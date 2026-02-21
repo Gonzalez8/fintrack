@@ -7,10 +7,17 @@ export interface Asset {
   id: string
   name: string
   ticker: string | null
-  type: 'STOCK' | 'FUND' | 'CRYPTO' | 'CASHLIKE'
+  isin: string | null
+  type: 'STOCK' | 'ETF' | 'FUND' | 'CRYPTO'
   currency: string
   current_price: string | null
   price_mode: 'MANUAL' | 'AUTO'
+  issuer_country: string | null
+  domicile_country: string | null
+  withholding_country: string | null
+  price_source: 'YAHOO' | 'MANUAL'
+  price_status: 'OK' | 'ERROR' | 'NO_TICKER' | null
+  price_updated_at: string | null
   created_at: string
   updated_at: string
 }
@@ -49,6 +56,7 @@ export interface Dividend {
   asset: string
   asset_name: string
   asset_ticker: string | null
+  asset_issuer_country: string | null
   shares: string | null
   gross: string
   tax: string
@@ -128,6 +136,22 @@ export interface YearSummary {
   total_net: string
 }
 
+export interface AccountSnapshot {
+  id: string
+  account: string
+  account_name: string
+  date: string
+  balance: string
+  note: string
+  created_at: string
+}
+
+export interface PatrimonioPoint {
+  month: string
+  cash: string
+  investments: string
+}
+
 export interface Settings {
   base_currency: string
   cost_basis_method: string
@@ -135,6 +159,8 @@ export interface Settings {
   rounding_money: number
   rounding_qty: number
   price_update_interval: number
+  default_price_source: string
+  snapshot_frequency: number
 }
 
 export interface ImportResult {

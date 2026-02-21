@@ -12,9 +12,9 @@ import type { Position } from '@/types'
 
 const TYPE_COLORS: Record<string, string> = {
   STOCK: 'bg-blue-100 text-blue-800',
+  ETF: 'bg-green-100 text-green-800',
   FUND: 'bg-purple-100 text-purple-800',
   CRYPTO: 'bg-orange-100 text-orange-800',
-  CASHLIKE: 'bg-green-100 text-green-800',
 }
 
 const columns: Column<Position>[] = [

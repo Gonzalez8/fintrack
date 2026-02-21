@@ -1,5 +1,5 @@
 import client from './client'
-import type { Asset, Account, Settings, PaginatedResponse } from '@/types'
+import type { Asset, Account, AccountSnapshot, Settings, PaginatedResponse } from '@/types'
 
 export const assetsApi = {
   list: (params?: Record<string, string>) =>
@@ -20,6 +20,16 @@ export const accountsApi = {
   create: (data: Partial<Account>) => client.post<Account>('/accounts/', data),
   update: (id: string, data: Partial<Account>) => client.patch<Account>(`/accounts/${id}/`, data),
   delete: (id: string) => client.delete(`/accounts/${id}/`),
+}
+
+export const snapshotsApi = {
+  list: (params?: Record<string, string>) =>
+    client.get<PaginatedResponse<AccountSnapshot>>('/account-snapshots/', { params }),
+  create: (data: { account: string; date: string; balance: string; note?: string }) =>
+    client.post<AccountSnapshot>('/account-snapshots/', data),
+  delete: (id: string) => client.delete(`/account-snapshots/${id}/`),
+  bulkCreate: (data: { date: string; snapshots: Array<{ account: string; balance: string; note?: string }> }) =>
+    client.post<AccountSnapshot[]>('/accounts/bulk-snapshot/', data),
 }
 
 export const settingsApi = {

@@ -51,10 +51,10 @@ export function NewAssetForm({ onCreated }: NewAssetFormProps) {
       <div className="flex gap-2">
         <Input className="h-8 text-xs flex-1" placeholder="Ticker (opcional)" value={ticker} onChange={(e) => setTicker(e.target.value)} />
         <select className={selectClass + ' flex-1'} value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="STOCK">Stock</option>
+          <option value="STOCK">Accion</option>
+          <option value="ETF">ETF</option>
           <option value="FUND">Fondo</option>
           <option value="CRYPTO">Crypto</option>
-          <option value="CASHLIKE">Cash-like</option>
         </select>
       </div>
       <Button

@@ -12,6 +12,9 @@ import { DividendosPage } from '@/pages/DividendosPage'
 import { InteresesPage } from '@/pages/InteresesPage'
 import { ImportarPage } from '@/pages/ImportarPage'
 import { FiscalPage } from '@/pages/FiscalPage'
+import { CuentasPage } from '@/pages/CuentasPage'
+import { ActivosPage } from '@/pages/ActivosPage'
+import { ActivoDetailPage } from '@/pages/ActivoDetailPage'
 import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
 
 const queryClient = new QueryClient({
@@ -80,6 +83,9 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/cartera" element={<CarteraPage />} />
+            <Route path="/activos" element={<ActivosPage />} />
+            <Route path="/activos/:id" element={<ActivoDetailPage />} />
+            <Route path="/cuentas" element={<CuentasPage />} />
             <Route path="/operaciones" element={<OperacionesPage />} />
             <Route path="/dividendos" element={<DividendosPage />} />
             <Route path="/intereses" element={<InteresesPage />} />

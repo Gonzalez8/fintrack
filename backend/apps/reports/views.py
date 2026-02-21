@@ -4,12 +4,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.transactions.models import Transaction, Dividend, Interest
-from .services import year_summary
+from .services import year_summary, patrimonio_evolution
 
 
 class YearSummaryView(APIView):
     def get(self, request):
         return Response(year_summary())
+
+
+class PatrimonioEvolutionView(APIView):
+    def get(self, request):
+        return Response(patrimonio_evolution())
 
 
 class Echo:

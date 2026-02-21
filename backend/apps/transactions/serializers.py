@@ -20,11 +20,12 @@ class TransactionSerializer(serializers.ModelSerializer):
 class DividendSerializer(serializers.ModelSerializer):
     asset_name = serializers.CharField(source="asset.name", read_only=True)
     asset_ticker = serializers.CharField(source="asset.ticker", read_only=True)
+    asset_issuer_country = serializers.CharField(source="asset.issuer_country", read_only=True, default=None)
 
     class Meta:
         model = Dividend
         fields = [
-            "id", "date", "asset", "asset_name", "asset_ticker",
+            "id", "date", "asset", "asset_name", "asset_ticker", "asset_issuer_country",
             "shares", "gross", "tax", "net", "withholding_rate",
             "created_at", "updated_at",
         ]

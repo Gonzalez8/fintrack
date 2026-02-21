@@ -1,0 +1,232 @@
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { assetsApi } from '@/api/assets'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { MoneyCell } from '@/components/app/MoneyCell'
+import { ArrowLeft } from 'lucide-react'
+import type { Asset } from '@/types'
+
+export function ActivoDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const { data: asset, isLoading } = useQuery({
+    queryKey: ['asset', id],
+    queryFn: () => assetsApi.get(id!).then((r) => r.data),
+    enabled: !!id,
+  })
+
+  const [form, setForm] = useState<Partial<Asset>>({})
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (asset) {
+      setForm({
+        name: asset.name,
+        ticker: asset.ticker,
+        isin: asset.isin,
+        type: asset.type,
+        currency: asset.currency,
+        price_mode: asset.price_mode,
+        issuer_country: asset.issuer_country,
+        domicile_country: asset.domicile_country,
+        withholding_country: asset.withholding_country,
+      })
+    }
+  }, [asset])
+
+  const updateMut = useMutation({
+    mutationFn: (data: Partial<Asset>) => assetsApi.update(id!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset', id] })
+      queryClient.invalidateQueries({ queryKey: ['assets-all'] })
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
+  if (isLoading) return <div className="text-muted-foreground">Cargando...</div>
+  if (!asset) return <div className="text-muted-foreground">Activo no encontrado</div>
+
+  const statusVariant = asset.price_status === 'OK' ? 'default' as const
+    : asset.price_status === 'ERROR' ? 'destructive' as const
+    : 'secondary' as const
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/activos')}>
+          <ArrowLeft className="mr-1 h-4 w-4" /> Volver
+        </Button>
+        <h2 className="text-2xl font-bold">{asset.name}</h2>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Datos del activo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div>
+                <label className="text-sm font-medium">Nombre</label>
+                <Input
+                  value={form.name ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-4 grid-cols-3">
+                <div>
+                  <label className="text-sm font-medium">Ticker</label>
+                  <Input
+                    value={form.ticker ?? ''}
+                    onChange={(e) => setForm((f) => ({ ...f, ticker: e.target.value || null }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">ISIN</label>
+                  <Input
+                    value={form.isin ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase() || null
+                      setForm((f) => {
+                        const updated: Partial<Asset> = { ...f, isin: val }
+                        if (val && val.length >= 2 && !f.issuer_country) {
+                          updated.issuer_country = val.slice(0, 2)
+                        }
+                        return updated
+                      })
+                    }}
+                    maxLength={12}
+                    placeholder="US0378331005"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Moneda</label>
+                  <Input
+                    value={form.currency ?? ''}
+                    onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))}
+                    maxLength={3}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium">Tipo</label>
+                  <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as Asset['type'] }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="STOCK">Accion</SelectItem>
+                      <SelectItem value="ETF">ETF</SelectItem>
+                      <SelectItem value="FUND">Fondo</SelectItem>
+                      <SelectItem value="CRYPTO">Crypto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Modo precio</label>
+                  <Select value={form.price_mode} onValueChange={(v) => setForm((f) => ({ ...f, price_mode: v as Asset['price_mode'] }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MANUAL">Manual</SelectItem>
+                      <SelectItem value="AUTO">Auto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Datos fiscales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div>
+                <label className="text-sm font-medium">Pais emisor (ISO alpha-2)</label>
+                <Input
+                  value={form.issuer_country ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, issuer_country: e.target.value.toUpperCase() || null }))}
+                  maxLength={2}
+                  placeholder="ES"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Domicilio instrumento</label>
+                <Input
+                  value={form.domicile_country ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, domicile_country: e.target.value.toUpperCase() || null }))}
+                  maxLength={2}
+                  placeholder="IE"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Pais retencion origen</label>
+                <Input
+                  value={form.withholding_country ?? ''}
+                  onChange={(e) => setForm((f) => ({ ...f, withholding_country: e.target.value.toUpperCase() || null }))}
+                  maxLength={2}
+                  placeholder="US"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Precio</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Precio actual</label>
+              <div className="text-lg font-semibold"><MoneyCell value={asset.current_price} /></div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Fuente</label>
+              <div className="text-sm">{asset.price_source ?? '-'}</div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Estado</label>
+              <div>
+                {asset.price_status ? (
+                  <Badge variant={statusVariant}>{asset.price_status}</Badge>
+                ) : '-'}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Ultima actualizacion</label>
+              <div className="text-sm">
+                {asset.price_updated_at
+                  ? new Date(asset.price_updated_at).toLocaleDateString('es-ES', {
+                      day: '2-digit', month: '2-digit', year: 'numeric',
+                      hour: '2-digit', minute: '2-digit',
+                    })
+                  : '-'}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={() => updateMut.mutate(form)} disabled={updateMut.isPending}>
+          {updateMut.isPending ? 'Guardando...' : 'Guardar'}
+        </Button>
+        <Button variant="outline" onClick={() => navigate('/activos')}>Volver</Button>
+        {saved && <span className="text-sm text-green-600">Guardado correctamente</span>}
+      </div>
+    </div>
+  )
+}

@@ -4,7 +4,7 @@ import { reportsApi } from '@/api/portfolio'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { MoneyCell } from '@/components/app/MoneyCell'
 import { formatMoney, formatPercent } from '@/lib/utils'
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 const COLORS = [
   '#2563eb', '#16a34a', '#dc2626', '#ca8a04', '#9333ea',
@@ -15,6 +15,10 @@ export function DashboardPage() {
   const { data: portfolio } = useQuery({
     queryKey: ['portfolio'],
     queryFn: () => portfolioApi.get().then((r) => r.data),
+  })
+  const { data: patrimonioEvo } = useQuery({
+    queryKey: ['patrimonio-evolution'],
+    queryFn: () => reportsApi.patrimonioEvolution().then((r) => r.data),
   })
   const { data: yearSummary } = useQuery({
     queryKey: ['year-summary'],
@@ -34,14 +38,14 @@ export function DashboardPage() {
     Dividendos: parseFloat(y.dividends_net),
     Intereses: parseFloat(y.interests_net),
     Ventas: parseFloat(y.sales_pnl),
-  })) ?? []
+  })).reverse() ?? []
 
   const allocationData = (() => {
     if (!portfolio) return []
     let rv = 0, rf = 0
     for (const p of portfolio.positions) {
       const mv = parseFloat(p.market_value)
-      if (p.asset_type === 'STOCK' || p.asset_type === 'CRYPTO') rv += mv
+      if (p.asset_type === 'STOCK' || p.asset_type === 'ETF' || p.asset_type === 'CRYPTO') rv += mv
       else rf += mv
     }
     const cash = parseFloat(portfolio.total_cash)
@@ -57,6 +61,17 @@ export function DashboardPage() {
     'Renta Fija': '#16a34a',
     'Efectivo': '#ca8a04',
   }
+
+  const evolutionData = (patrimonioEvo ?? []).map((p) => {
+    const cash = parseFloat(p.cash)
+    const investments = parseFloat(p.investments)
+    return {
+      month: p.month,
+      Efectivo: cash,
+      Inversiones: investments,
+      Total: cash + investments,
+    }
+  })
 
   const totalPnlPct = portfolio && parseFloat(portfolio.total_cost) > 0
     ? ((parseFloat(portfolio.total_unrealized_pnl) / parseFloat(portfolio.total_cost)) * 100).toFixed(2)
@@ -165,20 +180,47 @@ export function DashboardPage() {
             <CardTitle className="text-base">Ingresos por Año</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barData}>
-                <XAxis dataKey="year" />
-                <YAxis />
-                <Tooltip formatter={(v: number) => formatMoney(v)} />
-                <Legend />
-                <Bar dataKey="Dividendos" fill="#2563eb" />
-                <Bar dataKey="Intereses" fill="#16a34a" />
-                <Bar dataKey="Ventas" fill="#f97316" />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="overflow-x-auto">
+              <div style={{ height: Math.max(300, barData.length * 50) }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                    <XAxis type="number" tickFormatter={(v: number) => formatMoney(v)} />
+                    <YAxis type="category" dataKey="year" width={50} />
+                    <Tooltip
+                      formatter={(v: number) => formatMoney(v)}
+                      labelFormatter={(label) => `Año ${label}`}
+                    />
+                    <Legend />
+                    <Bar dataKey="Dividendos" stackId="income" fill="#2563eb" />
+                    <Bar dataKey="Intereses" stackId="income" fill="#16a34a" />
+                    <Bar dataKey="Ventas" stackId="income" fill="#f97316" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {evolutionData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Evolucion del Patrimonio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={evolutionData}>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(v: number) => formatMoney(v)} />
+                <Legend />
+                <Area type="monotone" dataKey="Efectivo" stackId="1" fill="#ca8a04" stroke="#ca8a04" fillOpacity={0.6} />
+                <Area type="monotone" dataKey="Inversiones" stackId="1" fill="#2563eb" stroke="#2563eb" fillOpacity={0.6} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

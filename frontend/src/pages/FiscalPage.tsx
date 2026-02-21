@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { portfolioApi, reportsApi } from '@/api/portfolio'
 import { dividendsApi, interestsApi } from '@/api/transactions'
@@ -46,18 +46,32 @@ export function FiscalPage() {
     return { qty, cost, sell, pnl, pct }
   })()
 
-  // Aggregate dividends by asset
-  const divByAsset = new Map<string, { name: string; ticker: string | null; gross: number; tax: number; net: number }>()
+  // Aggregate dividends by country then by asset
+  const divByCountryAsset = new Map<string, Map<string, { name: string; ticker: string | null; gross: number; tax: number; net: number }>>()
   for (const d of dividendsData?.results ?? []) {
-    const key = d.asset
-    if (!divByAsset.has(key)) divByAsset.set(key, { name: d.asset_name, ticker: d.asset_ticker, gross: 0, tax: 0, net: 0 })
-    const entry = divByAsset.get(key)!
+    const country = d.asset_issuer_country ?? '__none__'
+    if (!divByCountryAsset.has(country)) divByCountryAsset.set(country, new Map())
+    const assetMap = divByCountryAsset.get(country)!
+    if (!assetMap.has(d.asset)) assetMap.set(d.asset, { name: d.asset_name, ticker: d.asset_ticker, gross: 0, tax: 0, net: 0 })
+    const entry = assetMap.get(d.asset)!
     entry.gross += parseFloat(d.gross)
     entry.tax += parseFloat(d.tax)
     entry.net += parseFloat(d.net)
   }
-  const divRows = [...divByAsset.values()].sort((a, b) => b.net - a.net)
-  const divTotals = divRows.reduce((t, r) => ({ gross: t.gross + r.gross, tax: t.tax + r.tax, net: t.net + r.net }), { gross: 0, tax: 0, net: 0 })
+  // Sort countries alphabetically, "__none__" last
+  const sortedCountries = [...divByCountryAsset.keys()].sort((a, b) => {
+    if (a === '__none__') return 1
+    if (b === '__none__') return -1
+    return a.localeCompare(b)
+  })
+  const divTotals = { gross: 0, tax: 0, net: 0 }
+  for (const assetMap of divByCountryAsset.values()) {
+    for (const r of assetMap.values()) {
+      divTotals.gross += r.gross
+      divTotals.tax += r.tax
+      divTotals.net += r.net
+    }
+  }
 
   // Aggregate interests by account
   const intByAccount = new Map<string, { name: string; gross: number; net: number }>()
@@ -170,36 +184,65 @@ export function FiscalPage() {
       {/* Dividends table */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Rendimientos del capital mobiliario — Dividendos {year}</h3>
-        {divRows.length === 0 ? (
+        {sortedCountries.length === 0 ? (
           <p className="text-sm text-muted-foreground">Sin dividendos en {year}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>País</TableHead>
                 <TableHead>Entidad</TableHead>
                 <TableHead className="text-right">Bruto</TableHead>
                 <TableHead className="text-right">Retención</TableHead>
+                <TableHead className="text-right">% Ret.</TableHead>
                 <TableHead className="text-right">Neto</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {divRows.map((d, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <span className="font-medium">{d.name}</span>
-                    {d.ticker && <span className="ml-2 text-xs text-muted-foreground">{d.ticker}</span>}
-                  </TableCell>
-                  <TableCell className="text-right">{formatMoney(String(d.gross))}</TableCell>
-                  <TableCell className="text-right">{formatMoney(String(d.tax))}</TableCell>
-                  <TableCell className="text-right">{formatMoney(String(d.net))}</TableCell>
-                </TableRow>
-              ))}
+              {sortedCountries.map((country) => {
+                const assetMap = divByCountryAsset.get(country)!
+                const assets = [...assetMap.values()].sort((a, b) => b.net - a.net)
+                const countryTotals = assets.reduce(
+                  (t, r) => ({ gross: t.gross + r.gross, tax: t.tax + r.tax, net: t.net + r.net }),
+                  { gross: 0, tax: 0, net: 0 }
+                )
+                const countryLabel = country === '__none__' ? 'Sin país' : country
+                return (
+                  <Fragment key={country}>
+                    {assets.map((d, i) => (
+                      <TableRow key={`${country}-${i}`}>
+                        {i === 0 && (
+                          <TableCell rowSpan={assets.length + 1} className="font-semibold align-top">
+                            {countryLabel}
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <span className="font-medium">{d.name}</span>
+                          {d.ticker && <span className="ml-2 text-xs text-muted-foreground">{d.ticker}</span>}
+                        </TableCell>
+                        <TableCell className="text-right">{formatMoney(String(d.gross))}</TableCell>
+                        <TableCell className="text-right">{formatMoney(String(d.tax))}</TableCell>
+                        <TableCell className="text-right">{d.gross > 0 ? formatPercent(String((d.tax / d.gross * 100).toFixed(2))) : '-'}</TableCell>
+                        <TableCell className="text-right">{formatMoney(String(d.net))}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow key={`${country}-subtotal`} className="bg-muted/50">
+                      <TableCell className="font-medium text-sm">Subtotal {countryLabel}</TableCell>
+                      <TableCell className="text-right font-medium">{formatMoney(String(countryTotals.gross))}</TableCell>
+                      <TableCell className="text-right font-medium">{formatMoney(String(countryTotals.tax))}</TableCell>
+                      <TableCell className="text-right font-medium">{countryTotals.gross > 0 ? formatPercent(String((countryTotals.tax / countryTotals.gross * 100).toFixed(2))) : '-'}</TableCell>
+                      <TableCell className="text-right font-medium">{formatMoney(String(countryTotals.net))}</TableCell>
+                    </TableRow>
+                  </Fragment>
+                )
+              })}
             </TableBody>
             <TableFooter>
               <TableRow className="font-semibold">
-                <TableCell>Suma total</TableCell>
+                <TableCell colSpan={2}>Suma total</TableCell>
                 <TableCell className="text-right">{formatMoney(String(divTotals.gross))}</TableCell>
                 <TableCell className="text-right">{formatMoney(String(divTotals.tax))}</TableCell>
+                <TableCell className="text-right">{divTotals.gross > 0 ? formatPercent(String((divTotals.tax / divTotals.gross * 100).toFixed(2))) : '-'}</TableCell>
                 <TableCell className="text-right">{formatMoney(String(divTotals.net))}</TableCell>
               </TableRow>
             </TableFooter>

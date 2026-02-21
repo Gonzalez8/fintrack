@@ -1,6 +1,8 @@
 import math
+from datetime import date
 from decimal import Decimal, InvalidOperation
-from .models import Asset
+from django.utils import timezone
+from .models import Asset, PriceSnapshot
 
 
 def _fetch_batch(tickers, period="5d"):
@@ -83,12 +85,21 @@ def update_prices():
             except Exception:
                 pass
 
+    now = timezone.now()
     for ticker, asset in ticker_map.items():
         if ticker in prices:
             try:
                 price = Decimal(str(round(prices[ticker], 6)))
                 asset.current_price = price
-                asset.save(update_fields=["current_price", "updated_at"])
+                asset.price_status = Asset.PriceStatus.OK
+                asset.price_updated_at = now
+                asset.save(update_fields=[
+                    "current_price", "price_status", "price_updated_at", "updated_at",
+                ])
+                PriceSnapshot.objects.update_or_create(
+                    asset=asset, date=date.today(),
+                    defaults={"price": price, "source": "YAHOO"},
+                )
                 results["updated"] += 1
                 results["prices"].append({
                     "ticker": ticker,
@@ -96,8 +107,14 @@ def update_prices():
                     "price": str(price),
                 })
             except (InvalidOperation, ValueError) as e:
+                asset.price_status = Asset.PriceStatus.ERROR
+                asset.price_updated_at = now
+                asset.save(update_fields=["price_status", "price_updated_at", "updated_at"])
                 results["errors"].append(f"{ticker}: {str(e)}")
         else:
+            asset.price_status = Asset.PriceStatus.ERROR
+            asset.price_updated_at = now
+            asset.save(update_fields=["price_status", "price_updated_at", "updated_at"])
             results["errors"].append(f"{ticker}: no price data found")
 
     return results

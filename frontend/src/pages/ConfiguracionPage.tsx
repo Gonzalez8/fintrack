@@ -178,7 +178,7 @@ export function ConfiguracionPage() {
           </div>
 
           {importResult && (
-            <div className="mt-4 rounded-md bg-green-50 border border-green-200 p-3 text-sm text-green-800">
+            <div className="mt-4 rounded-md bg-green-500/10 border border-green-500/20 p-3 text-sm text-green-700 dark:text-green-400">
               <p className="font-medium mb-1">Backup importado correctamente</p>
               <ul className="space-y-0.5">
                 <li>Activos: {importResult.assets}</li>
@@ -194,7 +194,7 @@ export function ConfiguracionPage() {
           )}
 
           {importError && (
-            <div className="mt-4 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-800">
+            <div className="mt-4 rounded-md bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-700 dark:text-red-400">
               {importError}
             </div>
           )}

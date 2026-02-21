@@ -19,9 +19,9 @@ import axios from 'axios'
 const selectClass = 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
 
 const TYPE_BADGE: Record<string, string> = {
-  BUY: 'bg-green-100 text-green-800',
-  SELL: 'bg-red-100 text-red-800',
-  GIFT: 'bg-yellow-100 text-yellow-800',
+  BUY: 'bg-green-500/10 text-green-600 dark:text-green-400',
+  SELL: 'bg-red-500/10 text-red-600 dark:text-red-400',
+  GIFT: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 }
 
 const TYPE_LABELS: Record<string, string> = {

@@ -58,10 +58,12 @@ function ProtectedRoute() {
     return <Navigate to="/login" replace />
   }
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-6">
-        <Outlet />
+      <main className="flex-1 overflow-auto">
+        <div className="mx-auto max-w-7xl p-6 lg:p-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

@@ -12,10 +12,10 @@ import { RefreshCw } from 'lucide-react'
 import type { Position } from '@/types'
 
 const TYPE_COLORS: Record<string, string> = {
-  STOCK: 'bg-blue-100 text-blue-800',
-  ETF: 'bg-green-100 text-green-800',
-  FUND: 'bg-purple-100 text-purple-800',
-  CRYPTO: 'bg-orange-100 text-orange-800',
+  STOCK: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  ETF: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  FUND: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  CRYPTO: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
 }
 
 const columns: Column<Position>[] = [
@@ -123,7 +123,7 @@ export function CarteraPage() {
               <p className="text-2xl font-bold">{formatMoney(data.total_market_value)}</p>
             </CardContent>
           </Card>
-          <Card className={totalPnl >= 0 ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}>
+          <Card className={totalPnl >= 0 ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}>
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">P&L No Realizado</p>
               <p className={`text-2xl font-bold ${pnlColor}`}>{formatMoney(data.total_unrealized_pnl)}</p>

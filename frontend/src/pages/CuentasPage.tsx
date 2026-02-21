@@ -15,11 +15,11 @@ import type { Account, AccountSnapshot } from '@/types'
 const selectClass = 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
 
 const ACCOUNT_TYPE_COLORS: Record<string, string> = {
-  OPERATIVA: 'bg-blue-100 text-blue-800',
-  AHORRO: 'bg-green-100 text-green-800',
-  INVERSION: 'bg-orange-100 text-orange-800',
-  DEPOSITOS: 'bg-purple-100 text-purple-800',
-  ALTERNATIVOS: 'bg-yellow-100 text-yellow-800',
+  OPERATIVA: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  AHORRO: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  INVERSION: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  DEPOSITOS: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  ALTERNATIVOS: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 }
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {

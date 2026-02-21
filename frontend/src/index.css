@@ -4,26 +4,94 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Backgrounds */
+    --background: 220 20% 97%;
+    --foreground: 224 71% 4%;
+
+    /* Cards — white on light gray background */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 224 71% 4%;
+
+    /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 224 71% 4%;
+
+    /* Primary — Indigo */
+    --primary: 239 84% 62%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 220 14% 94%;
+    --secondary-foreground: 224 71% 4%;
+
+    /* Muted */
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent */
+    --accent: 220 14% 94%;
+    --accent-foreground: 224 71% 4%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & inputs */
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
+    --ring: 239 84% 62%;
+
+    /* Radius */
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 224 71% 4%;
+    --sidebar-border: 220 13% 88%;
+  }
+
+  .dark {
+    /* Backgrounds */
+    --background: 222 47% 6%;
+    --foreground: 213 31% 91%;
+
+    /* Cards */
+    --card: 222 47% 9%;
+    --card-foreground: 213 31% 91%;
+
+    /* Popovers */
+    --popover: 222 47% 9%;
+    --popover-foreground: 213 31% 91%;
+
+    /* Primary — Indigo stays vibrant in dark */
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary: 222 47% 14%;
+    --secondary-foreground: 213 31% 91%;
+
+    /* Muted */
+    --muted: 222 47% 14%;
+    --muted-foreground: 215 16% 55%;
+
+    /* Accent */
+    --accent: 222 47% 14%;
+    --accent-foreground: 213 31% 91%;
+
+    /* Destructive */
+    --destructive: 0 63% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & inputs */
+    --border: 222 47% 16%;
+    --input: 222 47% 16%;
+    --ring: 239 84% 67%;
+
+    /* Sidebar — slightly darker than cards */
+    --sidebar: 222 47% 7%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-border: 222 47% 14%;
   }
 }
 
@@ -31,7 +99,29 @@
   * {
     @apply border-border;
   }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
   }
 }

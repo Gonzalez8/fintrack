@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Briefcase, Landmark, Wallet, ArrowLeftRight, Coins,
-  Percent, FileText, Upload, Settings, LogOut
+  Percent, FileText, Settings, LogOut
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,6 @@ const links = [
   { to: '/dividendos', icon: Coins, label: 'Dividendos' },
   { to: '/intereses', icon: Percent, label: 'Intereses' },
   { to: '/fiscal', icon: FileText, label: 'Fiscal' },
-  { to: '/importar', icon: Upload, label: 'Importar' },
   { to: '/configuracion', icon: Settings, label: 'Configuracion' },
 ]
 

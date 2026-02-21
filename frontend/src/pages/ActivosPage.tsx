@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { MoneyCell } from '@/components/app/MoneyCell'
-import { RefreshCw, Trash2 } from 'lucide-react'
+import { RefreshCw, Trash2, Plus } from 'lucide-react'
+import type { Asset } from '@/types'
 
 const typeLabels: Record<string, string> = {
   STOCK: 'Accion',
@@ -39,6 +41,24 @@ export function ActivosPage() {
   const { data } = useQuery({
     queryKey: ['assets-all', search, typeFilter, statusFilter],
     queryFn: () => assetsApi.list(params).then((r) => r.data),
+  })
+
+  const [newOpen, setNewOpen] = useState(false)
+  const [newForm, setNewForm] = useState<Partial<Asset>>({ type: 'STOCK', currency: 'EUR', price_mode: 'AUTO' })
+  const [newError, setNewError] = useState<string | null>(null)
+
+  const createMut = useMutation({
+    mutationFn: (data: Partial<Asset>) => assetsApi.create(data).then((r) => r.data),
+    onSuccess: (asset) => {
+      queryClient.invalidateQueries({ queryKey: ['assets-all'] })
+      setNewOpen(false)
+      setNewForm({ type: 'STOCK', currency: 'EUR', price_mode: 'AUTO' })
+      setNewError(null)
+      navigate(`/activos/${asset.id}`)
+    },
+    onError: (err) => {
+      setNewError((err as any)?.response?.data?.detail ?? 'Error al crear el activo')
+    },
   })
 
   const [priceResult, setPriceResult] = useState<{ updated: number; errors: string[] } | null>(null)
@@ -92,6 +112,10 @@ export function ActivosPage() {
             >
               <RefreshCw className={`mr-2 h-4 w-4 ${updatePricesMut.isPending ? 'animate-spin' : ''}`} />
               {updatePricesMut.isPending ? 'Actualizando...' : 'Actualizar precios'}
+            </Button>
+            <Button size="sm" onClick={() => { setNewError(null); setNewOpen(true) }}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo activo
             </Button>
           </div>
         </CardHeader>
@@ -197,6 +221,84 @@ export function ActivosPage() {
           </Table>
         </CardContent>
       </Card>
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nuevo activo</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div>
+              <label className="text-sm font-medium">Nombre *</label>
+              <Input
+                placeholder="Apple Inc."
+                value={newForm.name ?? ''}
+                onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Ticker</label>
+                <Input
+                  placeholder="AAPL"
+                  value={newForm.ticker ?? ''}
+                  onChange={(e) => setNewForm((f) => ({ ...f, ticker: e.target.value || undefined }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">ISIN</label>
+                <Input
+                  placeholder="US0378331005"
+                  maxLength={12}
+                  value={newForm.isin ?? ''}
+                  onChange={(e) => setNewForm((f) => ({ ...f, isin: e.target.value.toUpperCase() || undefined }))}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-sm font-medium">Tipo</label>
+                <Select value={newForm.type} onValueChange={(v) => setNewForm((f) => ({ ...f, type: v as Asset['type'] }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="STOCK">Accion</SelectItem>
+                    <SelectItem value="ETF">ETF</SelectItem>
+                    <SelectItem value="FUND">Fondo</SelectItem>
+                    <SelectItem value="CRYPTO">Crypto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Moneda</label>
+                <Input
+                  maxLength={3}
+                  value={newForm.currency ?? 'EUR'}
+                  onChange={(e) => setNewForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Modo precio</label>
+                <Select value={newForm.price_mode} onValueChange={(v) => setNewForm((f) => ({ ...f, price_mode: v as Asset['price_mode'] }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AUTO">Auto</SelectItem>
+                    <SelectItem value="MANUAL">Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {newError && <p className="text-sm text-destructive">{newError}</p>}
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setNewOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => createMut.mutate(newForm)}
+              disabled={!newForm.name || createMut.isPending}
+            >
+              {createMut.isPending ? 'Creando...' : 'Crear activo'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -2,6 +2,7 @@ from collections import defaultdict
 from decimal import Decimal
 from django.db.models import Sum
 from django.db.models.functions import ExtractYear
+from django.utils import timezone
 from apps.transactions.models import Dividend, Interest
 from apps.portfolio.services import calculate_realized_pnl
 
@@ -70,6 +71,25 @@ def year_summary():
         )
 
     return sorted(years.values(), key=lambda x: x["year"])
+
+
+def rv_evolution():
+    """Return portfolio value time series from PortfolioSnapshot records."""
+    from apps.assets.models import PortfolioSnapshot
+
+    snapshots = (
+        PortfolioSnapshot.objects.order_by("captured_at")
+        .values("captured_at", "total_market_value")
+    )
+
+    return [
+        {
+            "captured_at": snap["captured_at"].isoformat(),
+            "value": str(snap["total_market_value"]),
+        }
+        for snap in snapshots
+        if snap["total_market_value"] > 0
+    ]
 
 
 def patrimonio_evolution():

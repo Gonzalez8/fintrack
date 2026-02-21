@@ -10,7 +10,6 @@ import { CarteraPage } from '@/pages/CarteraPage'
 import { OperacionesPage } from '@/pages/OperacionesPage'
 import { DividendosPage } from '@/pages/DividendosPage'
 import { InteresesPage } from '@/pages/InteresesPage'
-import { ImportarPage } from '@/pages/ImportarPage'
 import { FiscalPage } from '@/pages/FiscalPage'
 import { CuentasPage } from '@/pages/CuentasPage'
 import { ActivosPage } from '@/pages/ActivosPage'
@@ -90,7 +89,6 @@ export default function App() {
             <Route path="/dividendos" element={<DividendosPage />} />
             <Route path="/intereses" element={<InteresesPage />} />
             <Route path="/fiscal" element={<FiscalPage />} />
-            <Route path="/importar" element={<ImportarPage />} />
             <Route path="/configuracion" element={<ConfiguracionPage />} />
           </Route>
         </Routes>

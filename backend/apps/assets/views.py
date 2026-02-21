@@ -1,7 +1,12 @@
+from decimal import Decimal, InvalidOperation
+
+from django.utils import timezone
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from .models import Asset, Account, AccountSnapshot, Settings
 from .serializers import (
     AssetSerializer, AccountSerializer, AccountSnapshotSerializer,
@@ -26,6 +31,37 @@ class AssetViewSet(viewsets.ModelViewSet):
                 {"detail": "No se puede eliminar este activo porque tiene operaciones o dividendos asociados."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    @action(detail=True, methods=["post"], url_path="set-price")
+    def set_price(self, request, pk=None):
+        asset = self.get_object()
+        if asset.price_mode != Asset.PriceMode.MANUAL:
+            return Response(
+                {"detail": "El activo no esta en modo de precio manual."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        price_raw = request.data.get("price")
+        if price_raw is None:
+            return Response(
+                {"detail": "El campo 'price' es obligatorio."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            price = Decimal(str(price_raw))
+        except (InvalidOperation, ValueError):
+            return Response(
+                {"detail": "Precio no valido."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        now = timezone.now()
+        asset.current_price = price
+        asset.price_source = Asset.PriceSource.MANUAL
+        asset.price_status = Asset.PriceStatus.OK
+        asset.price_updated_at = now
+        asset.save(update_fields=[
+            "current_price", "price_source", "price_status", "price_updated_at", "updated_at",
+        ])
+        return Response(AssetSerializer(asset).data)
 
 
 class UpdatePricesView(APIView):

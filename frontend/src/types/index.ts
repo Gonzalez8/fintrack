@@ -154,6 +154,11 @@ export interface PatrimonioPoint {
   renta_fija: string
 }
 
+export interface RVPoint {
+  captured_at: string
+  value: string
+}
+
 export interface Settings {
   base_currency: string
   cost_basis_method: string
@@ -163,27 +168,6 @@ export interface Settings {
   price_update_interval: number
   default_price_source: string
   snapshot_frequency: number
-}
-
-export interface ImportResult {
-  dry_run: boolean
-  inserted: {
-    transactions: number
-    dividends: number
-    interests: number
-    assets: number
-  }
-  skipped_duplicates: {
-    transactions: number
-    dividends: number
-    interests: number
-  }
-  errors: Array<{
-    sheet: string
-    row: number
-    column: string
-    message: string
-  }>
 }
 
 export interface PaginatedResponse<T> {

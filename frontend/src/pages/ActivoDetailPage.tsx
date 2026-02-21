@@ -24,6 +24,8 @@ export function ActivoDetailPage() {
 
   const [form, setForm] = useState<Partial<Asset>>({})
   const [saved, setSaved] = useState(false)
+  const [manualPrice, setManualPrice] = useState('')
+  const [priceSaved, setPriceSaved] = useState(false)
 
   useEffect(() => {
     if (asset) {
@@ -49,6 +51,18 @@ export function ActivoDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['portfolio'] })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
+  const setPriceMut = useMutation({
+    mutationFn: (price: string) => assetsApi.setPrice(id!, price),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['asset', id] })
+      queryClient.invalidateQueries({ queryKey: ['assets-all'] })
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] })
+      setManualPrice('')
+      setPriceSaved(true)
+      setTimeout(() => setPriceSaved(false), 3000)
     },
   })
 
@@ -188,7 +202,7 @@ export function ActivoDetailPage() {
           <CardTitle className="text-base">Precio</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Precio actual</label>
               <div className="text-lg font-semibold"><MoneyCell value={asset.current_price} /></div>
@@ -217,6 +231,43 @@ export function ActivoDetailPage() {
               </div>
             </div>
           </div>
+
+          {(form.price_mode ?? asset.price_mode) === 'MANUAL' && (
+            <div className="border-t pt-4">
+              {asset.price_mode !== 'MANUAL' ? (
+                <p className="text-sm text-amber-600">
+                  Guarda primero los cambios del activo para poder introducir el precio manualmente.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Este activo esta en modo manual. Introduce el precio actual a mano.
+                  </p>
+                  <div className="flex items-center gap-3 max-w-xs">
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder={asset.current_price ?? 'Precio'}
+                      value={manualPrice}
+                      onChange={(e) => setManualPrice(e.target.value)}
+                    />
+                    <Button
+                      onClick={() => setPriceMut.mutate(manualPrice)}
+                      disabled={!manualPrice || setPriceMut.isPending}
+                    >
+                      {setPriceMut.isPending ? 'Guardando...' : 'Guardar'}
+                    </Button>
+                  </div>
+                  {priceSaved && (
+                    <p className="mt-2 text-sm text-green-600">Precio actualizado correctamente</p>
+                  )}
+                  {setPriceMut.isError && (
+                    <p className="mt-2 text-sm text-red-600">Error al guardar el precio</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

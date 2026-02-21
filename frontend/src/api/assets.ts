@@ -8,6 +8,7 @@ export const assetsApi = {
   create: (data: Partial<Asset>) => client.post<Asset>('/assets/', data),
   update: (id: string, data: Partial<Asset>) => client.patch<Asset>(`/assets/${id}/`, data),
   delete: (id: string) => client.delete(`/assets/${id}/`),
+  setPrice: (id: string, price: string) => client.post<Asset>(`/assets/${id}/set-price/`, { price }),
   updatePrices: () => client.post<{
     updated: number
     errors: string[]
@@ -35,4 +36,13 @@ export const snapshotsApi = {
 export const settingsApi = {
   get: () => client.get<Settings>('/settings/'),
   update: (data: Partial<Settings>) => client.put<Settings>('/settings/', data),
+}
+
+export const backupApi = {
+  exportUrl: '/api/backup/export/',
+  import: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return client.post<{ counts: Record<string, number | boolean> }>('/backup/import/', form)
+  },
 }

@@ -1,8 +1,11 @@
 import math
+import uuid
 from datetime import date
 from decimal import Decimal, InvalidOperation
+
 from django.utils import timezone
-from .models import Asset, PriceSnapshot
+
+from .models import Asset, PortfolioSnapshot, PriceSnapshot
 
 
 def _fetch_batch(tickers, period="5d"):
@@ -21,7 +24,6 @@ def _fetch_batch(tickers, period="5d"):
     if len(tickers) == 1:
         ticker = tickers[0]
         try:
-            # Single ticker: Close is a simple Series
             col = data["Close"]
             val = col.dropna().iloc[-1]
             close = float(val)
@@ -30,7 +32,6 @@ def _fetch_batch(tickers, period="5d"):
         except (IndexError, KeyError, TypeError, ValueError):
             pass
     else:
-        # Multiple tickers: Close is a DataFrame with ticker columns
         close_df = data["Close"]
         for ticker in tickers:
             try:
@@ -46,11 +47,37 @@ def _fetch_batch(tickers, period="5d"):
     return prices
 
 
+def create_portfolio_snapshot_now() -> None:
+    """Create a PortfolioSnapshot using the current FIFO-computed portfolio value.
+
+    Called by the background scheduler according to snapshot_frequency.
+    Uses the same calculation engine as the portfolio page to ensure consistency.
+    """
+    from apps.portfolio.services import calculate_portfolio
+
+    data = calculate_portfolio()
+    now = timezone.now()
+
+    PortfolioSnapshot.objects.create(
+        captured_at=now,
+        batch_id=uuid.uuid4(),
+        total_market_value=Decimal(data["total_market_value"]),
+        total_cost=Decimal(data["total_cost"]),
+        total_unrealized_pnl=Decimal(data["total_unrealized_pnl"]),
+    )
+
+
 def update_prices():
+    """Fetch latest prices from Yahoo Finance and update Asset.current_price.
+
+    Also saves a PriceSnapshot per asset for historical price tracking.
+    Does NOT create PortfolioSnapshot — that is handled by the background scheduler.
+    """
     import yfinance as yf
 
     assets = list(
-        Asset.objects.exclude(ticker__isnull=True)
+        Asset.objects.filter(price_mode=Asset.PriceMode.AUTO)
+        .exclude(ticker__isnull=True)
         .exclude(ticker="")
     )
     if not assets:
@@ -61,17 +88,14 @@ def update_prices():
 
     results = {"updated": 0, "errors": [], "prices": []}
 
-    # First attempt: batch with 5d period
     prices = _fetch_batch(tickers, period="5d")
 
-    # Second attempt: individually fetch missing ones with 1mo period
     missing = [t for t in tickers if t not in prices]
     if missing:
         for ticker in missing:
             fallback = _fetch_batch([ticker], period="1mo")
             prices.update(fallback)
 
-    # Third attempt: use Ticker.history() for still-missing (crypto, forex, etc.)
     still_missing = [t for t in tickers if t not in prices]
     if still_missing:
         for ticker in still_missing:
@@ -85,20 +109,29 @@ def update_prices():
             except Exception:
                 pass
 
+    batch_id = uuid.uuid4()
     now = timezone.now()
+    today = now.date()
+
     for ticker, asset in ticker_map.items():
         if ticker in prices:
             try:
                 price = Decimal(str(round(prices[ticker], 6)))
                 asset.current_price = price
+                asset.price_source = Asset.PriceSource.YAHOO
                 asset.price_status = Asset.PriceStatus.OK
                 asset.price_updated_at = now
                 asset.save(update_fields=[
-                    "current_price", "price_status", "price_updated_at", "updated_at",
+                    "current_price", "price_source", "price_status",
+                    "price_updated_at", "updated_at",
                 ])
-                PriceSnapshot.objects.update_or_create(
-                    asset=asset, date=date.today(),
-                    defaults={"price": price, "source": "YAHOO"},
+                PriceSnapshot.objects.create(
+                    asset=asset,
+                    date=today,
+                    price=price,
+                    source="YAHOO",
+                    captured_at=now,
+                    batch_id=batch_id,
                 )
                 results["updated"] += 1
                 results["prices"].append({

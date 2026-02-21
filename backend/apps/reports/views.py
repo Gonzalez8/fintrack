@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.transactions.models import Transaction, Dividend, Interest
-from .services import year_summary, patrimonio_evolution
+from .services import year_summary, patrimonio_evolution, rv_evolution
 
 
 class YearSummaryView(APIView):
@@ -15,6 +15,11 @@ class YearSummaryView(APIView):
 class PatrimonioEvolutionView(APIView):
     def get(self, request):
         return Response(patrimonio_evolution())
+
+
+class RVEvolutionView(APIView):
+    def get(self, request):
+        return Response(rv_evolution())
 
 
 class Echo:

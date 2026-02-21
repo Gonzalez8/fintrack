@@ -106,13 +106,28 @@ class PriceSnapshot(TimeStampedModel):
     date = models.DateField()
     price = models.DecimalField(max_digits=20, decimal_places=6)
     source = models.CharField(max_length=10, default="YAHOO")
+    captured_at = models.DateTimeField(null=True, blank=True)
+    batch_id = models.UUIDField(null=True, blank=True, db_index=True)
 
     class Meta:
-        unique_together = ["asset", "date"]
-        ordering = ["-date"]
+        ordering = ["-captured_at", "-date"]
 
     def __str__(self):
-        return f"{self.asset.name} @ {self.date}: {self.price}"
+        return f"{self.asset.name} @ {self.captured_at or self.date}: {self.price}"
+
+
+class PortfolioSnapshot(models.Model):
+    captured_at = models.DateTimeField(db_index=True)
+    batch_id = models.UUIDField(db_index=True)
+    total_market_value = models.DecimalField(max_digits=20, decimal_places=2)
+    total_cost = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    total_unrealized_pnl = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        ordering = ["-captured_at"]
+
+    def __str__(self):
+        return f"Portfolio @ {self.captured_at}: {self.total_market_value}"
 
 
 class Settings(models.Model):

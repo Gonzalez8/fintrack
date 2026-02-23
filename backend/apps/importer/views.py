@@ -183,4 +183,18 @@ class BackupImportView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Reset sequences for tables that use integer PKs so the next
+        # auto-generated ID doesn't collide with the imported rows.
+        from django.db import connection
+        int_pk_tables = [
+            "assets_portfoliosnapshot",
+            "assets_positionsnapshot",
+        ]
+        with connection.cursor() as cursor:
+            for table in int_pk_tables:
+                cursor.execute(
+                    f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), "
+                    f"COALESCE(MAX(id), 1)) FROM {table};"
+                )
+
         return Response({"counts": counts})

@@ -159,6 +159,12 @@ export interface RVPoint {
   value: string
 }
 
+export interface SnapshotStatus {
+  frequency_minutes: number
+  last_snapshot: string | null
+  next_snapshot: string | null
+}
+
 export interface Settings {
   base_currency: string
   cost_basis_method: string

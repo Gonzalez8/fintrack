@@ -6,9 +6,10 @@ import { formatMoney } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import type { RVPoint } from '@/types'
 
-type Range = '1W' | '1M' | '3M' | '1Y' | 'MAX'
+type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | 'MAX'
 
 const RANGES: { key: Range; label: string }[] = [
+  { key: '1D', label: '1D' },
   { key: '1W', label: '1S' },
   { key: '1M', label: '1M' },
   { key: '3M', label: '3M' },
@@ -20,7 +21,8 @@ function filterByRange(data: RVPoint[], range: Range): RVPoint[] {
   if (range === 'MAX' || !data.length) return data
   const now = new Date()
   const cutoff = new Date(now)
-  if (range === '1W') cutoff.setDate(now.getDate() - 7)
+  if (range === '1D') cutoff.setDate(now.getDate() - 1)
+  else if (range === '1W') cutoff.setDate(now.getDate() - 7)
   else if (range === '1M') cutoff.setMonth(now.getMonth() - 1)
   else if (range === '3M') cutoff.setMonth(now.getMonth() - 3)
   else cutoff.setFullYear(now.getFullYear() - 1)
@@ -40,6 +42,8 @@ function formatTooltipDate(isoStr: string): string {
 
 function formatAxisDate(isoStr: string, range: Range): string {
   const d = new Date(isoStr)
+  if (range === '1D')
+    return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
   if (range === '1W')
     return d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })
   if (range === '1M')

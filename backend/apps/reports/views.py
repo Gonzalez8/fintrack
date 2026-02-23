@@ -1,5 +1,8 @@
 import csv
+from datetime import timedelta
+
 from django.http import StreamingHttpResponse
+from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -20,6 +23,26 @@ class PatrimonioEvolutionView(APIView):
 class RVEvolutionView(APIView):
     def get(self, request):
         return Response(rv_evolution())
+
+
+class SnapshotStatusView(APIView):
+    def get(self, request):
+        from apps.assets.models import PortfolioSnapshot, Settings
+
+        settings = Settings.load()
+        freq = settings.snapshot_frequency
+        last = PortfolioSnapshot.objects.order_by("-captured_at").first()
+
+        result = {
+            "frequency_minutes": freq,
+            "last_snapshot": last.captured_at.isoformat() if last else None,
+            "next_snapshot": (
+                (last.captured_at + timedelta(minutes=freq)).isoformat()
+                if last and freq > 0
+                else None
+            ),
+        }
+        return Response(result)
 
 
 class Echo:

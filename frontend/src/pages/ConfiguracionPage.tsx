@@ -1,12 +1,37 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { settingsApi, backupApi } from '@/api/assets'
+import { reportsApi } from '@/api/portfolio'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { PageHeader } from '@/components/app/PageHeader'
 import type { Settings } from '@/types'
+
+function useNow(intervalMs = 60_000) {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), intervalMs)
+    return () => clearInterval(id)
+  }, [intervalMs])
+  return now
+}
+
+function formatRelative(date: Date, now: Date): string {
+  const diffMs = date.getTime() - now.getTime()
+  const diffMin = Math.round(diffMs / 60_000)
+  if (diffMin === 0) return 'ahora mismo'
+  if (diffMin > 0) return `en ${diffMin} min`
+  return `hace ${Math.abs(diffMin)} min`
+}
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('es-ES', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
 
 export function ConfiguracionPage() {
   const queryClient = useQueryClient()
@@ -28,6 +53,13 @@ export function ConfiguracionPage() {
 
   const [form, setForm] = useState<Partial<Settings>>({})
   const current = { ...settings, ...form }
+
+  const now = useNow()
+  const { data: snapshotStatus } = useQuery({
+    queryKey: ['snapshot-status'],
+    queryFn: () => reportsApi.snapshotStatus().then((r) => r.data),
+    refetchInterval: 60_000,
+  })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importResult, setImportResult] = useState<Record<string, number | boolean> | null>(null)
@@ -121,12 +153,13 @@ export function ConfiguracionPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="text-sm font-medium">Frecuencia de snapshots</label>
               <Select value={String(current.snapshot_frequency ?? 1440)} onValueChange={(v) => setForm((f) => ({ ...f, snapshot_frequency: parseInt(v) }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">Desactivado</SelectItem>
+                  <SelectItem value="15">Cada 15 minutos</SelectItem>
                   <SelectItem value="30">Cada 30 minutos</SelectItem>
                   <SelectItem value="60">Cada hora</SelectItem>
                   <SelectItem value="180">Cada 3 horas</SelectItem>
@@ -135,6 +168,32 @@ export function ConfiguracionPage() {
                   <SelectItem value="1440">Cada 24 horas</SelectItem>
                 </SelectContent>
               </Select>
+
+              {snapshotStatus && (
+                <div className="mt-2 flex flex-wrap gap-3">
+                  {snapshotStatus.frequency_minutes === 0 ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+                      Snapshots desactivados
+                    </span>
+                  ) : (
+                    <>
+                      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                        {snapshotStatus.last_snapshot
+                          ? <>Último: <span className="font-medium text-foreground">{formatRelative(new Date(snapshotStatus.last_snapshot), now)}</span> &middot; {formatDateTime(snapshotStatus.last_snapshot)}</>
+                          : 'Sin snapshots aún'}
+                      </span>
+                      {snapshotStatus.next_snapshot && (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                          Próximo: <span className="font-medium text-foreground">{formatRelative(new Date(snapshotStatus.next_snapshot), now)}</span> &middot; {formatDateTime(snapshotStatus.next_snapshot)}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="mt-4 flex items-center gap-3">

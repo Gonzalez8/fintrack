@@ -50,6 +50,10 @@ def _fetch_batch(tickers, period="5d"):
 def create_portfolio_snapshot_now() -> None:
     """Create a PortfolioSnapshot and one PositionSnapshot per open position.
 
+    Skips creation if portfolio totals are identical to the last snapshot,
+    which avoids storing redundant data during nights and weekends when
+    market prices do not change.
+
     Wrapped in a single atomic transaction so PortfolioSnapshot and all its
     PositionSnapshots are always committed together or not at all, regardless
     of the call site (scheduler, management command, view, test, shell).
@@ -64,6 +68,19 @@ def create_portfolio_snapshot_now() -> None:
     if has_positions and Decimal(data["total_market_value"]) <= 0:
         return
 
+    # Skip if totals are identical to the last snapshot (prices unchanged).
+    new_market_value = Decimal(data["total_market_value"])
+    new_cost = Decimal(data["total_cost"])
+    new_pnl = Decimal(data["total_unrealized_pnl"])
+    last = PortfolioSnapshot.objects.order_by("-captured_at").first()
+    if (
+        last is not None
+        and last.total_market_value == new_market_value
+        and last.total_cost == new_cost
+        and last.total_unrealized_pnl == new_pnl
+    ):
+        return
+
     now = timezone.now()
     batch_id = uuid.uuid4()
 
@@ -71,9 +88,9 @@ def create_portfolio_snapshot_now() -> None:
         PortfolioSnapshot.objects.create(
             captured_at=now,
             batch_id=batch_id,
-            total_market_value=Decimal(data["total_market_value"]),
-            total_cost=Decimal(data["total_cost"]),
-            total_unrealized_pnl=Decimal(data["total_unrealized_pnl"]),
+            total_market_value=new_market_value,
+            total_cost=new_cost,
+            total_unrealized_pnl=new_pnl,
         )
 
         position_snapshots = [

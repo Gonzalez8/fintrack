@@ -27,20 +27,25 @@ class RVEvolutionView(APIView):
 
 class SnapshotStatusView(APIView):
     def get(self, request):
+        import math
         from apps.assets.models import PortfolioSnapshot, Settings
 
         settings = Settings.load()
         freq = settings.snapshot_frequency
         last = PortfolioSnapshot.objects.order_by("-captured_at").first()
 
+        next_snapshot = None
+        if last and freq > 0:
+            elapsed = (timezone.now() - last.captured_at).total_seconds() / 60
+            # How many full cycles have passed since last snapshot?
+            # Next eligible time is last + (cycles+1) * freq
+            cycles = math.floor(elapsed / freq)
+            next_snapshot = (last.captured_at + timedelta(minutes=freq * (cycles + 1))).isoformat()
+
         result = {
             "frequency_minutes": freq,
             "last_snapshot": last.captured_at.isoformat() if last else None,
-            "next_snapshot": (
-                (last.captured_at + timedelta(minutes=freq)).isoformat()
-                if last and freq > 0
-                else None
-            ),
+            "next_snapshot": next_snapshot,
         }
         return Response(result)
 

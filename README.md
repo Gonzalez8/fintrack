@@ -4,14 +4,68 @@ Personal investment tracking application. Monitor your portfolio, transactions, 
 
 ## Features
 
-- **Dashboard** with total net worth, asset distribution, yearly income and historical evolution charts
-- **Portfolio** with current positions, unrealized P&L and price updates via Yahoo Finance
-- **Transactions** for buy, sell and gift operations with automatic FIFO cost basis
-- **Dividends** and **interests** with withholding tax details
-- **Tax report** — yearly summary ready for tax filing (capital gains, investment income)
-- **Excel import** from spreadsheet with duplicate detection
-- **Full backup/restore** in JSON
-- **Dark mode**
+### Dashboard
+- Summary cards: total net worth (investments + cash), unrealized P&L %, current year income (dividends, interests, realized sales)
+- Asset allocation pie chart by market value
+- Year-by-year income bar chart (dividends, interests, realized sales)
+- Asset type allocation: Renta Variable / Renta Fija / Cash
+- Monthly patrimony evolution area chart (cash + investments)
+
+### Portfolio (Cartera)
+- Current positions table: asset name/ticker, type, quantity, total cost, current price, market value, P&L €, P&L %  and portfolio weight
+- One-click price update via Yahoo Finance
+- Position detail modal with historical evolution chart (market value, cost basis, unrealized P&L over time)
+
+### Assets (Activos)
+- Asset catalog: name, ticker, ISIN, type (Stock, ETF, Fund, Crypto), currency, issuer/domicile/withholding countries
+- Automatic price mode (Yahoo Finance) or manual price override
+- Price status tracking per asset (OK / Error / No ticker)
+- Delete protection when an asset has associated transactions
+
+### Accounts (Cuentas)
+- Cash account management: operating, savings, investment, deposits, alternatives
+- Balance snapshot history with notes
+- Bulk snapshot creation for multiple accounts on the same date
+- Automatic balance denormalization for fast reads
+
+### Transactions (Operaciones)
+- Buy, sell and gift operations with date, quantity, price, commission and tax
+- FIFO cost basis engine: single-pass algorithm calculates realized P&L on every sale, including commission and tax in the cost basis
+- Configurable gift cost mode: zero or market price at gift date
+- Pagination, filters and CSV export
+
+### Dividends (Dividendos)
+- Gross amount, withholding tax, net income, withholding rate and shares at payment date
+- Filters by asset and date range
+- CSV export
+
+### Interests (Intereses)
+- Gross amount, net income, balance, annual rate and account
+- Filters by account and date range
+- CSV export
+
+### Tax Report (Fiscal)
+- Year-by-year summary table: dividend income (gross/net), interest income (gross/net), realized sales P&L, total net
+- Detailed breakdown per year: dividends, realized sales and interests
+- Year selector for the last 6 fiscal years
+
+### Backup & Restore
+- Full JSON export: settings, assets, accounts, snapshots, transactions, dividends, interests
+- Atomic import with foreign-key handling and duplicate skipping
+
+### Settings (Configuracion)
+- Cost basis method (FIFO)
+- Gift cost mode (Zero / Market)
+- Money and quantity rounding decimals
+- Price update interval and default price source
+- Portfolio snapshot frequency (minutes)
+- Data retention policy (auto-purge old snapshots)
+- Database storage usage breakdown by table
+- Last snapshot time and next eligible snapshot countdown
+
+### Dark mode
+
+---
 
 ## Tech Stack
 
@@ -144,8 +198,8 @@ backend/                Django 5.1 + DRF
     assets/             Asset, Account, Settings + Yahoo Finance
     transactions/       Transaction (BUY/SELL/GIFT), Dividend, Interest
     portfolio/          FIFO engine (positions, realized P&L)
-    importer/           Excel import
-    reports/            Yearly tax summaries
+    importer/           Excel import + JSON backup/restore
+    reports/            Yearly tax summaries + patrimony evolution
   config/
     settings/           base.py, development.py
     urls.py
@@ -184,23 +238,37 @@ docker compose exec frontend npx tsc --noEmit
 ## API
 
 ```
-POST    /api/auth/login/            Login (session)
-POST    /api/auth/logout/           Logout
-GET     /api/auth/me/               Current user
+POST    /api/auth/login/                  Login (session)
+POST    /api/auth/logout/                 Logout
+GET     /api/auth/me/                     Current user
 
-CRUD    /api/assets/                Assets
-POST    /api/assets/update-prices/  Fetch prices (Yahoo Finance)
-CRUD    /api/accounts/              Accounts
-GET/PUT /api/settings/              Settings (singleton)
+CRUD    /api/assets/                      Assets
+POST    /api/assets/{id}/set-price/       Manual price override
+GET     /api/assets/{id}/position-history/ Position snapshot history
+POST    /api/assets/update-prices/        Fetch prices (Yahoo Finance)
+CRUD    /api/accounts/                    Accounts
+CRUD    /api/account-snapshots/           Account balance snapshots
+POST    /api/accounts/bulk-snapshot/      Bulk snapshot creation
+GET/PUT /api/settings/                    Settings (singleton)
+GET     /api/storage-info/                DB size by table
 
-CRUD    /api/transactions/          Transactions
-CRUD    /api/dividends/             Dividends
-CRUD    /api/interests/             Interests
+CRUD    /api/transactions/                Transactions
+CRUD    /api/dividends/                   Dividends
+CRUD    /api/interests/                   Interests
 
-GET     /api/portfolio/             Positions + realized sales (FIFO)
-GET     /api/reports/yearly/        Year-by-year income summary
-POST    /api/import/xlsx/           Excel import (?dry_run=true)
-GET     /api/export/transactions.csv  CSV export
+GET     /api/portfolio/                   Positions + realized sales (FIFO)
+
+GET     /api/reports/year-summary/        Year-by-year income summary
+GET     /api/reports/patrimonio-evolution/ Monthly patrimony evolution
+GET     /api/reports/rv-evolution/        Portfolio value time series
+GET     /api/reports/snapshot-status/     Last/next snapshot info
+
+GET     /api/export/transactions.csv      CSV export
+GET     /api/export/dividends.csv         CSV export
+GET     /api/export/interests.csv         CSV export
+
+GET     /api/backup/export/               Full JSON backup
+POST    /api/backup/import/               Restore from JSON backup
 ```
 
 ## License

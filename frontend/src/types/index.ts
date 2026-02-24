@@ -177,6 +177,15 @@ export interface Settings {
   data_retention_days: number | null
 }
 
+export interface AssetPositionPoint {
+  captured_at: string
+  market_value: string
+  cost_basis: string
+  unrealized_pnl: string
+  unrealized_pnl_pct: string
+  quantity: string
+}
+
 export interface StorageInfo {
   total_mb: number
   tables: Array<{ table: string; size_mb: number }>

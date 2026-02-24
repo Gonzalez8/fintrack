@@ -17,13 +17,14 @@ interface DataTableProps<T> {
   totalPages?: number
   totalCount?: number
   onPageChange?: (page: number) => void
+  onRowClick?: (row: T) => void
   emptyIcon?: React.ReactNode
   emptyMessage?: string
 }
 
 export function DataTable<T extends Record<string, any>>({
   columns, data, loading, page = 1, totalPages = 1, totalCount, onPageChange,
-  emptyIcon, emptyMessage = 'Sin datos',
+  onRowClick, emptyIcon, emptyMessage = 'Sin datos',
 }: DataTableProps<T>) {
   const pageSize = 50
   const showingFrom = totalCount ? (page - 1) * pageSize + 1 : 0
@@ -61,7 +62,11 @@ export function DataTable<T extends Record<string, any>>({
             </TableRow>
           ) : (
             data.map((row, rowIdx) => (
-              <TableRow key={row.id ?? rowIdx}>
+              <TableRow
+                key={row.id ?? rowIdx}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={onRowClick ? 'cursor-pointer' : ''}
+              >
                 {columns.map((col, colIdx) => (
                   <TableCell key={colIdx} className={col.className}>
                     {typeof col.accessor === 'function'

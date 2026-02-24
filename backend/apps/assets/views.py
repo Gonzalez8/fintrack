@@ -7,7 +7,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Asset, Account, AccountSnapshot, Settings
+from .models import Asset, Account, AccountSnapshot, Settings, PositionSnapshot
 from .serializers import (
     AssetSerializer, AccountSerializer, AccountSnapshotSerializer,
     BulkSnapshotSerializer, SettingsSerializer,
@@ -31,6 +31,22 @@ class AssetViewSet(viewsets.ModelViewSet):
                 {"detail": "No se puede eliminar este activo porque tiene operaciones o dividendos asociados."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+    @action(detail=True, methods=["get"], url_path="position-history")
+    def position_history(self, request, pk=None):
+        snapshots = PositionSnapshot.objects.filter(asset_id=pk).order_by("captured_at")
+        data = [
+            {
+                "captured_at": s.captured_at.isoformat(),
+                "market_value": str(s.market_value),
+                "cost_basis": str(s.cost_basis),
+                "unrealized_pnl": str(s.unrealized_pnl),
+                "unrealized_pnl_pct": str(s.unrealized_pnl_pct),
+                "quantity": str(s.quantity),
+            }
+            for s in snapshots
+        ]
+        return Response(data)
 
     @action(detail=True, methods=["post"], url_path="set-price")
     def set_price(self, request, pk=None):

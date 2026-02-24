@@ -1,5 +1,5 @@
 import client from './client'
-import type { Asset, Account, AccountSnapshot, Settings, StorageInfo, PaginatedResponse } from '@/types'
+import type { Asset, Account, AccountSnapshot, Settings, StorageInfo, AssetPositionPoint, PaginatedResponse } from '@/types'
 
 export const assetsApi = {
   list: (params?: Record<string, string>) =>
@@ -9,6 +9,7 @@ export const assetsApi = {
   update: (id: string, data: Partial<Asset>) => client.patch<Asset>(`/assets/${id}/`, data),
   delete: (id: string) => client.delete(`/assets/${id}/`),
   setPrice: (id: string, price: string) => client.post<Asset>(`/assets/${id}/set-price/`, { price }),
+  positionHistory: (id: string) => client.get<AssetPositionPoint[]>(`/assets/${id}/position-history/`),
   updatePrices: () => client.post<{
     updated: number
     errors: string[]

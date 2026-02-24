@@ -75,6 +75,11 @@ export function DashboardPage() {
     }
   })
 
+  const lastEvoPoint = evolutionData[evolutionData.length - 1]
+  const evoCash = lastEvoPoint?.Efectivo ?? 0
+  const evoInvestments = lastEvoPoint?.Inversiones ?? 0
+  const evoTotal = lastEvoPoint?.Total ?? 0
+
 
   const totalPnlPct = portfolio && parseFloat(portfolio.total_cost) > 0
     ? ((parseFloat(portfolio.total_unrealized_pnl) / parseFloat(portfolio.total_cost)) * 100).toFixed(2)
@@ -212,17 +217,21 @@ export function DashboardPage() {
       </div>
 
       {evolutionData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Evolucion del Patrimonio</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={evolutionData} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="px-4 pt-5 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Evolución del Patrimonio</p>
+              <p className="text-2xl sm:text-3xl font-bold tabular-nums leading-none">{formatMoney(evoTotal)}</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Inversiones: {formatMoney(evoInvestments)} · Efectivo: {formatMoney(evoCash)}
+              </p>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={evolutionData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} padding={{ left: 16, right: 16 }} />
                 <YAxis hide />
                 <Tooltip formatter={(v: number) => formatMoney(v)} />
-                <Legend wrapperStyle={{ fontSize: '11px', width: '100%', boxSizing: 'border-box' }} />
+                <Legend wrapperStyle={{ fontSize: '11px', width: '100%', boxSizing: 'border-box', paddingLeft: '24px', paddingBottom: '8px' }} />
                 <Area type="monotone" dataKey="Efectivo" stackId="1" fill="#ca8a04" stroke="#ca8a04" fillOpacity={0.6} />
                 <Area type="monotone" dataKey="Inversiones" stackId="1" fill="#2563eb" stroke="#2563eb" fillOpacity={0.6} />
               </AreaChart>

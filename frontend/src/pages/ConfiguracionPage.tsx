@@ -237,8 +237,6 @@ export function ConfiguracionPage() {
               {storageInfo && storageInfo.tables.length > 0 && (
                 <div className="mt-3 space-y-1">
                   {storageInfo.tables
-                    .filter((t) => t.size_mb > 0)
-                    .slice(0, 8)
                     .map((t) => (
                       <div key={t.table} className="flex items-center justify-between text-xs text-muted-foreground">
                         <span className="font-mono">{t.table}</span>

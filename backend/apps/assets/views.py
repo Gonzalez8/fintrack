@@ -152,6 +152,8 @@ class SettingsView(RetrieveUpdateAPIView):
         return Settings.load()
 
 
+_APP_TABLE_PREFIXES = ("assets_", "transactions_", "portfolio_", "reports_", "importer_", "core_")
+
 class StorageInfoView(APIView):
     def get(self, request):
         from django.db import connection
@@ -165,6 +167,7 @@ class StorageInfoView(APIView):
         tables = [
             {"table": row[0], "size_mb": round(row[1] / (1024 * 1024), 3)}
             for row in rows
+            if row[0].startswith(_APP_TABLE_PREFIXES)
         ]
         total_mb = round(sum(t["size_mb"] for t in tables), 3)
         return Response({"total_mb": total_mb, "tables": tables})

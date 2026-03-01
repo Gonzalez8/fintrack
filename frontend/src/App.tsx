@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { settingsApi, assetsApi } from '@/api/assets'
 import { Sidebar } from '@/components/app/Sidebar'
 import { MobileNav } from '@/components/app/MobileNav'
+import { TopBar } from '@/components/app/TopBar'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { CarteraPage } from '@/pages/CarteraPage'
@@ -31,6 +32,14 @@ function useAutoUpdatePrices() {
   })
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const minutes = settings?.price_update_interval ?? 0
+
+  // Update prices once on mount
+  useEffect(() => {
+    assetsApi.updatePrices().then(() => {
+      queryClient.invalidateQueries({ queryKey: ['portfolio'] })
+      queryClient.invalidateQueries({ queryKey: ['assets-all'] })
+    })
+  }, [queryClient])
 
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current)
@@ -61,11 +70,14 @@ function ProtectedRoute() {
   return (
     <div className="flex min-h-screen overflow-x-hidden bg-background">
       <Sidebar />
-      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden pb-safe-mobile md:pb-0">
-        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-          <Outlet />
-        </div>
-      </main>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <TopBar />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-safe-mobile md:pb-0">
+          <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 animate-fade-in-up">
+            <Outlet />
+          </div>
+        </main>
+      </div>
       <MobileNav />
     </div>
   )

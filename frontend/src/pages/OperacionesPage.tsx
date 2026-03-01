@@ -5,7 +5,6 @@ import { portfolioApi } from '@/api/portfolio'
 import { assetsApi, accountsApi } from '@/api/assets'
 import { DataTable, type Column } from '@/components/app/DataTable'
 import { MoneyCell } from '@/components/app/MoneyCell'
-import { NewAssetForm } from '@/components/app/NewAssetForm'
 import { PageHeader } from '@/components/app/PageHeader'
 import { TransactionRow, TransactionRowSkeleton } from '@/components/app/TransactionRow'
 import { FilterSheet } from '@/components/app/FilterSheet'
@@ -323,7 +322,6 @@ export function OperacionesPage() {
                   })}
                 </SelectContent>
               </Select>
-              {!isSell && !editingId && <NewAssetForm onCreated={(id) => setForm((f) => ({ ...f, asset: id }))} />}
             </div>
 
             {!isSell && (
@@ -376,8 +374,11 @@ export function OperacionesPage() {
               <div>
                 <label className="text-sm font-medium inline-flex items-center gap-1">
                   Tasas / Impuestos
-                  <span title="FTT / stamp duty / tasas de mercado segun pais">
+                  <span className="relative group cursor-help">
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block w-52 rounded-md bg-popover border text-popover-foreground text-xs p-2 shadow-md z-50 pointer-events-none">
+                      FTT / stamp duty / tasas de mercado según país
+                    </span>
                   </span>
                 </label>
                 <div className="relative">

@@ -46,11 +46,11 @@ const columns: Column<Position>[] = [
     header: 'P&L',
     accessor: (r) => {
       const pnl = parseFloat(r.unrealized_pnl)
-      const color = pnl > 0 ? 'text-green-600' : pnl < 0 ? 'text-red-600' : ''
+      const colorClass = pnl > 0 ? 'money-positive' : pnl < 0 ? 'money-negative' : ''
       return (
         <div className="text-right">
-          <span className={`font-semibold text-base ${color}`}>{formatMoney(r.unrealized_pnl)}</span>
-          <div className={`text-xs ${color || 'text-muted-foreground'}`}>{formatPercent(r.unrealized_pnl_pct)}</div>
+          <span className={`font-semibold text-base ${colorClass}`}>{formatMoney(r.unrealized_pnl)}</span>
+          <div className={`text-xs ${colorClass || 'text-muted-foreground'}`}>{formatPercent(r.unrealized_pnl_pct)}</div>
         </div>
       )
     },
@@ -91,7 +91,7 @@ export function CarteraPage() {
   const totalPnl = parseFloat(data?.total_unrealized_pnl ?? '0')
   const totalCost = parseFloat(data?.total_cost ?? '0')
   const totalPnlPct = totalCost > 0 ? ((totalPnl / totalCost) * 100).toFixed(2) : '0'
-  const pnlColor = totalPnl > 0 ? 'text-green-600' : totalPnl < 0 ? 'text-red-600' : ''
+  const pnlColor = totalPnl > 0 ? 'money-positive' : totalPnl < 0 ? 'money-negative' : ''
 
   return (
     <div className="space-y-4">

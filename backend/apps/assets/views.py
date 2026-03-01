@@ -48,6 +48,38 @@ class AssetViewSet(viewsets.ModelViewSet):
         ]
         return Response(data)
 
+    @action(detail=True, methods=["get"], url_path="price-history")
+    def price_history(self, request, pk=None):
+        import yfinance as yf
+
+        asset = self.get_object()
+        if not asset.ticker:
+            return Response({"detail": "Este activo no tiene ticker."}, status=status.HTTP_400_BAD_REQUEST)
+
+        period = request.query_params.get("period", "1y")
+        if period not in {"1mo", "3mo", "6mo", "1y", "2y", "5y", "max"}:
+            period = "1y"
+
+        try:
+            hist = yf.Ticker(asset.ticker).history(period=period)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+        if hist.empty:
+            return Response([])
+
+        data = [
+            {
+                "time": date.strftime("%Y-%m-%d"),
+                "open": round(float(row["Open"]), 6),
+                "high": round(float(row["High"]), 6),
+                "low": round(float(row["Low"]), 6),
+                "close": round(float(row["Close"]), 6),
+            }
+            for date, row in hist.iterrows()
+        ]
+        return Response(data)
+
     @action(detail=True, methods=["post"], url_path="set-price")
     def set_price(self, request, pk=None):
         asset = self.get_object()

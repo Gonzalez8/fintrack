@@ -55,10 +55,9 @@ export function MobileNav() {
   }
 
   return (
-    // Height 64px (h-16), safe-area respected via padding
     <nav
       aria-label="Navegación principal"
-      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-sidebar md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex h-16 items-stretch">
@@ -72,18 +71,18 @@ export function MobileNav() {
             aria-label={label}
             className={({ isActive }) =>
               `flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium
-               transition-colors select-none
+               transition-colors select-none relative
                ${isActive ? 'text-primary' : 'text-muted-foreground'}`
             }
           >
             {({ isActive }) => (
               <>
-                <Icon className="h-5 w-5" aria-hidden="true" />
-                <span>{label}</span>
-                {/* Active indicator */}
+                {/* Active indicator — top */}
                 {isActive && (
-                  <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />
+                  <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
                 )}
+                <Icon className="h-5 w-5" aria-hidden="true" />
+                <span className={isActive ? 'font-mono' : ''}>{label}</span>
               </>
             )}
           </NavLink>
@@ -115,7 +114,7 @@ export function MobileNav() {
                 <button
                   key={to}
                   onClick={() => handleSecondaryNav(to)}
-                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-lg
                              bg-muted py-4 text-xs font-medium
                              active:scale-95 transition-transform"
                 >
@@ -129,7 +128,7 @@ export function MobileNav() {
             <div className="mt-4 border-t px-4 pt-3 pb-2 flex gap-2">
               <button
                 onClick={toggle}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg
                            bg-muted py-3 text-sm font-medium
                            active:scale-95 transition-transform"
                 aria-label={isDark ? 'Activar modo claro' : 'Activar modo oscuro'}
@@ -143,7 +142,7 @@ export function MobileNav() {
 
               <button
                 onClick={() => { closeSheet(); logout() }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg
                            bg-destructive/10 py-3 text-sm font-medium text-destructive
                            active:scale-95 transition-transform"
                 aria-label="Cerrar sesión"
@@ -161,17 +160,17 @@ export function MobileNav() {
           aria-label="Configuración"
           className={({ isActive }) =>
             `flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium
-             transition-colors select-none
+             transition-colors select-none relative
              ${isActive ? 'text-primary' : 'text-muted-foreground'}`
           }
         >
           {({ isActive }) => (
             <>
-              <Settings className="h-5 w-5" aria-hidden="true" />
-              <span>Config</span>
               {isActive && (
-                <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" />
+                <span className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
               )}
+              <Settings className="h-5 w-5" aria-hidden="true" />
+              <span className={isActive ? 'font-mono' : ''}>Config</span>
             </>
           )}
         </NavLink>

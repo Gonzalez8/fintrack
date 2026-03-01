@@ -177,6 +177,14 @@ export interface Settings {
   data_retention_days: number | null
 }
 
+export interface OHLCBar {
+  time: string   // YYYY-MM-DD
+  open: number
+  high: number
+  low: number
+  close: number
+}
+
 export interface AssetPositionPoint {
   captured_at: string
   market_value: string

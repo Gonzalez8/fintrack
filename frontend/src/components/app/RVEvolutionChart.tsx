@@ -4,6 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { portfolioApi, reportsApi } from '@/api/portfolio'
 import { formatMoney } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
+import { useChartTheme } from '@/lib/chartTheme'
 import type { RVPoint } from '@/types'
 
 type Range = '1D' | '1W' | '1M' | '3M' | '1Y' | 'MAX'
@@ -59,6 +60,7 @@ interface HoverState {
 }
 
 export function RVEvolutionChart() {
+  const ct = useChartTheme()
   const [range, setRange] = useState<Range>('1Y')
   const [hover, setHover] = useState<HoverState | null>(null)
 
@@ -83,7 +85,7 @@ export function RVEvolutionChart() {
   const firstSnapshotValue = hasEnoughData ? parseFloat(chartData[0].value) : 0
   const lastSnapshotValue = hasEnoughData ? parseFloat(chartData[chartData.length - 1].value) : 0
   const isPositive = lastSnapshotValue >= firstSnapshotValue
-  const color = isPositive ? '#16a34a' : '#dc2626'
+  const color = isPositive ? '#22c55e' : '#ef4444'
   const gradientId = `rv-grad-${isPositive ? 'green' : 'red'}`
 
   const periodReturnAbs = lastSnapshotValue - firstSnapshotValue
@@ -140,8 +142,8 @@ export function RVEvolutionChart() {
                 Evolución Renta Variable
               </p>
               {isLiveUpdated && (
-                <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-                  Actualizado ahora
+                <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-mono tracking-[2px] money-positive border-current/30 bg-green-500/10">
+                  LIVE
                 </span>
               )}
             </div>
@@ -158,11 +160,7 @@ export function RVEvolutionChart() {
               ) : !hasEnoughData ? (
                 <p className="text-sm text-muted-foreground">Datos insuficientes</p>
               ) : (
-                <p
-                  className={`text-sm font-medium ${
-                    isPositive ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
+                <p className={`text-sm font-medium ${isPositive ? 'money-positive' : 'money-negative'}`}>
                   {periodReturnAbs >= 0 ? '+' : ''}
                   {formatMoney(periodReturnAbs)}{' '}
                   <span className="text-xs">
@@ -175,7 +173,7 @@ export function RVEvolutionChart() {
           </div>
 
           {/* Range selector */}
-          <div className="flex shrink-0 gap-0.5 bg-muted rounded-lg p-1">
+          <div className="flex shrink-0 gap-0.5 bg-secondary/50 border border-border rounded-lg p-1">
             {RANGES.map(({ key, label }) => (
               <button
                 key={key}
@@ -183,9 +181,9 @@ export function RVEvolutionChart() {
                   setRange(key)
                   setHover(null)
                 }}
-                className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-medium rounded-md transition-all duration-150 ${
+                className={`px-2 py-1 sm:px-3 sm:py-1.5 font-mono text-[10px] tracking-wide rounded-md transition-all duration-150 ${
                   range === key
-                    ? 'bg-background shadow-sm text-foreground'
+                    ? 'bg-background shadow-sm text-primary border border-primary/20'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -216,7 +214,7 @@ export function RVEvolutionChart() {
               ticks={xTicks}
               tickLine={false}
               axisLine={false}
-              tick={{ fontSize: 11, fill: '#9ca3af' }}
+              tick={ct.axisTick}
               tickFormatter={tickFormatter}
               padding={{ left: 16, right: 16 }}
             />

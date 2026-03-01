@@ -1,22 +1,23 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { accountsApi, snapshotsApi } from '@/api/assets'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { MoneyCell } from '@/components/app/MoneyCell'
 import { PageHeader } from '@/components/app/PageHeader'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Trash2, ChevronDown, ChevronRight, Camera } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp, Camera } from 'lucide-react'
 import { ACCOUNT_TYPE_COLORS, ACCOUNT_TYPE_LABELS } from '@/lib/constants'
 import type { Account, AccountSnapshot } from '@/types'
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10)
 }
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function CuentasPage() {
   const queryClient = useQueryClient()
@@ -25,15 +26,12 @@ export function CuentasPage() {
     queryFn: () => accountsApi.list().then((r) => r.data),
   })
 
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [showNewAccount, setShowNewAccount] = useState(false)
   const [newAccount, setNewAccount] = useState({ name: '', type: 'OPERATIVA' })
 
-  // Single snapshot dialog
   const [snapshotDialog, setSnapshotDialog] = useState<Account | null>(null)
   const [snapshotForm, setSnapshotForm] = useState({ date: todayStr(), balance: '', note: '' })
 
-  // Bulk snapshot dialog
   const [showBulk, setShowBulk] = useState(false)
   const [bulkDate, setBulkDate] = useState(todayStr())
   const [bulkBalances, setBulkBalances] = useState<Record<string, { balance: string; note: string }>>({})
@@ -112,112 +110,150 @@ export function CuentasPage() {
     bulkSnapshotMut.mutate({ date: bulkDate, snapshots })
   }
 
+  // Saldo total
+  const totalBalance = accounts.reduce((sum, a) => sum + parseFloat(a.balance || '0'), 0)
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Cuentas" />
+      <PageHeader title="Cuentas">
+        <Button size="sm" variant="outline" onClick={openBulkDialog} disabled={accounts.length === 0}>
+          <Camera className="h-4 w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">Snapshot</span>
+        </Button>
+        <Button size="sm" onClick={() => setShowNewAccount(true)}>
+          <Plus className="h-4 w-4 sm:mr-1.5" />
+          <span className="hidden sm:inline">Nueva cuenta</span>
+        </Button>
+      </PageHeader>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Cuentas</CardTitle>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={openBulkDialog} disabled={accounts.length === 0}>
-              <Camera className="mr-1 h-4 w-4" />Snapshot mensual
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowNewAccount(true)} disabled={showNewAccount}>
-              <Plus className="mr-1 h-4 w-4" />Nueva cuenta
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8"></TableHead>
-                <TableHead>Cuenta</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead className="text-right">Saldo actual</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {showNewAccount && (
-                <TableRow>
-                  <TableCell></TableCell>
-                  <TableCell>
-                    <Input
-                      className="w-44"
-                      placeholder="Nombre"
-                      value={newAccount.name}
-                      onChange={(e) => setNewAccount((p) => ({ ...p, name: e.target.value }))}
-                      autoFocus
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Select value={newAccount.type} onValueChange={(v) => setNewAccount((p) => ({ ...p, type: v }))}>
-                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(ACCOUNT_TYPE_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>{label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell></TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button size="sm" disabled={!newAccount.name.trim()} onClick={() => createAccountMut.mutate({ name: newAccount.name.trim(), type: newAccount.type })}>
-                        OK
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setShowNewAccount(false); setNewAccount({ name: '', type: 'OPERATIVA' }) }}>X</Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-              {accounts.map((account) => (
-                <AccountRow
-                  key={account.id}
-                  account={account}
-                  expanded={!!expanded[account.id]}
-                  onToggle={() => setExpanded((p) => ({ ...p, [account.id]: !p[account.id] }))}
-                  onSnapshot={() => openSnapshotDialog(account)}
-                  onDelete={() => { if (confirm(`Eliminar cuenta ${account.name}?`)) deleteAccountMut.mutate(account.id) }}
-                  onDeleteSnapshot={(id) => deleteSnapshotMut.mutate(id)}
-                />
-              ))}
-            </TableBody>
-          </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Resumen total */}
+      {accounts.length > 0 && (
+        <div className="rounded-lg border border-border px-4 py-3 flex items-center justify-between">
+          <span className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">
+            Total cuentas
+          </span>
+          <span className="font-mono text-xl font-bold tabular-nums">
+            <MoneyCell value={totalBalance.toFixed(2)} />
+          </span>
+        </div>
+      )}
 
-      {/* Single snapshot dialog */}
-      <Dialog open={!!snapshotDialog} onOpenChange={(open) => !open && setSnapshotDialog(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+      {/* Grid de cuentas */}
+      {accounts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <p className="text-sm text-muted-foreground">No hay cuentas registradas.</p>
+          <Button size="sm" className="mt-3" onClick={() => setShowNewAccount(true)}>
+            <Plus className="mr-1.5 h-4 w-4" /> Crear primera cuenta
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {accounts.map((account) => (
+            <AccountCard
+              key={account.id}
+              account={account}
+              onSnapshot={() => openSnapshotDialog(account)}
+              onDelete={() => {
+                if (confirm(`Eliminar cuenta "${account.name}"?`)) deleteAccountMut.mutate(account.id)
+              }}
+              onDeleteSnapshot={(id) => {
+                if (confirm('Eliminar snapshot?')) deleteSnapshotMut.mutate(id)
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Dialog: nueva cuenta ── */}
+      <Dialog open={showNewAccount} onOpenChange={(open) => !open && setShowNewAccount(false)}>
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Actualizar saldo — {snapshotDialog?.name}</DialogTitle>
+            <DialogTitle>Nueva cuenta</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4">
+          <div className="grid gap-4 pt-1">
+            <div>
+              <label className="text-sm font-medium">Nombre</label>
+              <Input
+                className="mt-1"
+                placeholder="Ej: Santander"
+                value={newAccount.name}
+                onChange={(e) => setNewAccount((p) => ({ ...p, name: e.target.value }))}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newAccount.name.trim())
+                    createAccountMut.mutate({ name: newAccount.name.trim(), type: newAccount.type })
+                }}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Tipo</label>
+              <Select value={newAccount.type} onValueChange={(v) => setNewAccount((p) => ({ ...p, type: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ACCOUNT_TYPE_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              disabled={!newAccount.name.trim() || createAccountMut.isPending}
+              onClick={() => createAccountMut.mutate({ name: newAccount.name.trim(), type: newAccount.type })}
+            >
+              {createAccountMut.isPending ? 'Creando...' : 'Crear cuenta'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: snapshot individual ── */}
+      <Dialog open={!!snapshotDialog} onOpenChange={(open) => !open && setSnapshotDialog(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Actualizar saldo</DialogTitle>
+            <p className="text-sm text-muted-foreground">{snapshotDialog?.name}</p>
+          </DialogHeader>
+          <div className="grid gap-4 pt-1">
             <div>
               <label className="text-sm font-medium">Fecha</label>
-              <Input type="date" value={snapshotForm.date} onChange={(e) => setSnapshotForm((p) => ({ ...p, date: e.target.value }))} />
+              <Input
+                className="mt-1"
+                type="date"
+                value={snapshotForm.date}
+                onChange={(e) => setSnapshotForm((p) => ({ ...p, date: e.target.value }))}
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Saldo</label>
-              <Input type="number" step="any" value={snapshotForm.balance} onChange={(e) => setSnapshotForm((p) => ({ ...p, balance: e.target.value }))} autoFocus />
+              <Input
+                className="mt-1"
+                type="number"
+                step="any"
+                value={snapshotForm.balance}
+                onChange={(e) => setSnapshotForm((p) => ({ ...p, balance: e.target.value }))}
+                autoFocus
+              />
             </div>
             <div>
-              <label className="text-sm font-medium">Nota</label>
-              <Input value={snapshotForm.note} onChange={(e) => setSnapshotForm((p) => ({ ...p, note: e.target.value }))} placeholder="Opcional" />
+              <label className="text-sm font-medium">Nota <span className="text-muted-foreground font-normal">(opcional)</span></label>
+              <Input
+                className="mt-1"
+                value={snapshotForm.note}
+                onChange={(e) => setSnapshotForm((p) => ({ ...p, note: e.target.value }))}
+                placeholder="Ej: cierre enero"
+              />
             </div>
             <Button
-              onClick={() => snapshotDialog && createSnapshotMut.mutate({
-                account: snapshotDialog.id,
-                date: snapshotForm.date,
-                balance: snapshotForm.balance,
-                note: snapshotForm.note,
-              })}
-              disabled={createSnapshotMut.isPending}
+              disabled={!snapshotForm.balance || createSnapshotMut.isPending}
+              onClick={() =>
+                snapshotDialog &&
+                createSnapshotMut.mutate({
+                  account: snapshotDialog.id,
+                  date: snapshotForm.date,
+                  balance: snapshotForm.balance,
+                  note: snapshotForm.note,
+                })
+              }
             >
               {createSnapshotMut.isPending ? 'Guardando...' : 'Guardar'}
             </Button>
@@ -225,56 +261,68 @@ export function CuentasPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk snapshot dialog */}
+      {/* ── Dialog: snapshot bulk ── */}
       <Dialog open={showBulk} onOpenChange={(open) => !open && setShowBulk(false)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Snapshot mensual</DialogTitle>
+            <p className="text-sm text-muted-foreground">Actualiza el saldo de todas las cuentas</p>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 pt-1">
             <div>
               <label className="text-sm font-medium">Fecha</label>
-              <Input type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} />
+              <Input
+                className="mt-1"
+                type="date"
+                value={bulkDate}
+                onChange={(e) => setBulkDate(e.target.value)}
+              />
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cuenta</TableHead>
-                  <TableHead>Saldo</TableHead>
-                  <TableHead>Nota</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accounts.map((account) => (
-                  <TableRow key={account.id}>
-                    <TableCell className="font-medium">{account.name}</TableCell>
-                    <TableCell>
+
+            <div className="space-y-3">
+              {accounts.map((account) => (
+                <div key={account.id} className="rounded-lg border border-border p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{account.name}</p>
+                    <Badge className={ACCOUNT_TYPE_COLORS[account.type] ?? ''} variant="secondary">
+                      {ACCOUNT_TYPE_LABELS[account.type] ?? account.type}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">Saldo</label>
                       <Input
+                        className="mt-0.5"
                         type="number"
                         step="any"
-                        className="w-36"
                         value={bulkBalances[account.id]?.balance ?? ''}
-                        onChange={(e) => setBulkBalances((p) => ({
-                          ...p,
-                          [account.id]: { ...p[account.id], balance: e.target.value },
-                        }))}
+                        onChange={(e) =>
+                          setBulkBalances((p) => ({
+                            ...p,
+                            [account.id]: { ...p[account.id], balance: e.target.value },
+                          }))
+                        }
                       />
-                    </TableCell>
-                    <TableCell>
+                    </div>
+                    <div>
+                      <label className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">Nota</label>
                       <Input
-                        className="w-36"
+                        className="mt-0.5"
                         placeholder="Opcional"
                         value={bulkBalances[account.id]?.note ?? ''}
-                        onChange={(e) => setBulkBalances((p) => ({
-                          ...p,
-                          [account.id]: { ...p[account.id], note: e.target.value },
-                        }))}
+                        onChange={(e) =>
+                          setBulkBalances((p) => ({
+                            ...p,
+                            [account.id]: { ...p[account.id], note: e.target.value },
+                          }))
+                        }
                       />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <Button onClick={submitBulk} disabled={bulkSnapshotMut.isPending} className="w-full">
               {bulkSnapshotMut.isPending ? 'Guardando...' : 'Guardar snapshot'}
             </Button>
@@ -285,89 +333,111 @@ export function CuentasPage() {
   )
 }
 
-function AccountRow({
-  account, expanded, onToggle, onSnapshot, onDelete, onDeleteSnapshot,
+// ─── AccountCard ───────────────────────────────────────────────────────────────
+
+function AccountCard({
+  account,
+  onSnapshot,
+  onDelete,
+  onDeleteSnapshot,
 }: {
   account: Account
-  expanded: boolean
-  onToggle: () => void
   onSnapshot: () => void
   onDelete: () => void
   onDeleteSnapshot: (id: string) => void
 }) {
+  const [expanded, setExpanded] = useState(false)
+
   const { data: snapshotsData } = useQuery({
     queryKey: ['account-snapshots', account.id],
-    queryFn: () => snapshotsApi.list({ account: account.id, page_size: '100' }).then((r) => r.data),
+    queryFn: () => snapshotsApi.list({ account: account.id, page_size: '20' }).then((r) => r.data),
     enabled: expanded,
   })
 
   const snapshots = snapshotsData?.results ?? []
 
   return (
-    <>
-      <TableRow>
-        <TableCell>
-          <Button size="icon" variant="ghost" className="h-9 w-9" onClick={onToggle}>
-            {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </TableCell>
-        <TableCell className="font-medium">{account.name}</TableCell>
-        <TableCell>
-          <Badge className={ACCOUNT_TYPE_COLORS[account.type] ?? ''} variant="secondary">
-            {ACCOUNT_TYPE_LABELS[account.type] ?? account.type}
-          </Badge>
-        </TableCell>
-        <TableCell className="text-right">
-          <MoneyCell value={account.balance} />
-        </TableCell>
-        <TableCell>
-          <div className="flex gap-1">
-            <Button size="sm" variant="ghost" onClick={onSnapshot}>Actualizar saldo</Button>
-            <Button size="sm" variant="ghost" onClick={onDelete}>
-              <Trash2 className="h-4 w-4 text-destructive" />
+    <Card className="flex flex-col">
+      <CardContent className="flex-1 pt-4">
+        {/* Cabecera: nombre + acciones */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-medium truncate">{account.name}</p>
+            <Badge className={`mt-1 ${ACCOUNT_TYPE_COLORS[account.type] ?? ''}`} variant="secondary">
+              {ACCOUNT_TYPE_LABELS[account.type] ?? account.type}
+            </Badge>
+          </div>
+          <div className="flex shrink-0 gap-0.5">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              onClick={onSnapshot}
+              title="Actualizar saldo"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
             </Button>
           </div>
-        </TableCell>
-      </TableRow>
-      {expanded && snapshots.length > 0 && (
-        <TableRow>
-          <TableCell colSpan={5} className="bg-muted/50 p-0">
-            <div className="px-8 py-2">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
-                    <TableHead>Nota</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {snapshots.map((s: AccountSnapshot) => (
-                    <TableRow key={s.id}>
-                      <TableCell>{s.date}</TableCell>
-                      <TableCell className="text-right"><MoneyCell value={s.balance} /></TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{s.note}</TableCell>
-                      <TableCell>
-                        <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => { if (confirm('Eliminar snapshot?')) onDeleteSnapshot(s.id) }}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </TableCell>
-        </TableRow>
-      )}
-      {expanded && snapshots.length === 0 && (
-        <TableRow>
-          <TableCell colSpan={5} className="bg-muted/50 text-center text-sm text-muted-foreground py-3">
-            Sin snapshots
-          </TableCell>
-        </TableRow>
-      )}
-    </>
+        </div>
+
+        {/* Saldo */}
+        <p className="mt-4 font-mono text-2xl font-bold tabular-nums">
+          <MoneyCell value={account.balance} />
+        </p>
+
+        {/* Toggle historial */}
+        <button
+          className="mt-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          Historial
+        </button>
+
+        {/* Lista de snapshots */}
+        {expanded && (
+          <div className="mt-2 space-y-0 border-t border-border/50">
+            {snapshots.length === 0 ? (
+              <p className="py-3 text-xs text-muted-foreground">Sin snapshots registrados</p>
+            ) : (
+              snapshots.map((s: AccountSnapshot) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between border-b border-border/30 py-2 last:border-0"
+                >
+                  <div className="min-w-0">
+                    <span className="font-mono text-[11px] text-muted-foreground">{s.date}</span>
+                    {s.note && (
+                      <span className="ml-2 text-[11px] text-muted-foreground/70 truncate">{s.note}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="font-mono text-sm tabular-nums">
+                      <MoneyCell value={s.balance} />
+                    </span>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => onDeleteSnapshot(s.id)}
+                    >
+                      <Trash2 className="h-3 w-3 text-destructive/70" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

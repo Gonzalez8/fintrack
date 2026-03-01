@@ -15,15 +15,14 @@ export function PositionCard({ position, onClick }: Props) {
   const pnlPct = parseFloat(position.unrealized_pnl_pct)
   const weight = parseFloat(position.weight_pct)
   const isPositive = pnl >= 0
-  const pnlColor = isPositive
-    ? 'text-emerald-600 dark:text-emerald-400'
-    : 'text-red-600 dark:text-red-400'
+  const pnlColor = isPositive ? 'money-positive' : 'money-negative'
 
   return (
     <button
       onClick={onClick}
-      className="w-full text-left rounded-xl border bg-card p-4
-                 transition-colors active:bg-muted/40
+      className="w-full text-left rounded-lg border bg-card p-4
+                 transition-all duration-200 active:bg-muted/40
+                 hover:border-primary/25 dark:hover:shadow-glow-blue
                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {/* ── Header: nombre + badge tipo ── */}
@@ -49,7 +48,7 @@ export function PositionCard({ position, onClick }: Props) {
       {/* ── Fila principal: valor mercado + P&L ── */}
       <div className="flex items-end justify-between mb-3">
         <div>
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+          <p className="font-mono text-[9px] uppercase tracking-[1.5px] text-muted-foreground mb-0.5">
             Valor
           </p>
           <p className="text-xl font-bold tabular-nums leading-none">
@@ -57,7 +56,7 @@ export function PositionCard({ position, onClick }: Props) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
+          <p className="font-mono text-[9px] uppercase tracking-[1.5px] text-muted-foreground mb-0.5">
             P&amp;L
           </p>
           <p className={`text-base font-bold tabular-nums leading-none ${pnlColor}`}>
@@ -84,8 +83,8 @@ export function PositionCard({ position, onClick }: Props) {
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full rounded-full bg-primary/60 transition-all duration-500"
-            style={{ width: `${Math.min(weight, 100)}%` }}
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(weight, 100)}%`, backgroundColor: '#3b82f6' }}
           />
         </div>
         <span className="text-[11px] text-muted-foreground tabular-nums w-9 text-right">
@@ -100,7 +99,7 @@ export function PositionCard({ position, onClick }: Props) {
 
 export function PositionCardSkeleton() {
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-3">
+    <div className="rounded-lg border bg-card p-4 space-y-3">
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1.5 flex-1">

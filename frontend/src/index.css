@@ -8,7 +8,7 @@
     --background: 220 20% 97%;
     --foreground: 224 71% 4%;
 
-    /* Cards — white on light gray background */
+    /* Cards */
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
 
@@ -16,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    /* Primary — Indigo */
-    --primary: 239 84% 62%;
+    /* Primary — Blue APEX */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary */
@@ -39,10 +39,10 @@
     /* Borders & inputs */
     --border: 220 13% 88%;
     --input: 220 13% 88%;
-    --ring: 239 84% 62%;
+    --ring: 217 91% 60%;
 
-    /* Radius */
-    --radius: 0.75rem;
+    /* Radius — APEX angular */
+    --radius: 0.5rem;
 
     /* Sidebar */
     --sidebar: 0 0% 100%;
@@ -51,32 +51,32 @@
   }
 
   .dark {
-    /* Backgrounds */
-    --background: 222 47% 6%;
+    /* Backgrounds — APEX exact values */
+    --background: 222 36% 7%;
     --foreground: 213 31% 91%;
 
     /* Cards */
-    --card: 222 47% 9%;
+    --card: 221 32% 10%;
     --card-foreground: 213 31% 91%;
 
     /* Popovers */
-    --popover: 222 47% 9%;
+    --popover: 221 32% 10%;
     --popover-foreground: 213 31% 91%;
 
-    /* Primary — Indigo stays vibrant in dark */
-    --primary: 239 84% 67%;
+    /* Primary — Blue APEX */
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary */
-    --secondary: 222 47% 14%;
+    --secondary: 222 36% 13%;
     --secondary-foreground: 213 31% 91%;
 
     /* Muted */
-    --muted: 222 47% 14%;
-    --muted-foreground: 215 16% 55%;
+    --muted: 222 36% 13%;
+    --muted-foreground: 215 20% 56%;
 
     /* Accent */
-    --accent: 222 47% 14%;
+    --accent: 222 36% 13%;
     --accent-foreground: 213 31% 91%;
 
     /* Destructive */
@@ -84,23 +84,72 @@
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & inputs */
-    --border: 222 47% 16%;
-    --input: 222 47% 16%;
-    --ring: 239 84% 67%;
+    --border: 216 48% 19%;
+    --input: 216 48% 19%;
+    --ring: 217 91% 60%;
 
-    /* Sidebar — slightly darker than cards */
-    --sidebar: 222 47% 7%;
+    /* Sidebar */
+    --sidebar: 222 38% 9%;
     --sidebar-foreground: 213 31% 91%;
-    --sidebar-border: 222 47% 14%;
+    --sidebar-border: 216 48% 19%;
   }
 }
 
 @layer utilities {
-  /* Safe-area bottom padding for iOS home indicator.
-     On mobile adds the MobileNav height (4rem) plus the system inset.
-     On desktop md:pb-0 takes over so this class has no effect. */
+  /* Safe-area bottom padding for iOS home indicator */
   .pb-safe-mobile {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Semantic money classes with glow in dark mode */
+  .money-positive {
+    color: #16a34a;
+  }
+  .money-negative {
+    color: #dc2626;
+  }
+  .dark .money-positive {
+    color: #22c55e;
+    text-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+  }
+  .dark .money-negative {
+    color: #ef4444;
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+  }
+
+  /* APEX card — gradient top border in dark mode */
+  .dark .apex-card {
+    border-top: 1px solid rgba(59, 130, 246, 0.3);
+  }
+
+  /* Fade-in-up animation */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.35s ease-out both;
+  }
+
+  /* Pulse dot for live market indicator */
+  @keyframes pulse-dot {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.4;
+      transform: scale(0.8);
+    }
+  }
+  .animate-pulse-dot {
+    animation: pulse-dot 2s ease-in-out infinite;
   }
 }
 
@@ -119,10 +168,42 @@
     @apply bg-background text-foreground;
   }
 
-  /* Scrollbar styling */
+  /* Scan-line overlay in dark mode */
+  .dark body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+    opacity: 0.015;
+  }
+
+  /* Subtle radial gradient on main content in dark mode */
+  .dark main {
+    background: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      rgba(59, 130, 246, 0.04) 0%,
+      transparent 70%
+    );
+  }
+
+  /* JetBrains Mono for monospaced elements */
+  .font-mono,
+  [class*='tabular-nums'] {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  }
+
+  /* Scrollbar styling — 5px APEX style */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
   ::-webkit-scrollbar-track {
     @apply bg-transparent;
@@ -131,6 +212,6 @@
     @apply bg-border rounded-full;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/40;
+    background-color: #3b82f6;
   }
 }

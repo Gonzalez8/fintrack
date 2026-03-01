@@ -11,6 +11,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'ui-monospace', 'monospace'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -60,6 +61,9 @@ export default {
       boxShadow: {
         card: '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
         'card-hover': '0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px -1px rgb(0 0 0 / 0.06)',
+        'glow-blue': '0 0 16px rgba(59, 130, 246, 0.25)',
+        'glow-green': '0 0 16px rgba(34, 197, 94, 0.25)',
+        'glow-red': '0 0 16px rgba(239, 68, 68, 0.25)',
       },
     },
   },

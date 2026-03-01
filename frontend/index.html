@@ -7,13 +7,13 @@
     <title>Fintrack</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <!-- Prevent flash of wrong theme before React hydrates -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+    <!-- Prevent flash of wrong theme before React hydrates — dark by default -->
     <script>
       ;(function () {
         const saved = localStorage.getItem('theme')
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-        if (saved === 'dark' || (!saved && prefersDark)) {
+        if (saved === 'dark' || (!saved && prefersDark) || !saved) {
           document.documentElement.classList.add('dark')
         }
       })()

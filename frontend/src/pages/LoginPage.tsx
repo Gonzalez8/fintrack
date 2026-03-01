@@ -29,14 +29,14 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-background dark:[background:radial-gradient(ellipse_80%_60%_at_50%_-20%,rgba(59,130,246,0.08)_0%,transparent_70%)]">
+      <Card className="w-full max-w-sm dark:shadow-[0_24px_48px_rgba(0,0,0,0.5),0_0_40px_rgba(59,130,246,0.1)]">
         <CardHeader className="items-center pb-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary mb-2">
-            <TrendingUp className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] shadow-[0_0_16px_rgba(59,130,246,0.5)] mb-3">
+            <TrendingUp className="h-5 w-5 text-white" />
           </div>
-          <h1 className="text-xl font-semibold tracking-tight">Fintrack</h1>
-          <p className="text-sm text-muted-foreground">Seguimiento de inversiones</p>
+          <h1 className="font-mono text-[18px] font-bold tracking-[4px] uppercase">Fintrack</h1>
+          <p className="font-mono text-[9px] tracking-[4px] uppercase text-primary">Investment Terminal</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

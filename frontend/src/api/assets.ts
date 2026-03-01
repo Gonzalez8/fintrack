@@ -1,5 +1,5 @@
 import client from './client'
-import type { Asset, Account, AccountSnapshot, Settings, StorageInfo, AssetPositionPoint, PaginatedResponse } from '@/types'
+import type { Asset, Account, AccountSnapshot, Settings, StorageInfo, AssetPositionPoint, OHLCBar, PaginatedResponse } from '@/types'
 
 export const assetsApi = {
   list: (params?: Record<string, string>) =>
@@ -10,6 +10,8 @@ export const assetsApi = {
   delete: (id: string) => client.delete(`/assets/${id}/`),
   setPrice: (id: string, price: string) => client.post<Asset>(`/assets/${id}/set-price/`, { price }),
   positionHistory: (id: string) => client.get<AssetPositionPoint[]>(`/assets/${id}/position-history/`),
+  priceHistory: (id: string, period = '1y') =>
+    client.get<OHLCBar[]>(`/assets/${id}/price-history/`, { params: { period } }),
   updatePrices: () => client.post<{
     updated: number
     errors: string[]

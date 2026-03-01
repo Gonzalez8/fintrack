@@ -53,10 +53,10 @@ function SidebarLink({ to, icon: Icon, label }: { to: string; icon: typeof Layou
       to={to}
       end={to === '/'}
       className={({ isActive }) =>
-        `group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 ${
+        `flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all duration-150 border-l-2 ${
           isActive
-            ? 'bg-primary/10 text-primary'
-            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            ? 'border-primary bg-primary/[0.08] text-[#60a5fa]'
+            : 'border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
         }`
       }
     >
@@ -64,13 +64,10 @@ function SidebarLink({ to, icon: Icon, label }: { to: string; icon: typeof Layou
         <>
           <Icon
             className={`h-4 w-4 shrink-0 transition-colors ${
-              isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+              isActive ? 'text-[#60a5fa]' : 'text-muted-foreground'
             }`}
           />
           {label}
-          {isActive && (
-            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
-          )}
         </>
       )}
     </NavLink>
@@ -88,17 +85,17 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-14 items-center gap-2.5 px-4" style={{ borderBottom: '1px solid hsl(var(--sidebar-border))' }}>
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-          <TrendingUp className="h-4 w-4 text-primary-foreground" />
+        <div className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-gradient-to-br from-[#1d4ed8] to-[#3b82f6] shadow-[0_0_12px_rgba(59,130,246,0.4)]">
+          <TrendingUp className="h-4 w-4 text-white" />
         </div>
-        <span className="text-base font-semibold tracking-tight">Fintrack</span>
+        <span className="font-mono text-[15px] font-bold tracking-[3px] uppercase">Fintrack</span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-2 pt-3">
+      <nav className="flex-1 overflow-y-auto py-3">
         {sections.map((section) => (
           <div key={section.label} className="mb-3">
-            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            <p className="mb-1 px-4 font-mono text-[9px] tracking-[3px] uppercase text-muted-foreground/50">
               {section.label}
             </p>
             {section.links.map((link) => (
@@ -107,7 +104,7 @@ export function Sidebar() {
           </div>
         ))}
 
-        <div className="my-3 h-px bg-border/60" />
+        <div className="my-3 h-px bg-border/60 mx-4" />
 
         {bottomLinks.map((link) => (
           <SidebarLink key={link.to} {...link} />
@@ -118,7 +115,7 @@ export function Sidebar() {
       <div className="p-2 space-y-1" style={{ borderTop: '1px solid hsl(var(--sidebar-border))' }}>
         <button
           onClick={toggle}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all border-l-2 border-transparent hover:bg-secondary hover:text-foreground"
         >
           {isDark ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
           {isDark ? 'Modo claro' : 'Modo oscuro'}
@@ -126,7 +123,7 @@ export function Sidebar() {
 
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground px-4 rounded-none border-l-2 border-transparent hover:border-transparent"
           onClick={logout}
         >
           <LogOut className="h-4 w-4 shrink-0" />

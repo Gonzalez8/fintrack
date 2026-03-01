@@ -7,11 +7,7 @@ import { RVEvolutionChart } from '@/components/app/RVEvolutionChart'
 import { formatMoney, formatPercent } from '@/lib/utils'
 import { PageHeader } from '@/components/app/PageHeader'
 import { PieChart, Pie, Cell, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
-
-const COLORS = [
-  '#2563eb', '#16a34a', '#dc2626', '#ca8a04', '#9333ea',
-  '#0891b2', '#e11d48', '#65a30d', '#6366f1', '#f97316',
-]
+import { useChartTheme, CHART_COLORS } from '@/lib/chartTheme'
 
 export function DashboardPage() {
   const { data: portfolio } = useQuery({
@@ -26,6 +22,8 @@ export function DashboardPage() {
     queryKey: ['year-summary'],
     queryFn: () => reportsApi.yearSummary().then((r) => r.data),
   })
+
+  const ct = useChartTheme()
 
   const currentYear = new Date().getFullYear()
   const currentYearData = yearSummary?.find((y) => y.year === currentYear)
@@ -59,9 +57,9 @@ export function DashboardPage() {
   })()
 
   const ALLOC_COLORS: Record<string, string> = {
-    'Renta Variable': '#2563eb',
-    'Renta Fija': '#16a34a',
-    'Efectivo': '#ca8a04',
+    'Renta Variable': '#3b82f6',
+    'Renta Fija': '#22c55e',
+    'Efectivo': '#f59e0b',
   }
 
   const evolutionData = (patrimonioEvo ?? []).map((p) => {
@@ -92,10 +90,10 @@ export function DashboardPage() {
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Patrimonio Total</CardTitle>
+            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">Patrimonio Total</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{formatMoney(portfolio?.grand_total)}</div>
+            <div className="text-xl sm:text-2xl font-bold tabular-nums">{formatMoney(portfolio?.grand_total)}</div>
             {portfolio && parseFloat(portfolio.total_cash) > 0 && (
               <div className="text-xs text-muted-foreground mt-1">
                 Inversiones: {formatMoney(portfolio.total_market_value)} + Efectivo: {formatMoney(portfolio.total_cash)}
@@ -105,10 +103,10 @@ export function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ingresos {currentYear}</CardTitle>
+            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">Ingresos {currentYear}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{formatMoney(currentYearData?.total_net ?? '0')}</div>
+            <div className="text-xl sm:text-2xl font-bold tabular-nums">{formatMoney(currentYearData?.total_net ?? '0')}</div>
             {currentYearData && (
               <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
                 <div>Dividendos: {formatMoney(currentYearData.dividends_net)} · Intereses: {formatMoney(currentYearData.interests_net)}</div>
@@ -119,10 +117,10 @@ export function DashboardPage() {
         </Card>
         <Card className="sm:col-span-2 md:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">P&L No Realizado</CardTitle>
+            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">P&L No Realizado</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold tabular-nums">
               <MoneyCell value={portfolio?.total_unrealized_pnl} colored />
               <span className="ml-2 text-sm">
                 {formatPercent(totalPnlPct)}
@@ -140,13 +138,26 @@ export function DashboardPage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie data={allocationData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ percent }) => `${(percent * 100).toFixed(1)}%`}>
+                <Pie
+                  data={allocationData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={80}
+                  label={({ percent }: any) => `${(percent * 100).toFixed(1)}%`}
+                >
                   {allocationData.map((d, i) => (
-                    <Cell key={i} fill={ALLOC_COLORS[d.name] ?? COLORS[i]} />
+                    <Cell key={i} fill={ALLOC_COLORS[d.name] ?? CHART_COLORS[i % CHART_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => formatMoney(v)} />
-                <Legend wrapperStyle={{ fontSize: '11px', width: '100%', boxSizing: 'border-box' }} />
+                <Tooltip
+                  formatter={(v: number) => formatMoney(v)}
+                  contentStyle={ct.tooltipStyle}
+                  labelStyle={ct.tooltipLabelStyle}
+                  itemStyle={ct.tooltipItemStyle}
+                />
+                <Legend wrapperStyle={ct.legendStyle} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -164,7 +175,7 @@ export function DashboardPage() {
                   <div key={p.asset_id} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="inline-block h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                        <span className="inline-block h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                         <span className="font-medium truncate">{p.asset_name}</span>
                         {p.asset_ticker && <span className="text-xs text-muted-foreground shrink-0">{p.asset_ticker}</span>}
                       </div>
@@ -174,7 +185,7 @@ export function DashboardPage() {
                       </div>
                     </div>
                     <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                     </div>
                   </div>
                 )
@@ -195,19 +206,23 @@ export function DashboardPage() {
                     <XAxis
                       type="number"
                       tickFormatter={(v: number) => v === 0 ? '0' : `${(v / 1000).toFixed(0)}k`}
-                      tick={{ fontSize: 10 }}
+                      tick={ct.axisTick}
                       tickLine={false}
                       axisLine={false}
                     />
-                    <YAxis type="category" dataKey="year" width={42} tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <YAxis type="category" dataKey="year" width={42} tick={ct.axisTick} tickLine={false} axisLine={false} />
                     <Tooltip
                       formatter={(v: number) => formatMoney(v)}
                       labelFormatter={(label) => `Año ${label}`}
+                      contentStyle={ct.tooltipStyle}
+                      labelStyle={ct.tooltipLabelStyle}
+                      itemStyle={ct.tooltipItemStyle}
+                      cursor={ct.tooltipCursor}
                     />
-                    <Legend wrapperStyle={{ fontSize: '11px', width: '100%', boxSizing: 'border-box' }} />
-                    <Bar dataKey="Dividendos" stackId="income" fill="#2563eb" />
-                    <Bar dataKey="Intereses" stackId="income" fill="#16a34a" />
-                    <Bar dataKey="Ventas" stackId="income" fill="#f97316" />
+                    <Legend wrapperStyle={ct.legendStyle} />
+                    <Bar dataKey="Dividendos" stackId="income" fill="#3b82f6" />
+                    <Bar dataKey="Intereses" stackId="income" fill="#22c55e" />
+                    <Bar dataKey="Ventas" stackId="income" fill="#f59e0b" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -228,12 +243,18 @@ export function DashboardPage() {
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={evolutionData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#9ca3af' }} tickLine={false} axisLine={false} padding={{ left: 16, right: 16 }} />
+                <XAxis dataKey="month" tick={ct.axisTick} tickLine={false} axisLine={false} padding={{ left: 16, right: 16 }} />
                 <YAxis hide />
-                <Tooltip formatter={(v: number) => formatMoney(v)} />
-                <Legend wrapperStyle={{ fontSize: '11px', width: '100%', boxSizing: 'border-box', paddingLeft: '24px', paddingBottom: '8px' }} />
-                <Area type="monotone" dataKey="Efectivo" stackId="1" fill="#ca8a04" stroke="#ca8a04" fillOpacity={0.6} />
-                <Area type="monotone" dataKey="Inversiones" stackId="1" fill="#2563eb" stroke="#2563eb" fillOpacity={0.6} />
+                <Tooltip
+                  formatter={(v: number) => formatMoney(v)}
+                  contentStyle={ct.tooltipStyle}
+                  labelStyle={ct.tooltipLabelStyle}
+                  itemStyle={ct.tooltipItemStyle}
+                  cursor={ct.tooltipCursor}
+                />
+                <Legend wrapperStyle={{ ...ct.legendStyle, paddingLeft: '24px', paddingBottom: '8px' }} />
+                <Area type="monotone" dataKey="Efectivo" stackId="1" fill="#f59e0b" stroke="#f59e0b" fillOpacity={0.6} />
+                <Area type="monotone" dataKey="Inversiones" stackId="1" fill="#3b82f6" stroke="#3b82f6" fillOpacity={0.6} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>

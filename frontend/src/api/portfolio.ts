@@ -1,5 +1,5 @@
 import client from './client'
-import type { Portfolio, YearSummary, PatrimonioPoint, RVPoint, SnapshotStatus } from '@/types'
+import type { Portfolio, YearSummary, PatrimonioPoint, RVPoint, SnapshotStatus, MonthlySavingsData } from '@/types'
 
 export const portfolioApi = {
   get: () => client.get<Portfolio>('/portfolio/'),
@@ -10,4 +10,9 @@ export const reportsApi = {
   patrimonioEvolution: () => client.get<PatrimonioPoint[]>('/reports/patrimonio-evolution/'),
   rvEvolution: () => client.get<RVPoint[]>('/reports/rv-evolution/'),
   snapshotStatus: () => client.get<SnapshotStatus>('/reports/snapshot-status/'),
+}
+
+export const analyticsApi = {
+  monthlySavings: (params?: { from?: string; to?: string }) =>
+    client.get<MonthlySavingsData>('/reports/monthly-savings/', { params }),
 }

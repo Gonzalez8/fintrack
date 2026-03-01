@@ -17,6 +17,7 @@ import { CuentasPage } from '@/pages/CuentasPage'
 import { ActivosPage } from '@/pages/ActivosPage'
 import { ActivoDetailPage } from '@/pages/ActivoDetailPage'
 import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
+import { AhorroMensualPage } from '@/pages/AhorroMensualPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -105,6 +106,7 @@ export default function App() {
             <Route path="/dividendos" element={<DividendosPage />} />
             <Route path="/intereses" element={<InteresesPage />} />
             <Route path="/fiscal" element={<FiscalPage />} />
+            <Route path="/ahorro" element={<AhorroMensualPage />} />
             <Route path="/configuracion" element={<ConfiguracionPage />} />
           </Route>
         </Routes>

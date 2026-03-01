@@ -41,6 +41,7 @@ export function CuentasPage() {
     queryClient.invalidateQueries({ queryKey: ['account-snapshots'] })
     queryClient.invalidateQueries({ queryKey: ['portfolio'] })
     queryClient.invalidateQueries({ queryKey: ['patrimonio-evolution'] })
+    queryClient.invalidateQueries({ queryKey: ['monthly-savings'] })
   }
 
   const createAccountMut = useMutation({

@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Briefcase, ArrowLeftRight, Settings,
   Menu, Coins, Landmark, Wallet, Percent, FileText,
-  LogOut, Moon, Sun,
+  LogOut, Moon, Sun, PiggyBank,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -17,11 +17,12 @@ const PRIMARY_TABS = [
 ]
 
 const SECONDARY_ITEMS = [
-  { to: '/dividendos',   icon: Coins,    label: 'Dividendos' },
-  { to: '/intereses',    icon: Percent,  label: 'Intereses' },
-  { to: '/activos',      icon: Landmark, label: 'Activos' },
-  { to: '/cuentas',      icon: Wallet,   label: 'Cuentas' },
-  { to: '/fiscal',       icon: FileText, label: 'Fiscal' },
+  { to: '/dividendos',   icon: Coins,     label: 'Dividendos' },
+  { to: '/intereses',    icon: Percent,   label: 'Intereses' },
+  { to: '/activos',      icon: Landmark,  label: 'Activos' },
+  { to: '/cuentas',      icon: Wallet,    label: 'Cuentas' },
+  { to: '/fiscal',       icon: FileText,  label: 'Fiscal' },
+  { to: '/ahorro',       icon: PiggyBank, label: 'Ahorro' },
 ]
 
 // ─── Dark mode hook ───────────────────────────────────────────────────────────

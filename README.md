@@ -47,6 +47,16 @@ Personal investment tracking application. Monitor your portfolio, transactions, 
 - Filters by account and date range
 - CSV export
 
+### Monthly Savings (Ahorro mensual)
+- **Real savings calculation**: ΔEfectivo + ΔCoste inv. — cash flow adjusted for invested capital, so money deployed into investments is not counted as a loss
+- Investment cost basis tracked via incremental FIFO: BUY/GIFT lots added at cost price, SELL consumes actual FIFO cost (not sell price)
+- KPI cards: Efectivo actual, Ahorro último mes, Media mensual (range-aware), Mejor/Peor mes
+- **"Sin outliers" toggle**: trimmed mean (drops best + worst month) when ≥ 6 months in range
+- Bar chart (Ahorro mensual real) with range selector (3M / 6M / 1A / 2A / MAX) and rich tooltip (Ahorro real, ΔEfectivo, ΔCoste inv., Efectivo fin)
+- Historical table with columns: Mes, Efectivo fin, ΔEfectivo, ΔCoste inv., Ahorro real
+- MAX range groups rows by year (collapsible, previous years collapsed by default); year header shows net annual real savings
+- **Mobile-first**: card-per-month layout on small screens (month + ahorro real prominent, breakdown in 3-column grid below); range buttons expand to full width for touch
+
 ### Tax Report (Fiscal)
 - Year-by-year summary table: dividend income (gross/net), interest income (gross/net), realized sales P&L, total net
 - Detailed breakdown per year: dividends, realized sales and interests
@@ -216,16 +226,17 @@ frontend/               Vite + React 18 + TypeScript
     api/                Axios clients (CSRF interceptor)
     pages/              Dashboard, Cartera, Activos, Cuentas,
                         Operaciones, Dividendos, Intereses,
-                        Fiscal, Configuracion
+                        AhorroMensual, Fiscal, Configuracion
     components/
       ui/               shadcn/ui (Radix + Tailwind)
       app/              Sidebar, TopBar, MobileNav, PageHeader,
                         DataTable, MoneyCell, PriceChart,
                         PatrimonioEvolutionChart, RVEvolutionChart,
+                        MonthlySavingsChart, MonthlySavingsTable,
                         PositionCard
     stores/             Zustand (authStore)
     types/              TypeScript interfaces
-    lib/                chartTheme.ts, utils, constants
+    lib/                chartTheme.ts, savingsUtils.ts, utils, constants
 ```
 
 ## Common Commands
@@ -272,6 +283,7 @@ GET     /api/portfolio/                   Positions + realized sales (FIFO)
 GET     /api/reports/year-summary/        Year-by-year income summary
 GET     /api/reports/patrimonio-evolution/ Monthly patrimony evolution
 GET     /api/reports/rv-evolution/        Portfolio value time series
+GET     /api/reports/monthly-savings/     Monthly cash + investment cost basis + real savings
 GET     /api/reports/snapshot-status/     Last/next snapshot info
 
 GET     /api/export/transactions.csv      CSV export

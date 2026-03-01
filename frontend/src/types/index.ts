@@ -205,3 +205,32 @@ export interface PaginatedResponse<T> {
   previous: string | null
   results: T[]
 }
+
+export interface MonthlySavingsComment {
+  account_name: string
+  date: string          // ISO date string (YYYY-MM-DD)
+  note: string
+}
+
+export interface MonthlySavingsPoint {
+  month: string                        // YYYY-MM
+  cash_end: string                     // Decimal as string
+  cash_delta: string | null            // null for the first month (no previous)
+  investment_cost_end: string          // accumulated FIFO cost basis of investments
+  investment_cost_delta: string | null // null for the first month
+  real_savings: string | null          // ΔEfectivo + ΔCosteInv; null for first month
+  comments: MonthlySavingsComment[]   // AccountSnapshot notes for this month
+}
+
+export interface MonthlySavingsStats {
+  current_cash: string
+  last_month_delta: string | null
+  avg_monthly_delta: string | null
+  best_month: MonthlySavingsPoint | null
+  worst_month: MonthlySavingsPoint | null
+}
+
+export interface MonthlySavingsData {
+  months: MonthlySavingsPoint[]
+  stats: MonthlySavingsStats | null
+}

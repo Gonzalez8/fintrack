@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Briefcase, Landmark, Wallet, ArrowLeftRight,
-  Coins, Percent, FileText, Settings, LogOut, Moon, Sun, TrendingUp,
+  Coins, Percent, FileText, Settings, LogOut, Moon, Sun, TrendingUp, PiggyBank,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,12 @@ const sections = [
       { to: '/operaciones', icon: ArrowLeftRight, label: 'Operaciones' },
       { to: '/dividendos', icon: Coins, label: 'Dividendos' },
       { to: '/intereses', icon: Percent, label: 'Intereses' },
+    ],
+  },
+  {
+    label: 'Análisis',
+    links: [
+      { to: '/ahorro', icon: PiggyBank, label: 'Ahorro mensual' },
     ],
   },
 ]

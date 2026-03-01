@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.transactions.models import Transaction, Dividend, Interest
-from .services import year_summary, patrimonio_evolution, rv_evolution
+from .services import year_summary, patrimonio_evolution, rv_evolution, monthly_savings, _compute_savings_stats
 
 
 class YearSummaryView(APIView):
@@ -23,6 +23,26 @@ class PatrimonioEvolutionView(APIView):
 class RVEvolutionView(APIView):
     def get(self, request):
         return Response(rv_evolution())
+
+
+class MonthlySavingsView(APIView):
+    def get(self, request):
+        result = monthly_savings()
+        months = result["months"]
+
+        from_month = request.query_params.get("from")
+        to_month = request.query_params.get("to")
+
+        if from_month or to_month:
+            if from_month:
+                months = [m for m in months if m["month"] >= from_month]
+            if to_month:
+                months = [m for m in months if m["month"] <= to_month]
+            stats = _compute_savings_stats(months)
+        else:
+            stats = result["stats"]
+
+        return Response({"months": months, "stats": stats})
 
 
 class SnapshotStatusView(APIView):

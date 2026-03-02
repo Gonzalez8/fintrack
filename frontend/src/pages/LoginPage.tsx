@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { TrendingUp } from 'lucide-react'
 
+const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
+
 export function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -13,6 +15,20 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
   const login = useAuthStore((s) => s.login)
   const navigate = useNavigate()
+
+  const handleDemo = async () => {
+    setLoading(true)
+    try {
+      const { worker } = await import('@/demo/index')
+      await worker.start({ onUnhandledRequest: 'bypass', serviceWorker: { url: '/mockServiceWorker.js' } })
+      await login('demo', 'demo')
+      navigate('/')
+    } catch {
+      setError('Error al iniciar el modo demo')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -61,6 +77,22 @@ export function LoginPage() {
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
+          {IS_DEMO_MODE && (
+            <div className="mt-4 border-t pt-4">
+              <p className="mb-2 text-center text-xs text-muted-foreground">
+                ¿Sin cuenta? Explora con datos de ejemplo
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={loading}
+                onClick={handleDemo}
+              >
+                Probar Demo
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

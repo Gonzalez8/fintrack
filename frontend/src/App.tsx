@@ -6,6 +6,7 @@ import { settingsApi, assetsApi } from '@/api/assets'
 import { Sidebar } from '@/components/app/Sidebar'
 import { MobileNav } from '@/components/app/MobileNav'
 import { TopBar } from '@/components/app/TopBar'
+import { DemoBanner } from '@/components/app/DemoBanner'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { CarteraPage } from '@/pages/CarteraPage'
@@ -73,6 +74,7 @@ function ProtectedRoute() {
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
         <TopBar />
+        <DemoBanner />
         <main className="flex-1 overflow-y-auto overflow-x-hidden pb-safe-mobile md:pb-0">
           <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8 animate-fade-in-up">
             <Outlet />

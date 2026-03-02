@@ -20,6 +20,7 @@ media/
 node_modules/
 dist/
 .cache/
+tsconfig.tsbuildinfo
 
 # Environment
 .env

@@ -187,6 +187,46 @@ Default user: `admin` / `admin`
 
 ---
 
+### Option D — Live Demo (Vercel, no backend required)
+
+A static frontend-only demo can be deployed to Vercel using [MSW (Mock Service Worker)](https://mswjs.io/) to intercept all API calls and return realistic sample data. No database or backend is needed.
+
+**How it works**
+
+All API requests are intercepted by a Service Worker registered in the browser. The mock layer lives entirely in `frontend/src/demo/` and is only included in the bundle when `VITE_DEMO_MODE=true`. The sample data represents a Spanish investor's portfolio over 2 years (ETFs, IBEX stocks, savings accounts).
+
+- The user is auto-logged in on first load — no credentials needed.
+- All pages and features are fully navigable (Cartera, Activos, Operaciones, Dividendos, Intereses, Fiscal, Ahorro, Configuración).
+- CRUD operations (add/edit/delete) work in memory for the session but reset on page reload.
+- CSV exports and JSON backup download work with demo data.
+
+**Deploy to Vercel**
+
+1. Fork or push the repo to GitHub.
+2. Create a new project in [Vercel](https://vercel.com) pointing to the repo.
+3. Set the following in the Vercel project settings:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `frontend` |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Environment Variable | `VITE_DEMO_MODE=true` |
+
+4. Deploy. Vercel will build the frontend with MSW enabled and serve it as a static site.
+
+The `frontend/vercel.json` is already configured to handle SPA routing and serve the MSW service worker with the correct `Service-Worker-Allowed` header.
+
+**Test the demo locally**
+
+```bash
+cd frontend
+VITE_DEMO_MODE=true npm run dev
+# Open http://localhost:5173 — lands directly on Dashboard with sample data
+```
+
+---
+
 ## Environment Variables Reference
 
 | Variable | Required | Default | Description |

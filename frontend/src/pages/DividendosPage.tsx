@@ -181,7 +181,7 @@ export function DividendosPage() {
 
             <div className="space-y-1">
               <label className="text-sm font-medium">Activo</label>
-              <Select modal={false} value={form.asset ?? ''} onValueChange={(v) => {
+              <Select value={form.asset ?? ''} onValueChange={(v) => {
                 const pos = positionMap.get(v)
                 setForm((f) => ({ ...f, asset: v, shares: pos ? pos.quantity : f.shares }))
               }}>

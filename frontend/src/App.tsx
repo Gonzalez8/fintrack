@@ -94,8 +94,14 @@ function ProtectedRoute() {
 
 export default function App() {
   const fetchMe = useAuthStore((s) => s.fetchMe)
+  // Guard against React StrictMode double-invoking the effect: both concurrent
+  // calls share the same refresh cookie; the first rotates it (ROTATE_REFRESH_TOKENS),
+  // the second gets a 401 on the now-blacklisted token and forces a logout.
+  const initRef = useRef(false)
 
   useEffect(() => {
+    if (initRef.current) return
+    initRef.current = true
     fetchMe()
   }, [fetchMe])
 

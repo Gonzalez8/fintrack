@@ -88,9 +88,9 @@ Personal investment tracking application. Monitor your portfolio, transactions, 
 
 | Layer | Technologies |
 |---|---|
-| Backend | Django 5.1, Django REST Framework, PostgreSQL 16, yfinance, openpyxl, djangorestframework-simplejwt |
+| Backend | Django 5.1, Django REST Framework, PostgreSQL 16, yfinance, djangorestframework-simplejwt, Celery 5.3, Redis |
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui (Radix), React Query, Zustand, Recharts, lightweight-charts |
-| Infra | Docker Compose |
+| Infra | Docker Compose (db, redis, backend, frontend, celery_worker, celery_beat) |
 
 ---
 
@@ -241,6 +241,7 @@ VITE_DEMO_MODE=true npm run dev
 | `APP_PORT` | | `8000` | Host port mapped to the backend container |
 | `DJANGO_SUPERUSER_USERNAME` | | `admin` | Initial admin username |
 | `DJANGO_SUPERUSER_PASSWORD` | | `admin` | Initial admin password |
+| `REDIS_URL` | | `redis://redis:6379/0` | Celery broker + result backend |
 
 > **Security note:** Always set strong, unique values for `DB_PASSWORD`, `DJANGO_SECRET_KEY` and `DJANGO_SUPERUSER_PASSWORD` before deploying to a public server.
 
@@ -253,7 +254,7 @@ backend/                Django 5.1 + DRF
   apps/
     core/               JWT auth (JWTLoginView, JWTRefreshView, JWTLogoutView, MeView)
                         UserOwnedModel abstract base + OwnedByUserMixin
-    assets/             Asset, Account, Settings + Yahoo Finance + snapshot scheduler
+    assets/             Asset, Account, Settings + Yahoo Finance + Celery tasks
     transactions/       Transaction (BUY/SELL/GIFT), Dividend, Interest
     portfolio/          FIFO engine (positions, realized P&L) — all fns receive user param
     importer/           Excel import + JSON backup/restore (owner-scoped)
@@ -266,6 +267,7 @@ frontend/               Vite + React 18 + TypeScript
   src/
     api/                client.ts — Bearer interceptor + 401→refresh retry (no CSRF)
                         auth.ts — tokenLogin, tokenRefresh, logout, me
+                        tasks.ts — pollTask() for async price update polling
     pages/              Dashboard, Cartera, Activos, Cuentas,
                         Operaciones, Dividendos, Intereses,
                         AhorroMensual, Fiscal, Configuracion
@@ -313,7 +315,8 @@ CRUD    /api/assets/                      Assets (owner-scoped)
 POST    /api/assets/{id}/set-price/       Manual price override
 GET     /api/assets/{id}/position-history/ Position snapshot history
 GET     /api/assets/{id}/price-history/   OHLC price history from Yahoo Finance (?period=1mo|3mo|6mo|1y|2y|5y|max)
-POST    /api/assets/update-prices/        Fetch prices (Yahoo Finance)
+POST    /api/assets/update-prices/        Enqueue price update → 202 { task_id, status }
+GET     /api/tasks/{task_id}/            Celery task status (SUCCESS/FAILURE/PENDING)
 CRUD    /api/accounts/                    Accounts (owner-scoped)
 CRUD    /api/account-snapshots/           Account balance snapshots (owner-scoped)
 POST    /api/accounts/bulk-snapshot/      Bulk snapshot creation

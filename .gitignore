@@ -16,6 +16,10 @@ db.sqlite3
 staticfiles/
 media/
 
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
 # Node
 node_modules/
 dist/

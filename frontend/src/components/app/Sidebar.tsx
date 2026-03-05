@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Briefcase, Landmark, Wallet, ArrowLeftRight,
-  Coins, Percent, FileText, Settings, LogOut, Moon, Sun, TrendingUp, PiggyBank,
+  Coins, Percent, FileText, Settings, LogOut, Moon, Sun, TrendingUp, PiggyBank, UserCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
@@ -36,6 +36,7 @@ const sections = [
 const bottomLinks = [
   { to: '/fiscal', icon: FileText, label: 'Fiscal' },
   { to: '/configuracion', icon: Settings, label: 'Configuración' },
+  { to: '/perfil', icon: UserCircle, label: 'Mi perfil' },
 ]
 
 function useDarkMode() {

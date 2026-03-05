@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 import { authApi } from '@/api/auth'
 import { setAccessToken } from '@/api/client'
-import type { User } from '@/types'
+import type { User, RegisterRequest } from '@/types'
 
 interface AuthState {
   user: User | null
   loading: boolean
   login: (username: string, password: string) => Promise<void>
+  register: (data: RegisterRequest) => Promise<void>
+  loginWithGoogle: (credential: string) => Promise<void>
   logout: () => Promise<void>
   /**
    * Called on app mount to restore the session from the httpOnly refresh cookie.
@@ -21,6 +23,18 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (username, password) => {
     const { data } = await authApi.tokenLogin(username, password)
+    setAccessToken(data.access)
+    set({ user: data.user })
+  },
+
+  register: async (data) => {
+    const { data: res } = await authApi.register(data)
+    setAccessToken(res.access)
+    set({ user: res.user })
+  },
+
+  loginWithGoogle: async (credential) => {
+    const { data } = await authApi.googleAuth(credential)
     setAccessToken(data.access)
     set({ user: data.user })
   },

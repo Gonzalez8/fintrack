@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
@@ -44,6 +45,8 @@ class JWTLoginView(APIView):
         Cookie: refresh_token (httpOnly, SameSite=Lax)
     """
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth_login"
 
     def post(self, request):
         username = request.data.get("username")
@@ -154,6 +157,199 @@ class TaskStatusView(APIView):
             else:
                 data["error"] = str(result.result)
         return Response(data)
+
+
+# ---------------------------------------------------------------------------
+# Registration
+# ---------------------------------------------------------------------------
+
+class RegisterView(APIView):
+    """POST /api/auth/register/ — create a new user and return JWT tokens.
+
+    Respects the ALLOW_REGISTRATION setting (default True).
+    Returns same shape as JWTLoginView: { access, user } + httpOnly refresh cookie.
+    """
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth_register"
+
+    def post(self, request):
+        from apps.core.serializers import RegisterSerializer
+
+        if not django_settings.ALLOW_REGISTRATION:
+            return Response(
+                {"detail": "El registro está deshabilitado."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        refresh = RefreshToken.for_user(user)
+        response = Response(
+            {
+                "access": str(refresh.access_token),
+                "user": {"id": user.pk, "username": user.username},
+            },
+            status=status.HTTP_201_CREATED,
+        )
+        _set_refresh_cookie(response, str(refresh))
+        return response
+
+
+# ---------------------------------------------------------------------------
+# Google OAuth2
+# ---------------------------------------------------------------------------
+
+class GoogleAuthView(APIView):
+    """POST /api/auth/google/ — verify a Google ID token and issue JWT tokens.
+
+    Body: { credential: "<google-id-token>" }
+
+    Finds an existing user by email or creates a new one. Returns same shape
+    as JWTLoginView: { access, user } + httpOnly refresh cookie.
+    """
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth_google"
+
+    def post(self, request):
+        if not django_settings.GOOGLE_CLIENT_ID:
+            return Response(
+                {"detail": "Google login no configurado."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        credential = request.data.get("credential", "")
+        if not credential:
+            return Response(
+                {"detail": "Credencial de Google requerida."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            from google.oauth2 import id_token as google_id_token
+            from google.auth.transport.requests import Request as GoogleRequest
+            idinfo = google_id_token.verify_oauth2_token(
+                credential, GoogleRequest(), django_settings.GOOGLE_CLIENT_ID
+            )
+        except ValueError as exc:
+            return Response(
+                {"detail": f"Token de Google inválido: {exc}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = idinfo.get("email", "")
+        if not email:
+            return Response(
+                {"detail": "No se pudo obtener el email de Google."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        user = User.objects.filter(email=email).first()
+        if user is None:
+            # Derive a username from the email prefix, avoiding collisions.
+            base_username = email.split("@")[0]
+            username = base_username
+            counter = 2
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}_{counter}"
+                counter += 1
+            user = User.objects.create_user(username=username, email=email)
+
+        refresh = RefreshToken.for_user(user)
+        response = Response({
+            "access": str(refresh.access_token),
+            "user": {"id": user.pk, "username": user.username},
+        })
+        _set_refresh_cookie(response, str(refresh))
+        return response
+
+
+# ---------------------------------------------------------------------------
+# Profile & password
+# ---------------------------------------------------------------------------
+
+class ProfileView(APIView):
+    """GET/PUT /api/auth/profile/ — read and update the authenticated user's profile."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from apps.core.serializers import ProfileSerializer
+        return Response(ProfileSerializer(request.user, context={"request": request}).data)
+
+    def put(self, request):
+        from apps.core.serializers import ProfileSerializer
+        serializer = ProfileSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class ChangePasswordView(APIView):
+    """POST /api/auth/change-password/ — change password and rotate JWT tokens."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth_password"
+
+    def post(self, request):
+        from apps.core.serializers import ChangePasswordSerializer
+
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        if not user.check_password(serializer.validated_data["current_password"]):
+            return Response(
+                {"current_password": "Contraseña actual incorrecta."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
+
+        # Blacklist old refresh token if present, then issue new pair.
+        raw_token = request.COOKIES.get(django_settings.JWT_REFRESH_COOKIE_NAME)
+        if raw_token:
+            try:
+                RefreshToken(raw_token).blacklist()
+            except (TokenError, InvalidToken):
+                pass
+
+        refresh = RefreshToken.for_user(user)
+        response = Response({"access": str(refresh.access_token)})
+        _set_refresh_cookie(response, str(refresh))
+        return response
+
+
+# ---------------------------------------------------------------------------
+# Health check
+# ---------------------------------------------------------------------------
+
+class HealthView(APIView):
+    """GET /api/health/ — liveness probe for load balancers and container orchestrators.
+
+    Returns 200 when the DB is reachable, 503 otherwise.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []  # Skip JWT auth for health checks
+
+    def get(self, request):
+        from django.db import connection
+        try:
+            connection.ensure_connection()
+            return Response({"status": "ok"})
+        except Exception:
+            return Response({"status": "error"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
 # ---------------------------------------------------------------------------

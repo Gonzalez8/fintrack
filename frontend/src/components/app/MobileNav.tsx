@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Briefcase, ArrowLeftRight, Settings,
   Menu, Coins, Landmark, Wallet, Percent, FileText,
-  LogOut, Moon, Sun, PiggyBank,
+  LogOut, Moon, Sun, PiggyBank, UserCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -22,7 +22,8 @@ const SECONDARY_ITEMS = [
   { to: '/activos',      icon: Landmark,  label: 'Activos' },
   { to: '/cuentas',      icon: Wallet,    label: 'Cuentas' },
   { to: '/fiscal',       icon: FileText,  label: 'Fiscal' },
-  { to: '/ahorro',       icon: PiggyBank, label: 'Ahorro' },
+  { to: '/ahorro',       icon: PiggyBank,   label: 'Ahorro' },
+  { to: '/perfil',       icon: UserCircle,  label: 'Perfil' },
 ]
 
 // ─── Dark mode hook ───────────────────────────────────────────────────────────

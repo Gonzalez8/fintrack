@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
+    "drf_spectacular",
     # Local apps
     "apps.core",
     "apps.assets",
@@ -70,7 +71,12 @@ DATABASES = {
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = []
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Europe/Madrid"
@@ -101,6 +107,21 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
     "COERCE_DECIMAL_TO_STRING": True,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Rate limiting — global defaults
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "200/hour",
+        "user": "2000/hour",
+        # Scoped rates for sensitive auth endpoints
+        "auth_login": "10/minute",     # POST /api/auth/token/
+        "auth_register": "10/hour",    # POST /api/auth/register/
+        "auth_google": "10/minute",    # POST /api/auth/google/
+        "auth_password": "10/hour",    # POST /api/auth/change-password/
+    },
 }
 
 # JWT
@@ -133,6 +154,24 @@ SESSION_COOKIE_SAMESITE = "Lax"
 # Frontend SPA served by Django in production
 FRONTEND_DIR = os.environ.get("FRONTEND_DIR", "")
 WHITENOISE_ROOT = FRONTEND_DIR if FRONTEND_DIR else None
+
+# OpenAPI / Swagger
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Fintrack API",
+    "DESCRIPTION": (
+        "Personal investment tracking API. All endpoints (except auth) require "
+        "Authorization: Bearer <access_token>. Resources are automatically scoped "
+        "to the authenticated user."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": r"/api/",
+}
+
+# Google OAuth2
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+ALLOW_REGISTRATION = os.environ.get("ALLOW_REGISTRATION", "true").lower() == "true"
 
 # Celery
 CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")

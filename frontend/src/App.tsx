@@ -20,6 +20,7 @@ import { ActivosPage } from '@/pages/ActivosPage'
 import { ActivoDetailPage } from '@/pages/ActivoDetailPage'
 import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
 import { AhorroMensualPage } from '@/pages/AhorroMensualPage'
+import { PerfilPage } from '@/pages/PerfilPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -115,6 +116,7 @@ export default function App() {
             <Route path="/fiscal" element={<FiscalPage />} />
             <Route path="/ahorro" element={<AhorroMensualPage />} />
             <Route path="/configuracion" element={<ConfiguracionPage />} />
+            <Route path="/perfil" element={<PerfilPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

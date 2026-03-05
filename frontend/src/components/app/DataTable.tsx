@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,8 +25,10 @@ interface DataTableProps<T> {
 
 export function DataTable<T extends Record<string, any>>({
   columns, data, loading, page = 1, totalPages = 1, totalCount, onPageChange,
-  onRowClick, emptyIcon, emptyMessage = 'Sin datos',
+  onRowClick, emptyIcon, emptyMessage,
 }: DataTableProps<T>) {
+  const { t } = useTranslation()
+  const resolvedEmptyMessage = emptyMessage ?? t('common.noData')
   const pageSize = 50
   const showingFrom = totalCount ? (page - 1) * pageSize + 1 : 0
   const showingTo = totalCount ? Math.min(page * pageSize, totalCount) : data.length
@@ -57,7 +60,7 @@ export function DataTable<T extends Record<string, any>>({
               <TableCell colSpan={columns.length} className="py-12">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   {emptyIcon ?? <Inbox className="h-10 w-10 stroke-[1.5]" />}
-                  <p className="text-sm">{emptyMessage}</p>
+                  <p className="text-sm">{resolvedEmptyMessage}</p>
                 </div>
               </TableCell>
             </TableRow>
@@ -85,8 +88,8 @@ export function DataTable<T extends Record<string, any>>({
         <div className="flex items-center justify-between border-t px-4 py-3">
           <span className="text-sm text-muted-foreground">
             {totalCount
-              ? `Mostrando ${showingFrom}–${showingTo} de ${totalCount}`
-              : `Página ${page} de ${totalPages}`}
+              ? t('common.showing', { from: showingFrom, to: showingTo, count: totalCount })
+              : t('common.pageOf', { current: page, total: totalPages })}
           </span>
           <div className="flex items-center gap-2">
             <Button

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { transactionsApi } from '@/api/transactions'
 import { portfolioApi } from '@/api/portfolio'
 import { assetsApi, accountsApi } from '@/api/assets'
@@ -19,6 +20,7 @@ import { TX_TYPE_BADGE_COLORS, TX_TYPE_LABELS } from '@/lib/constants'
 import type { Transaction } from '@/types'
 
 export function OperacionesPage() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<Record<string, string>>({})
@@ -75,13 +77,13 @@ export function OperacionesPage() {
   })
 
   const columns: Column<Transaction>[] = [
-    { header: 'Fecha', accessor: 'date' },
+    { header: t('common.date'), accessor: 'date' },
     {
-      header: 'Tipo',
+      header: t('common.type'),
       accessor: (r) => <Badge className={TX_TYPE_BADGE_COLORS[r.type] ?? ''} variant="secondary">{TX_TYPE_LABELS[r.type] ?? r.type}</Badge>,
     },
     {
-      header: 'Activo',
+      header: t('common.asset'),
       accessor: (r) => (
         <div>
           <span className="font-medium">{r.asset_name}</span>
@@ -89,11 +91,11 @@ export function OperacionesPage() {
         </div>
       ),
     },
-    { header: 'Cuenta', accessor: 'account_name' },
-    { header: 'Cantidad', accessor: (r) => formatQty(r.quantity), className: 'text-right' },
-    { header: 'Precio', accessor: (r) => <MoneyCell value={r.price} />, className: 'text-right' },
-    { header: 'Comision', accessor: (r) => <MoneyCell value={r.commission} />, className: 'text-right' },
-    { header: 'Tasas', accessor: (r) => <MoneyCell value={r.tax} />, className: 'text-right' },
+    { header: t('common.account'), accessor: 'account_name' },
+    { header: t('common.quantity'), accessor: (r) => formatQty(r.quantity), className: 'text-right' },
+    { header: t('common.price'), accessor: (r) => <MoneyCell value={r.price} />, className: 'text-right' },
+    { header: t('transactions.commission'), accessor: (r) => <MoneyCell value={r.commission} />, className: 'text-right' },
+    { header: t('transactions.taxes'), accessor: (r) => <MoneyCell value={r.tax} />, className: 'text-right' },
     {
       header: '',
       accessor: (r) => (
@@ -169,38 +171,46 @@ export function OperacionesPage() {
     setDialogOpen(true)
   }
 
+  const getDialogTitle = () => {
+    if (editingId) return t('transactions.editTransaction')
+    if (form.type === 'BUY') return t('transactions.newBuy')
+    if (form.type === 'SELL') return t('transactions.newSell')
+    if (form.type === 'GIFT') return t('transactions.newGift')
+    return t('transactions.title')
+  }
+
   return (
     <div className="space-y-4">
-      <PageHeader title="Operaciones">
+      <PageHeader title={t('transactions.title')}>
         <a href="/api/export/transactions.csv" target="_blank" rel="noopener">
           <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />CSV</Button>
         </a>
         <Button size="sm" onClick={() => openNew('BUY')}>
-          <ShoppingCart className="mr-2 h-4 w-4" />Compra
+          <ShoppingCart className="mr-2 h-4 w-4" />{t('transactions.buy')}
         </Button>
         <Button size="sm" variant="destructive" onClick={() => openNew('SELL')}>
-          <TrendingDown className="mr-2 h-4 w-4" />Venta
+          <TrendingDown className="mr-2 h-4 w-4" />{t('transactions.sell')}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => openNew('GIFT')}>
-          <Gift className="mr-2 h-4 w-4" />Regalo
+          <Gift className="mr-2 h-4 w-4" />{t('transactions.gift')}
         </Button>
       </PageHeader>
 
       {/* ── Filtros: Sheet en mobile, inline en desktop ── */}
       <FilterSheet activeCount={activeFilterCount} onReset={resetFilters}>
         <Input
-          placeholder="Buscar nombre o ticker..."
+          placeholder={t('transactions.searchPlaceholder')}
           className="w-full sm:w-52"
           value={filters.search ?? ''}
           onChange={(e) => { setFilters((f) => ({ ...f, search: e.target.value })); setPage(1) }}
         />
         <Input
-          placeholder="Desde fecha" type="date" className="w-full sm:w-40"
+          placeholder={t('transactions.fromDate')} type="date" className="w-full sm:w-40"
           value={filters.from_date ?? ''}
           onChange={(e) => { setFilters((f) => ({ ...f, from_date: e.target.value })); setPage(1) }}
         />
         <Input
-          placeholder="Hasta fecha" type="date" className="w-full sm:w-40"
+          placeholder={t('transactions.toDate')} type="date" className="w-full sm:w-40"
           value={filters.to_date ?? ''}
           onChange={(e) => { setFilters((f) => ({ ...f, to_date: e.target.value })); setPage(1) }}
         />
@@ -208,21 +218,21 @@ export function OperacionesPage() {
           value={filters.type || 'ALL'}
           onValueChange={(v) => { setFilters((f) => ({ ...f, type: v === 'ALL' ? '' : v })); setPage(1) }}
         >
-          <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder={t('common.type')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Todos</SelectItem>
-            <SelectItem value="BUY">Compra</SelectItem>
-            <SelectItem value="SELL">Venta</SelectItem>
-            <SelectItem value="GIFT">Regalo</SelectItem>
+            <SelectItem value="ALL">{t('transactions.allTypes')}</SelectItem>
+            <SelectItem value="BUY">{t('transactions.buy')}</SelectItem>
+            <SelectItem value="SELL">{t('transactions.sell')}</SelectItem>
+            <SelectItem value="GIFT">{t('transactions.gift')}</SelectItem>
           </SelectContent>
         </Select>
         <Select
           value={filters.account_id || 'ALL'}
           onValueChange={(v) => { setFilters((f) => ({ ...f, account_id: v === 'ALL' ? '' : v })); setPage(1) }}
         >
-          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Cuenta" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder={t('common.account')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Todas las cuentas</SelectItem>
+            <SelectItem value="ALL">{t('transactions.allAccounts')}</SelectItem>
             {accountsData?.results.map((a) => (
               <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
             ))}
@@ -237,7 +247,7 @@ export function OperacionesPage() {
           : (data?.results ?? []).length === 0
             ? (
               <p className="py-12 text-center text-sm text-muted-foreground">
-                Sin operaciones
+                {t('transactions.noTransactions')}
               </p>
             )
             : (data?.results ?? []).map((tx) => (
@@ -253,14 +263,14 @@ export function OperacionesPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t px-1 py-3">
             <span className="text-xs text-muted-foreground">
-              Página {page} de {totalPages}
+              {t('common.pageOf', { current: page, total: totalPages })}
             </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                Anterior
+                {t('common.previous')}
               </Button>
               <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                Siguiente
+                {t('common.next')}
               </Button>
             </div>
           </div>
@@ -275,7 +285,7 @@ export function OperacionesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Editar Operación' : `Nueva ${TX_TYPE_LABELS[form.type] ?? 'Operación'}`}</DialogTitle>
+            <DialogTitle>{getDialogTitle()}</DialogTitle>
           </DialogHeader>
           <form
             className="space-y-4"
@@ -290,32 +300,32 @@ export function OperacionesPage() {
             }}
           >
             <div>
-              <label className="text-sm font-medium">Fecha</label>
+              <label className="text-sm font-medium">{t('common.date')}</label>
               <Input type="date" required value={form.date ?? ''} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
             </div>
 
             {editingId && (
               <div>
-                <label className="text-sm font-medium">Tipo</label>
+                <label className="text-sm font-medium">{t('common.type')}</label>
                 <Select value={form.type ?? ''} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BUY">Compra</SelectItem>
-                    <SelectItem value="SELL">Venta</SelectItem>
-                    <SelectItem value="GIFT">Regalo</SelectItem>
+                    <SelectItem value="BUY">{t('transactions.buy')}</SelectItem>
+                    <SelectItem value="SELL">{t('transactions.sell')}</SelectItem>
+                    <SelectItem value="GIFT">{t('transactions.gift')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
 
             <div>
-              <label className="text-sm font-medium">Activo</label>
+              <label className="text-sm font-medium">{t('common.asset')}</label>
               <Select value={form.asset ?? ''} onValueChange={handleAssetChange}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar activo" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('common.selectAsset')} /></SelectTrigger>
                 <SelectContent>
                   {assetOptions.map((a) => {
                     const pos = positionMap.get(a.id)
-                    const suffix = isSell && pos ? ` — ${formatQty(pos.quantity)} uds` : ''
+                    const suffix = isSell && pos ? ` — ${formatQty(pos.quantity)} ${t('transactions.units')}` : ''
                     return (
                       <SelectItem key={a.id} value={a.id}>{a.name} {a.ticker ? `(${a.ticker})` : ''}{suffix}</SelectItem>
                     )
@@ -326,9 +336,9 @@ export function OperacionesPage() {
 
             {!isSell && (
               <div>
-                <label className="text-sm font-medium">Cuenta</label>
+                <label className="text-sm font-medium">{t('common.account')}</label>
                 <Select value={form.account ?? ''} onValueChange={(v) => setForm((f) => ({ ...f, account: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Seleccionar cuenta" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('common.selectAccount')} /></SelectTrigger>
                   <SelectContent>
                     {accountsData?.results.map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
@@ -339,7 +349,7 @@ export function OperacionesPage() {
             )}
 
             <div>
-              <label className="text-sm font-medium">Cantidad</label>
+              <label className="text-sm font-medium">{t('common.quantity')}</label>
               <Input
                 type="number" step="any" min="0" required
                 value={form.quantity ?? ''}
@@ -348,19 +358,19 @@ export function OperacionesPage() {
               />
               {selectedPosition && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Disponible: <strong>{formatQty(selectedPosition.quantity)}</strong> uds
+                  {t('transactions.available')}: <strong>{formatQty(selectedPosition.quantity)}</strong> {t('transactions.units')}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="text-sm font-medium">Precio unitario</label>
+              <label className="text-sm font-medium">{t('transactions.unitPrice')}</label>
               <Input type="number" step="any" min="0" value={form.price ?? ''} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Comision</label>
+                <label className="text-sm font-medium">{t('transactions.commission')}</label>
                 <div className="relative">
                   <Input
                     type="number" step="any" min="0"
@@ -373,11 +383,11 @@ export function OperacionesPage() {
               </div>
               <div>
                 <label className="text-sm font-medium inline-flex items-center gap-1">
-                  Tasas / Impuestos
+                  {t('transactions.taxes')}
                   <span className="relative group cursor-help">
                     <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block w-52 rounded-md bg-popover border text-popover-foreground text-xs p-2 shadow-md z-50 pointer-events-none">
-                      FTT / stamp duty / tasas de mercado según país
+                      {t('transactions.taxesTooltip')}
                     </span>
                   </span>
                 </label>
@@ -405,22 +415,22 @@ export function OperacionesPage() {
               return (
                 <div className="rounded-md bg-muted/50 p-3 space-y-1">
                   <p className="text-sm font-medium">
-                    Total operacion: <strong>{total.toFixed(2)} €</strong>
+                    {t('transactions.totalOperation')}: <strong>{total.toFixed(2)} €</strong>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {qty} × {price}{isSell ? ' −' : ' +'} {comm} comision{tax > 0 ? ` ${isSell ? '−' : '+'} ${tax} tasas` : ''}
+                    {qty} × {price}{isSell ? ' −' : ' +'} {comm} {t('transactions.commission_short')}{tax > 0 ? ` ${isSell ? '−' : '+'} ${tax} ${t('transactions.taxes_short')}` : ''}
                   </p>
                 </div>
               )
             })()}
 
             <p className="text-xs text-muted-foreground">
-              La tributacion por plusvalias se calcula en la seccion Fiscal, no aqui.
+              {t('transactions.taxNote')}
             </p>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={createMut.isPending || updateMut.isPending}>
-              {(createMut.isPending || updateMut.isPending) ? 'Guardando...' : 'Guardar'}
+              {(createMut.isPending || updateMut.isPending) ? t('transactions.saving') : t('transactions.save')}
             </Button>
           </form>
         </DialogContent>

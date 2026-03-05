@@ -1,5 +1,6 @@
 import { useMemo, useState, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { analyticsApi } from '@/api/portfolio'
 import { formatMoney } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -97,16 +98,18 @@ function KpiCard({ label, value, colored, subtitle }: {
   )
 }
 
-function BestWorstCard({ best, worst }: {
+function BestWorstCard({ best, worst, bestLabel, worstLabel }: {
   best: MonthlySavingsPoint | null
   worst: MonthlySavingsPoint | null
+  bestLabel: string
+  worstLabel: string
 }) {
   return (
     <Card>
       <CardContent className="pb-4 pt-4 px-4 space-y-3">
         <div>
           <p className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground mb-1">
-            Mejor mes
+            {bestLabel}
           </p>
           <p className="font-mono text-lg font-bold tabular-nums money-positive leading-none">
             {best?.real_savings != null ? `+${formatMoney(best.real_savings)}` : '—'}
@@ -120,7 +123,7 @@ function BestWorstCard({ best, worst }: {
         <div className="h-px bg-border/60" />
         <div>
           <p className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground mb-1">
-            Peor mes
+            {worstLabel}
           </p>
           <p className={`font-mono text-lg font-bold tabular-nums leading-none ${
             worst?.real_savings != null && parseFloat(worst.real_savings) < 0
@@ -143,6 +146,7 @@ function BestWorstCard({ best, worst }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function AhorroMensualPage() {
+  const { t } = useTranslation()
   const [range, setRange]           = useState<Range>('1A')
   const [normalize, setNormalize]   = useState(false)
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null)
@@ -160,7 +164,7 @@ export function AhorroMensualPage() {
 
   // Subtitle for the "Media mensual" card
   const avgSubtitle = stats
-    ? `${RANGE_LABELS[range]}${stats.is_normalized ? ' · sin outliers' : ''}`
+    ? `${RANGE_LABELS[range]}${stats.is_normalized ? ` · ${t('savings.noOutliers')}` : ''}`
     : undefined
 
   // Scroll to table + set selected month when a chart bar is clicked
@@ -188,9 +192,9 @@ export function AhorroMensualPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Ahorro mensual" subtitle="Flujo de efectivo mes a mes" />
+        <PageHeader title={t('savings.title')} subtitle={t('savings.subtitle')} />
         <div className="flex min-h-[200px] items-center justify-center text-muted-foreground text-sm">
-          Cargando...
+          {t('savings.loading')}
         </div>
       </div>
     )
@@ -199,8 +203,8 @@ export function AhorroMensualPage() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Ahorro mensual" subtitle="Flujo de efectivo mes a mes" />
-        <p className="text-sm text-destructive">Error al cargar los datos.</p>
+        <PageHeader title={t('savings.title')} subtitle={t('savings.subtitle')} />
+        <p className="text-sm text-destructive">{t('savings.loadError')}</p>
       </div>
     )
   }
@@ -208,12 +212,10 @@ export function AhorroMensualPage() {
   if (allMonths.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Ahorro mensual" subtitle="Flujo de efectivo mes a mes" />
+        <PageHeader title={t('savings.title')} subtitle={t('savings.subtitle')} />
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground text-sm">
-            No hay snapshots de efectivo todavía.
-            <br />
-            Añade snapshots en el apartado de <strong>Cuentas</strong> para ver el historial.
+            {t('savings.noSnapshots')}
           </CardContent>
         </Card>
       </div>
@@ -222,21 +224,21 @@ export function AhorroMensualPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Ahorro mensual" subtitle="Flujo de efectivo mes a mes" />
+      <PageHeader title={t('savings.title')} subtitle={t('savings.subtitle')} />
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard
-          label="Efectivo actual"
+          label={t('savings.currentCash')}
           value={stats?.current_cash ?? null}
         />
         <KpiCard
-          label="Ahorro último mes"
+          label={t('savings.lastMonth')}
           value={stats?.last_month_delta ?? null}
           colored
         />
         <KpiCard
-          label="Media mensual"
+          label={t('savings.monthlyAverage')}
           value={stats?.avg_monthly_delta ?? null}
           colored
           subtitle={avgSubtitle}
@@ -244,6 +246,8 @@ export function AhorroMensualPage() {
         <BestWorstCard
           best={stats?.best_month ?? null}
           worst={stats?.worst_month ?? null}
+          bestLabel={t('savings.bestMonth')}
+          worstLabel={t('savings.worstMonth')}
         />
       </div>
 
@@ -264,7 +268,7 @@ export function AhorroMensualPage() {
         <MonthlySavingsTable
           months={filteredMonths}
           stats={tableStats}
-          title={range === 'MAX' ? 'Histórico completo' : RANGE_LABELS[range]}
+          title={range === 'MAX' ? t('savings.fullHistory') : RANGE_LABELS[range]}
           groupByYear={range === 'MAX'}
           selectedMonth={selectedMonth}
           onMonthSelect={setSelectedMonth}

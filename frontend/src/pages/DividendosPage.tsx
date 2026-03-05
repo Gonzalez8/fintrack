@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { dividendsApi } from '@/api/transactions'
 import { assetsApi } from '@/api/assets'
 import { portfolioApi } from '@/api/portfolio'
@@ -17,6 +18,7 @@ import { formatQty, formatErrors } from '@/lib/utils'
 import type { Dividend, Position } from '@/types'
 
 export function DividendosPage() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<Record<string, string>>({})
@@ -56,9 +58,9 @@ export function DividendosPage() {
   })
 
   const columns: Column<Dividend>[] = [
-    { header: 'Fecha', accessor: 'date' },
+    { header: t('common.date'), accessor: 'date' },
     {
-      header: 'Activo',
+      header: t('common.asset'),
       accessor: (r) => (
         <div>
           <span className="font-medium">{r.asset_name}</span>
@@ -66,10 +68,10 @@ export function DividendosPage() {
         </div>
       ),
     },
-    { header: 'Acciones', accessor: (r) => formatQty(r.shares), className: 'text-right' },
-    { header: 'Bruto', accessor: (r) => <MoneyCell value={r.gross} />, className: 'text-right' },
+    { header: t('dividends.shares'), accessor: (r) => formatQty(r.shares), className: 'text-right' },
+    { header: t('common.gross'), accessor: (r) => <MoneyCell value={r.gross} />, className: 'text-right' },
     { header: 'Impuesto', accessor: (r) => <MoneyCell value={r.tax} />, className: 'text-right' },
-    { header: 'Neto', accessor: (r) => <MoneyCell value={r.net} />, className: 'text-right' },
+    { header: t('common.net'), accessor: (r) => <MoneyCell value={r.net} />, className: 'text-right' },
     {
       header: '% Retencion',
       accessor: (r) => r.withholding_rate ? `${(parseFloat(r.withholding_rate) * 100).toFixed(2)}%` : '-',
@@ -102,12 +104,12 @@ export function DividendosPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Dividendos">
+      <PageHeader title={t('dividends.title')}>
         <a href="/api/export/dividends.csv" target="_blank" rel="noopener">
           <Button variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />CSV</Button>
         </a>
         <Button size="sm" onClick={openDialog}>
-          <Plus className="mr-2 h-4 w-4" />Nuevo
+          <Plus className="mr-2 h-4 w-4" />{t('dividends.new')}
         </Button>
       </PageHeader>
 
@@ -116,9 +118,9 @@ export function DividendosPage() {
           value={filters.year || 'ALL'}
           onValueChange={(v) => { setFilters((f) => ({ ...f, year: v === 'ALL' ? '' : v })); setPage(1) }}
         >
-          <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder="Año" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-32"><SelectValue placeholder={t('common.year')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Todos</SelectItem>
+            <SelectItem value="ALL">{t('common.all')}</SelectItem>
             {years.map((y) => (
               <SelectItem key={y} value={String(y)}>{y}</SelectItem>
             ))}
@@ -131,7 +133,7 @@ export function DividendosPage() {
         {isLoading
           ? Array.from({ length: 5 }).map((_, i) => <DividendRowSkeleton key={i} />)
           : (data?.results ?? []).length === 0
-            ? <p className="py-12 text-center text-sm text-muted-foreground">Sin dividendos</p>
+            ? <p className="py-12 text-center text-sm text-muted-foreground">{t('dividends.noDividends')}</p>
             : (data?.results ?? []).map((d) => (
               <DividendRow
                 key={d.id}
@@ -142,10 +144,10 @@ export function DividendosPage() {
         }
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t px-1 py-3">
-            <span className="text-xs text-muted-foreground">Página {page} de {totalPages}</span>
+            <span className="text-xs text-muted-foreground">{t('common.pageOf', { current: page, total: totalPages })}</span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</Button>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>Siguiente</Button>
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t('common.previous')}</Button>
+              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>{t('common.next')}</Button>
             </div>
           </div>
         )}
@@ -158,7 +160,7 @@ export function DividendosPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Nuevo Dividendo</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t('dividends.newDividend')}</DialogTitle></DialogHeader>
           <form className="space-y-3" onSubmit={(e) => {
             e.preventDefault()
             setError('')
@@ -175,18 +177,18 @@ export function DividendosPage() {
             })
           }}>
             <div>
-              <label className="text-sm font-medium">Fecha</label>
+              <label className="text-sm font-medium">{t('common.date')}</label>
               <Input type="date" required value={form.date ?? ''} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Activo</label>
+              <label className="text-sm font-medium">{t('common.asset')}</label>
               <Select value={form.asset ?? ''} onValueChange={(v) => {
                 const pos = positionMap.get(v)
                 setForm((f) => ({ ...f, asset: v, shares: pos ? pos.quantity : f.shares }))
               }}>
 
-                <SelectTrigger><SelectValue placeholder="Seleccionar activo" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('common.selectAsset')} /></SelectTrigger>
                 <SelectContent>
                   {assetsData?.results.map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.name} {a.ticker ? `(${a.ticker})` : ''}</SelectItem>
@@ -196,15 +198,15 @@ export function DividendosPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Numero de acciones</label>
+              <label className="text-sm font-medium">{t('dividends.shares')}</label>
               <Input type="number" step="any" value={form.shares ?? ''} required onChange={(e) => setForm((f) => ({ ...f, shares: e.target.value }))} />
             </div>
             <div>
-              <label className="text-sm font-medium">Total recibido (neto)</label>
+              <label className="text-sm font-medium">{t('dividends.netReceived')}</label>
               <Input type="number" step="any" value={form.net ?? ''} required onChange={(e) => setForm((f) => ({ ...f, net: e.target.value }))} />
             </div>
             <div>
-              <label className="text-sm font-medium">Impuestos retenidos</label>
+              <label className="text-sm font-medium">{t('dividends.taxWithheld')}</label>
               <Input type="number" step="any" value={form.tax ?? ''} onChange={(e) => setForm((f) => ({ ...f, tax: e.target.value }))} />
             </div>
 
@@ -215,15 +217,15 @@ export function DividendosPage() {
               const shares = parseFloat(form.shares || '0')
               return (
                 <div className="text-xs text-muted-foreground space-y-0.5">
-                  <div>Bruto: {gross.toFixed(2)} EUR {shares > 0 && <span>({(gross / shares).toFixed(4)} EUR/accion)</span>}</div>
-                  {tax > 0 && gross > 0 && <div>Retencion: {((tax / gross) * 100).toFixed(2)}%</div>}
+                  <div>{t('common.gross')}: {gross.toFixed(2)} EUR {shares > 0 && <span>({(gross / shares).toFixed(4)} {t('dividends.perShare')})</span>}</div>
+                  {tax > 0 && gross > 0 && <div>{t('dividends.retention')}: {((tax / gross) * 100).toFixed(2)}%</div>}
                 </div>
               )
             })()}
 
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={createMut.isPending}>
-              {createMut.isPending ? 'Guardando...' : 'Guardar'}
+              {createMut.isPending ? t('dividends.saving') : t('dividends.save')}
             </Button>
           </form>
         </DialogContent>

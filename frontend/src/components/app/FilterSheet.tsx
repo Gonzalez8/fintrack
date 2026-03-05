@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +18,8 @@ interface Props {
  * En desktop (≥md): los children se renderizan inline sin Sheet.
  */
 export function FilterSheet({ activeCount, onReset, children }: Props) {
+  const { t } = useTranslation()
+
   return (
     <>
       {/* ── Mobile: botón + Sheet ── */}
@@ -25,7 +28,7 @@ export function FilterSheet({ activeCount, onReset, children }: Props) {
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="relative h-9">
               <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Filtros
+              {t('common.filter')}
               {activeCount > 0 && (
                 <Badge
                   variant="destructive"
@@ -41,7 +44,7 @@ export function FilterSheet({ activeCount, onReset, children }: Props) {
           <SheetContent side="bottom" className="rounded-t-2xl">
             <SheetHeader className="mb-4">
               <div className="flex items-center justify-between pr-6">
-                <SheetTitle className="text-base">Filtros</SheetTitle>
+                <SheetTitle className="text-base">{t('common.filter')}</SheetTitle>
                 {activeCount > 0 && (
                   <Button
                     variant="ghost"
@@ -49,7 +52,7 @@ export function FilterSheet({ activeCount, onReset, children }: Props) {
                     className="h-8 text-xs text-muted-foreground"
                     onClick={onReset}
                   >
-                    Limpiar ({activeCount})
+                    {t('common.clearFilters')} ({activeCount})
                   </Button>
                 )}
               </div>
@@ -61,7 +64,7 @@ export function FilterSheet({ activeCount, onReset, children }: Props) {
 
             <SheetClose asChild>
               <Button className="mt-4 w-full" size="sm">
-                Aplicar filtros
+                {t('common.applyFilters')}
               </Button>
             </SheetClose>
           </SheetContent>

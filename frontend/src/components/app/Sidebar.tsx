@@ -2,41 +2,21 @@ import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Briefcase, Landmark, Wallet, ArrowLeftRight,
-  Coins, Percent, FileText, Settings, LogOut, Moon, Sun, TrendingUp, PiggyBank, UserCircle,
+  Coins, Percent, FileText, Settings, LogOut, Moon, Sun, TrendingUp, PiggyBank, UserCircle, Globe,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from 'react-i18next'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
-const sections = [
-  {
-    label: 'Resumen',
-    links: [
-      { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-      { to: '/cartera', icon: Briefcase, label: 'Cartera' },
-    ],
-  },
-  {
-    label: 'Operaciones',
-    links: [
-      { to: '/activos', icon: Landmark, label: 'Activos' },
-      { to: '/cuentas', icon: Wallet, label: 'Cuentas' },
-      { to: '/operaciones', icon: ArrowLeftRight, label: 'Operaciones' },
-      { to: '/dividendos', icon: Coins, label: 'Dividendos' },
-      { to: '/intereses', icon: Percent, label: 'Intereses' },
-    ],
-  },
-  {
-    label: 'Análisis',
-    links: [
-      { to: '/ahorro', icon: PiggyBank, label: 'Ahorro mensual' },
-    ],
-  },
-]
-
-const bottomLinks = [
-  { to: '/fiscal', icon: FileText, label: 'Fiscal' },
-  { to: '/configuracion', icon: Settings, label: 'Configuración' },
-  { to: '/perfil', icon: UserCircle, label: 'Mi perfil' },
+const LANGUAGES = [
+  { code: 'es', label: 'Español' },
+  { code: 'en', label: 'English' },
+  { code: 'it', label: 'Italiano' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'fr', label: 'Français' },
 ]
 
 function useDarkMode() {
@@ -84,6 +64,39 @@ function SidebarLink({ to, icon: Icon, label }: { to: string; icon: typeof Layou
 export function Sidebar() {
   const logout = useAuthStore((s) => s.logout)
   const { isDark, toggle } = useDarkMode()
+  const { t, i18n } = useTranslation()
+
+  const sections = [
+    {
+      label: t('nav.summary'),
+      links: [
+        { to: '/', icon: LayoutDashboard, label: t('nav.dashboard') },
+        { to: '/cartera', icon: Briefcase, label: t('nav.portfolio') },
+      ],
+    },
+    {
+      label: t('nav.operations'),
+      links: [
+        { to: '/activos', icon: Landmark, label: t('nav.assets') },
+        { to: '/cuentas', icon: Wallet, label: t('nav.accounts') },
+        { to: '/operaciones', icon: ArrowLeftRight, label: t('nav.operations') },
+        { to: '/dividendos', icon: Coins, label: t('nav.dividends') },
+        { to: '/intereses', icon: Percent, label: t('nav.interests') },
+      ],
+    },
+    {
+      label: t('nav.analysis'),
+      links: [
+        { to: '/ahorro', icon: PiggyBank, label: t('nav.savings') },
+      ],
+    },
+  ]
+
+  const bottomLinks = [
+    { to: '/fiscal', icon: FileText, label: t('nav.fiscal') },
+    { to: '/configuracion', icon: Settings, label: t('nav.settings') },
+    { to: '/perfil', icon: UserCircle, label: t('nav.profile') },
+  ]
 
   return (
     <aside
@@ -120,12 +133,33 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="p-2 space-y-1" style={{ borderTop: '1px solid hsl(var(--sidebar-border))' }}>
+        {/* Language selector */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all border-l-2 border-transparent hover:bg-secondary hover:text-foreground">
+              <Globe className="h-4 w-4 shrink-0" />
+              {LANGUAGES.find((l) => l.code === i18n.language)?.label ?? t('nav.language')}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start">
+            {LANGUAGES.map((lang) => (
+              <DropdownMenuItem
+                key={lang.code}
+                onClick={() => i18n.changeLanguage(lang.code)}
+                className={i18n.language === lang.code ? 'font-semibold text-primary' : ''}
+              >
+                {lang.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <button
           onClick={toggle}
           className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all border-l-2 border-transparent hover:bg-secondary hover:text-foreground"
         >
           {isDark ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
-          {isDark ? 'Modo claro' : 'Modo oscuro'}
+          {isDark ? t('nav.lightMode') : t('nav.darkMode')}
         </button>
 
         <Button
@@ -134,7 +168,7 @@ export function Sidebar() {
           onClick={logout}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          Cerrar sesión
+          {t('nav.logout')}
         </Button>
       </div>
     </aside>

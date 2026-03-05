@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Gonzalez8/Fintrack/main/frontend/public/logo.svg" alt="Fintrack logo" width="80" />
-
 # Fintrack
 
 **Self-hosted investment portfolio tracker — built for privacy and clarity.**
@@ -23,18 +21,26 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 
 ## Screenshots
 
-> _Screenshots coming soon — contributions welcome!_
-
-<!--
 <p align="center">
-  <img src=".github/screenshots/dashboard.png" alt="Dashboard" width="49%" />
-  <img src=".github/screenshots/portfolio.png" alt="Portfolio" width="49%" />
+  <img src=".github/screenshots/01-dashboard.png" alt="Dashboard" width="49%" />
+  <img src=".github/screenshots/02-cartera.png" alt="Portfolio" width="49%" />
 </p>
 <p align="center">
-  <img src=".github/screenshots/transactions.png" alt="Transactions" width="49%" />
-  <img src=".github/screenshots/fiscal.png" alt="Tax Report" width="49%" />
+  <img src=".github/screenshots/03-activos.png" alt="Assets" width="49%" />
+  <img src=".github/screenshots/04-cuentas.png" alt="Accounts" width="49%" />
 </p>
--->
+<p align="center">
+  <img src=".github/screenshots/05-operaciones.png" alt="Transactions" width="49%" />
+  <img src=".github/screenshots/06-dividendos.png" alt="Dividends" width="49%" />
+</p>
+<p align="center">
+  <img src=".github/screenshots/08-ahorro.png" alt="Monthly Savings" width="49%" />
+  <img src=".github/screenshots/09-fiscal.png" alt="Tax Report" width="49%" />
+</p>
+<p align="center">
+  <img src=".github/screenshots/10-cartera-detalle.png" alt="Position detail chart" width="49%" />
+  <img src=".github/screenshots/11-activo-detalle.png" alt="Asset price history chart" width="49%" />
+</p>
 
 ---
 

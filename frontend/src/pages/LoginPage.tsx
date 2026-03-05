@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { TrendingUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
@@ -34,6 +35,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const login = useAuthStore((s) => s.login)
+  const { t } = useTranslation()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,7 +45,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       await login(username, password)
       onSuccess()
     } catch {
-      setError('Credenciales incorrectas')
+      setError(t('login.invalidCredentials'))
     } finally {
       setLoading(false)
     }
@@ -52,16 +54,16 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Usuario</label>
+        <label className="text-sm font-medium">{t('common.username')}</label>
         <Input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus />
       </div>
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Contraseña</label>
+        <label className="text-sm font-medium">{t('common.password')}</label>
         <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Entrando…' : 'Entrar'}
+        {loading ? t('login.signingIn') : t('login.signIn')}
       </Button>
     </form>
   )
@@ -75,6 +77,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const register = useAuthStore((s) => s.register)
+  const { t } = useTranslation()
 
   const setField = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }))
 
@@ -99,7 +102,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         }
         setErrors(flat)
       } else {
-        setErrors({ non_field_errors: 'Error al registrarse' })
+        setErrors({ non_field_errors: t('login.registrationError') })
       }
     } finally {
       setLoading(false)
@@ -109,24 +112,24 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Usuario</label>
+        <label className="text-sm font-medium">{t('common.username')}</label>
         <Input value={form.username} onChange={(e) => setField('username', e.target.value)} autoFocus />
         {errors.username && <p className="text-xs text-destructive">{errors.username}</p>}
       </div>
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-muted-foreground">
-          Email <span className="text-xs">(opcional)</span>
+          {t('common.email')} <span className="text-xs">({t('common.optional')})</span>
         </label>
         <Input
           type="email"
           value={form.email}
           onChange={(e) => setField('email', e.target.value)}
-          placeholder="tu@email.com"
+          placeholder={t('common.emailPlaceholder')}
         />
         {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
       </div>
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Contraseña</label>
+        <label className="text-sm font-medium">{t('common.password')}</label>
         <Input
           type="password"
           value={form.password}
@@ -135,7 +138,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
       </div>
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Confirmar contraseña</label>
+        <label className="text-sm font-medium">{t('login.confirmPassword')}</label>
         <Input
           type="password"
           value={form.password_confirm}
@@ -149,7 +152,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         <p className="text-sm text-destructive">{errors.non_field_errors}</p>
       )}
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Creando cuenta…' : 'Crear cuenta'}
+        {loading ? t('login.registering') : t('login.register')}
       </Button>
     </form>
   )
@@ -162,6 +165,7 @@ function GoogleButton() {
   const buttonRef = useRef<HTMLDivElement>(null)
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle)
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID || !buttonRef.current) return
@@ -206,7 +210,7 @@ function GoogleButton() {
     <div className="space-y-3">
       <div className="relative flex items-center gap-3">
         <div className="flex-1 h-px bg-border" />
-        <span className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground/50">o</span>
+        <span className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground/50">{t('login.or')}</span>
         <div className="flex-1 h-px bg-border" />
       </div>
       <div ref={buttonRef} className="flex justify-center" />
@@ -222,6 +226,7 @@ export function LoginPage() {
   const login = useAuthStore((s) => s.login)
   const [demoLoading, setDemoLoading] = useState(false)
   const [demoError, setDemoError] = useState('')
+  const { t } = useTranslation()
 
   const onSuccess = () => navigate('/')
 
@@ -234,7 +239,7 @@ export function LoginPage() {
       await login('demo', 'demo')
       navigate('/')
     } catch {
-      setDemoError('Error al iniciar el modo demo')
+      setDemoError(t('login.demoError'))
     } finally {
       setDemoLoading(false)
     }
@@ -248,15 +253,15 @@ export function LoginPage() {
             <TrendingUp className="h-5 w-5 text-white" />
           </div>
           <h1 className="font-mono text-[18px] font-bold tracking-[4px] uppercase">Fintrack</h1>
-          <p className="font-mono text-[9px] tracking-[4px] uppercase text-primary">Investment Terminal</p>
+          <p className="font-mono text-[9px] tracking-[4px] uppercase text-primary">{t('login.subtitle')}</p>
         </CardHeader>
 
         <CardContent className="space-y-4">
           {ALLOW_REGISTRATION ? (
             <Tabs defaultValue="login">
               <TabsList className="w-full mb-1">
-                <TabsTrigger value="login" className="flex-1">Entrar</TabsTrigger>
-                <TabsTrigger value="register" className="flex-1">Crear cuenta</TabsTrigger>
+                <TabsTrigger value="login" className="flex-1">{t('login.signIn')}</TabsTrigger>
+                <TabsTrigger value="register" className="flex-1">{t('login.register')}</TabsTrigger>
               </TabsList>
               <TabsContent value="login" className="mt-3">
                 <LoginForm onSuccess={onSuccess} />
@@ -274,7 +279,7 @@ export function LoginPage() {
           {IS_DEMO_MODE && (
             <div className="border-t pt-4">
               <p className="mb-2 text-center text-xs text-muted-foreground">
-                ¿Sin cuenta? Explora con datos de ejemplo
+                {t('login.noAccount')}
               </p>
               {demoError && <p className="mb-2 text-xs text-destructive text-center">{demoError}</p>}
               <Button
@@ -284,7 +289,7 @@ export function LoginPage() {
                 disabled={demoLoading}
                 onClick={handleDemo}
               >
-                {demoLoading ? 'Cargando demo…' : 'Probar Demo'}
+                {demoLoading ? t('login.demoLoading') : t('login.tryDemo')}
               </Button>
             </div>
           )}

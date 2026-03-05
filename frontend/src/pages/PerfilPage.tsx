@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CheckCircle, UserCircle } from 'lucide-react'
 import type { ChangePasswordRequest } from '@/types'
+import { useTranslation } from 'react-i18next'
 
 // ---------------------------------------------------------------------------
 // Profile card
@@ -16,6 +17,7 @@ import type { ChangePasswordRequest } from '@/types'
 function ProfileCard() {
   const queryClient = useQueryClient()
   const storeUser = useAuthStore((s) => s.user)
+  const { t } = useTranslation()
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
@@ -62,7 +64,7 @@ function ProfileCard() {
   if (isLoading) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-sm text-muted-foreground">Cargando…</CardContent>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">{t('common.loading')}</CardContent>
       </Card>
     )
   }
@@ -72,21 +74,21 @@ function ProfileCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <UserCircle className="h-4 w-4 text-primary" />
-          Información de cuenta
+          {t('profile.accountInfo')}
         </CardTitle>
       </CardHeader>
       <CardContent>
         {!editing ? (
           <div className="space-y-4">
             <div className="grid grid-cols-[120px_1fr] gap-2 text-sm">
-              <span className="text-muted-foreground">Usuario</span>
+              <span className="text-muted-foreground">{t('common.username')}</span>
               <span className="font-mono font-medium">{profile?.username}</span>
-              <span className="text-muted-foreground">Email</span>
-              <span>{profile?.email || <span className="text-muted-foreground italic">Sin email</span>}</span>
-              <span className="text-muted-foreground">Miembro desde</span>
+              <span className="text-muted-foreground">{t('common.email')}</span>
+              <span>{profile?.email || <span className="text-muted-foreground italic">{t('profile.noEmail')}</span>}</span>
+              <span className="text-muted-foreground">{t('profile.memberSince')}</span>
               <span>
                 {profile?.date_joined
-                  ? new Date(profile.date_joined).toLocaleDateString('es-ES', {
+                  ? new Date(profile.date_joined).toLocaleDateString(undefined, {
                       day: '2-digit',
                       month: 'long',
                       year: 'numeric',
@@ -95,18 +97,18 @@ function ProfileCard() {
               </span>
               {storeUser && (
                 <>
-                  <span className="text-muted-foreground">ID de usuario</span>
+                  <span className="text-muted-foreground">{t('profile.userId')}</span>
                   <span className="font-mono text-xs text-muted-foreground">{storeUser.id}</span>
                 </>
               )}
             </div>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={startEditing}>
-                Editar perfil
+                {t('profile.editProfile')}
               </Button>
               {saved && (
                 <span className="flex items-center gap-1 text-xs text-green-500">
-                  <CheckCircle className="h-3 w-3" /> Guardado
+                  <CheckCircle className="h-3 w-3" /> {t('profile.saved')}
                 </span>
               )}
             </div>
@@ -114,7 +116,7 @@ function ProfileCard() {
         ) : (
           <form onSubmit={handleSave} className="space-y-4 max-w-sm">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Usuario</label>
+              <label className="text-sm font-medium">{t('common.username')}</label>
               <Input
                 value={form.username}
                 onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
@@ -123,18 +125,18 @@ function ProfileCard() {
               {errors.username && <p className="text-xs text-destructive">{errors.username}</p>}
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Email</label>
+              <label className="text-sm font-medium">{t('common.email')}</label>
               <Input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="tu@email.com"
+                placeholder={t('common.emailPlaceholder')}
               />
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
             <div className="flex items-center gap-2">
               <Button type="submit" size="sm" disabled={updateMut.isPending}>
-                {updateMut.isPending ? 'Guardando…' : 'Guardar'}
+                {updateMut.isPending ? t('profile.saving') : t('common.save')}
               </Button>
               <Button
                 type="button"
@@ -142,7 +144,7 @@ function ProfileCard() {
                 variant="ghost"
                 onClick={() => setEditing(false)}
               >
-                Cancelar
+                {t('common.cancel')}
               </Button>
             </div>
           </form>
@@ -163,6 +165,7 @@ function ChangePasswordCard() {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [success, setSuccess] = useState(false)
+  const { t } = useTranslation()
 
   const setField = (field: keyof ChangePasswordRequest, value: string) =>
     setForm((f) => ({ ...f, [field]: value }))
@@ -185,7 +188,7 @@ function ChangePasswordCard() {
         }
         setErrors(flat)
       } else {
-        setErrors({ non_field_errors: 'Error al cambiar la contraseña' })
+        setErrors({ non_field_errors: t('profile.passwordError') })
       }
     },
   })
@@ -199,12 +202,12 @@ function ChangePasswordCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Cambiar contraseña</CardTitle>
+        <CardTitle className="text-base">{t('profile.changePassword')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Contraseña actual</label>
+            <label className="text-sm font-medium">{t('profile.currentPassword')}</label>
             <Input
               type="password"
               value={form.current_password}
@@ -215,7 +218,7 @@ function ChangePasswordCard() {
             )}
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Nueva contraseña</label>
+            <label className="text-sm font-medium">{t('profile.newPassword')}</label>
             <Input
               type="password"
               value={form.new_password}
@@ -226,7 +229,7 @@ function ChangePasswordCard() {
             )}
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Confirmar nueva contraseña</label>
+            <label className="text-sm font-medium">{t('profile.confirmNewPassword')}</label>
             <Input
               type="password"
               value={form.new_password_confirm}
@@ -241,11 +244,11 @@ function ChangePasswordCard() {
           )}
           <div className="flex items-center gap-3">
             <Button type="submit" size="sm" disabled={changeMut.isPending}>
-              {changeMut.isPending ? 'Guardando…' : 'Cambiar contraseña'}
+              {changeMut.isPending ? t('profile.saving') : t('profile.changePassword')}
             </Button>
             {success && (
               <span className="flex items-center gap-1 text-xs text-green-500">
-                <CheckCircle className="h-3 w-3" /> Contraseña actualizada
+                <CheckCircle className="h-3 w-3" /> {t('profile.passwordUpdated')}
               </span>
             )}
           </div>
@@ -259,9 +262,10 @@ function ChangePasswordCard() {
 // Page
 // ---------------------------------------------------------------------------
 export function PerfilPage() {
+  const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 max-w-2xl">
-      <PageHeader title="Mi perfil" />
+      <PageHeader title={t('profile.title')} />
       <ProfileCard />
       <ChangePasswordCard />
     </div>

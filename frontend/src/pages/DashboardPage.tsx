@@ -9,6 +9,7 @@ import { formatMoney, formatPercent } from '@/lib/utils'
 import { PageHeader } from '@/components/app/PageHeader'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useChartTheme, CHART_COLORS } from '@/lib/chartTheme'
+import { useTranslation } from 'react-i18next'
 
 export function DashboardPage() {
   const { data: portfolio } = useQuery({
@@ -21,6 +22,7 @@ export function DashboardPage() {
   })
 
   const ct = useChartTheme()
+  const { t } = useTranslation()
 
   const currentYear = new Date().getFullYear()
   const currentYearData = yearSummary?.find((y) => y.year === currentYear)
@@ -32,9 +34,9 @@ export function DashboardPage() {
 
   const barData = yearSummary?.map((y) => ({
     year: y.year,
-    Dividendos: parseFloat(y.dividends_net),
-    Intereses: parseFloat(y.interests_net),
-    Ventas: parseFloat(y.sales_pnl),
+    [t('dashboard.dividends')]: parseFloat(y.dividends_net),
+    [t('dashboard.interests')]: parseFloat(y.interests_net),
+    [t('dashboard.sales')]: parseFloat(y.sales_pnl),
   })).reverse() ?? []
 
   const allocationData = (() => {
@@ -47,57 +49,59 @@ export function DashboardPage() {
     }
     const cash = parseFloat(portfolio.total_cash)
     return [
-      { name: 'Renta Variable', value: rv },
-      { name: 'Renta Fija', value: rf },
-      { name: 'Efectivo', value: cash },
+      { name: t('dashboard.equities'), value: rv },
+      { name: t('dashboard.fixedIncome'), value: rf },
+      { name: t('topbar.cash'), value: cash },
     ].filter((d) => d.value > 0)
   })()
 
   const ALLOC_COLORS: Record<string, string> = {
-    'Renta Variable': '#3b82f6',
-    'Renta Fija': '#22c55e',
-    'Efectivo': '#f59e0b',
+    [t('dashboard.equities')]: '#3b82f6',
+    [t('dashboard.fixedIncome')]: '#22c55e',
+    [t('topbar.cash')]: '#f59e0b',
   }
 
   const totalPnlPct = portfolio && parseFloat(portfolio.total_cost) > 0
     ? ((parseFloat(portfolio.total_unrealized_pnl) / parseFloat(portfolio.total_cost)) * 100).toFixed(2)
     : '0'
 
+  void pieData
+
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" />
+      <PageHeader title={t('dashboard.title')} />
 
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">Patrimonio Total</CardTitle>
+            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">{t('dashboard.totalPatrimony')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold tabular-nums">{formatMoney(portfolio?.grand_total)}</div>
             {portfolio && parseFloat(portfolio.total_cash) > 0 && (
               <div className="text-xs text-muted-foreground mt-1">
-                Inversiones: {formatMoney(portfolio.total_market_value)} + Efectivo: {formatMoney(portfolio.total_cash)}
+                {t('dashboard.investments')}: {formatMoney(portfolio.total_market_value)} + {t('dashboard.cash')}: {formatMoney(portfolio.total_cash)}
               </div>
             )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">Ingresos {currentYear}</CardTitle>
+            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">{t('dashboard.income', { year: currentYear })}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold tabular-nums">{formatMoney(currentYearData?.total_net ?? '0')}</div>
             {currentYearData && (
               <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                <div>Dividendos: {formatMoney(currentYearData.dividends_net)} · Intereses: {formatMoney(currentYearData.interests_net)}</div>
-                <div>Ventas: <MoneyCell value={currentYearData.sales_pnl} colored /></div>
+                <div>{t('dashboard.dividends')}: {formatMoney(currentYearData.dividends_net)} · {t('dashboard.interests')}: {formatMoney(currentYearData.interests_net)}</div>
+                <div>{t('dashboard.sales')}: <MoneyCell value={currentYearData.sales_pnl} colored /></div>
               </div>
             )}
           </CardContent>
         </Card>
         <Card className="sm:col-span-2 md:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">P&L No Realizado</CardTitle>
+            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">{t('dashboard.unrealizedPnl')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold tabular-nums">
@@ -113,7 +117,7 @@ export function DashboardPage() {
       <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Asignación de Patrimonio</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.assetAllocation')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
@@ -145,7 +149,7 @@ export function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Distribución por Activo</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.assetDistribution')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
@@ -176,7 +180,7 @@ export function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Ingresos por Año</CardTitle>
+            <CardTitle className="text-base">{t('dashboard.incomeByYear')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -193,16 +197,16 @@ export function DashboardPage() {
                     <YAxis type="category" dataKey="year" width={42} tick={ct.axisTick} tickLine={false} axisLine={false} />
                     <Tooltip
                       formatter={(v: number) => formatMoney(v)}
-                      labelFormatter={(label) => `Año ${label}`}
+                      labelFormatter={(label) => t('dashboard.yearLabel', { year: label })}
                       contentStyle={ct.tooltipStyle}
                       labelStyle={ct.tooltipLabelStyle}
                       itemStyle={ct.tooltipItemStyle}
                       cursor={ct.tooltipCursor}
                     />
                     <Legend wrapperStyle={ct.legendStyle} />
-                    <Bar dataKey="Dividendos" stackId="income" fill="#3b82f6" />
-                    <Bar dataKey="Intereses" stackId="income" fill="#22c55e" />
-                    <Bar dataKey="Ventas" stackId="income" fill="#f59e0b" />
+                    <Bar dataKey={t('dashboard.dividends')} stackId="income" fill="#3b82f6" />
+                    <Bar dataKey={t('dashboard.interests')} stackId="income" fill="#22c55e" />
+                    <Bar dataKey={t('dashboard.sales')} stackId="income" fill="#f59e0b" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

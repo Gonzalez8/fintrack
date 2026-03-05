@@ -12,37 +12,25 @@ from .services import year_summary, patrimonio_evolution, rv_evolution, monthly_
 
 class YearSummaryView(APIView):
     def get(self, request):
-        return Response(year_summary())
+        return Response(year_summary(request.user))
 
 
 class PatrimonioEvolutionView(APIView):
     def get(self, request):
-        return Response(patrimonio_evolution())
+        return Response(patrimonio_evolution(request.user))
 
 
 class RVEvolutionView(APIView):
     def get(self, request):
-        return Response(rv_evolution())
+        return Response(rv_evolution(request.user))
 
 
 class MonthlySavingsView(APIView):
     def get(self, request):
-        result = monthly_savings()
-        months = result["months"]
-
         from_month = request.query_params.get("from")
         to_month = request.query_params.get("to")
-
-        if from_month or to_month:
-            if from_month:
-                months = [m for m in months if m["month"] >= from_month]
-            if to_month:
-                months = [m for m in months if m["month"] <= to_month]
-            stats = _compute_savings_stats(months)
-        else:
-            stats = result["stats"]
-
-        return Response({"months": months, "stats": stats})
+        result = monthly_savings(request.user, start_date=from_month, end_date=to_month)
+        return Response(result)
 
 
 class SnapshotStatusView(APIView):
@@ -50,15 +38,13 @@ class SnapshotStatusView(APIView):
         import math
         from apps.assets.models import PortfolioSnapshot, Settings
 
-        settings = Settings.load()
+        settings = Settings.load(request.user)
         freq = settings.snapshot_frequency
-        last = PortfolioSnapshot.objects.order_by("-captured_at").first()
+        last = PortfolioSnapshot.objects.filter(owner=request.user).order_by("-captured_at").first()
 
         next_snapshot = None
         if last and freq > 0:
             elapsed = (timezone.now() - last.captured_at).total_seconds() / 60
-            # How many full cycles have passed since last snapshot?
-            # Next eligible time is last + (cycles+1) * freq
             cycles = math.floor(elapsed / freq)
             next_snapshot = (last.captured_at + timedelta(minutes=freq * (cycles + 1))).isoformat()
 
@@ -77,7 +63,11 @@ class Echo:
 
 class ExportTransactionsCSV(APIView):
     def get(self, request):
-        qs = Transaction.objects.select_related("asset", "account").order_by("date")
+        qs = (
+            Transaction.objects.filter(owner=request.user)
+            .select_related("asset", "account")
+            .order_by("date")
+        )
         writer_buffer = Echo()
 
         def rows():
@@ -96,7 +86,11 @@ class ExportTransactionsCSV(APIView):
 
 class ExportDividendsCSV(APIView):
     def get(self, request):
-        qs = Dividend.objects.select_related("asset").order_by("date")
+        qs = (
+            Dividend.objects.filter(owner=request.user)
+            .select_related("asset")
+            .order_by("date")
+        )
         writer_buffer = Echo()
 
         def rows():
@@ -115,7 +109,11 @@ class ExportDividendsCSV(APIView):
 
 class ExportInterestsCSV(APIView):
     def get(self, request):
-        qs = Interest.objects.select_related("account").order_by("date")
+        qs = (
+            Interest.objects.filter(owner=request.user)
+            .select_related("account")
+            .order_by("date")
+        )
         writer_buffer = Echo()
 
         def rows():

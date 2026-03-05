@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { pollTask } from '@/api/tasks'
+import type { UpdatePricesResult } from '@/types'
 import { assetsApi } from '@/api/assets'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,13 +19,6 @@ import { FilterSheet } from '@/components/app/FilterSheet'
 import { RefreshCw, Trash2, Plus } from 'lucide-react'
 import type { Asset } from '@/types'
 
-const typeLabels: Record<string, string> = {
-  STOCK: 'Accion',
-  ETF: 'ETF',
-  FUND: 'Fondo',
-  CRYPTO: 'Crypto',
-}
-
 const statusVariant = (s: string | null) => {
   if (s === 'OK') return 'default' as const
   if (s === 'ERROR') return 'destructive' as const
@@ -30,11 +26,19 @@ const statusVariant = (s: string | null) => {
 }
 
 export function ActivosPage() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('ALL')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+
+  const typeLabels: Record<string, string> = {
+    STOCK: t('assets.stock'),
+    ETF: t('assets.etf'),
+    FUND: t('assets.fund'),
+    CRYPTO: t('assets.crypto'),
+  }
 
   const params: Record<string, string> = { page_size: '500' }
   if (search) params.search = search
@@ -77,7 +81,12 @@ export function ActivosPage() {
 
   const [priceResult, setPriceResult] = useState<{ updated: number; errors: string[] } | null>(null)
   const updatePricesMut = useMutation({
-    mutationFn: () => assetsApi.updatePrices().then((r) => r.data),
+    mutationFn: async () => {
+      const { data } = await assetsApi.updatePrices()
+      const taskResult = await pollTask(data.task_id)
+      if (taskResult.status === 'FAILURE') throw new Error(taskResult.error ?? 'Error desconocido')
+      return taskResult.result as UpdatePricesResult
+    },
     onSuccess: (result) => {
       setPriceResult({ updated: result.updated, errors: result.errors })
       queryClient.invalidateQueries({ queryKey: ['assets-all'] })
@@ -104,34 +113,34 @@ export function ActivosPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Activos">
+      <PageHeader title={t('assets.title')}>
         <Button
           variant="outline"
           size="sm"
           onClick={() => { setPriceResult(null); updatePricesMut.mutate() }}
           disabled={updatePricesMut.isPending}
-          aria-label="Actualizar precios"
+          aria-label={t('assets.updatePrices')}
         >
           <RefreshCw className={`h-4 w-4 sm:mr-2 ${updatePricesMut.isPending ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">
-            {updatePricesMut.isPending ? 'Actualizando...' : 'Actualizar precios'}
+            {updatePricesMut.isPending ? t('assets.updating') : t('assets.updatePrices')}
           </span>
         </Button>
         <Button
           size="sm"
           onClick={() => { setNewError(null); setNewOpen(true) }}
-          aria-label="Nuevo activo"
+          aria-label={t('assets.newAsset')}
         >
           <Plus className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Nuevo activo</span>
+          <span className="hidden sm:inline">{t('assets.newAsset')}</span>
         </Button>
       </PageHeader>
 
       {priceResult && (
         <p className="text-sm text-muted-foreground">
-          <span className="font-medium">{priceResult.updated}</span> precios actualizados
+          <span className="font-medium">{priceResult.updated}</span> {t('assets.pricesUpdated')}
           {priceResult.errors.length > 0 && (
-            <span className="text-destructive ml-1">· {priceResult.errors.length} errores</span>
+            <span className="text-destructive ml-1">· {priceResult.errors.length} {t('assets.errors')}</span>
           )}
         </p>
       )}
@@ -140,32 +149,32 @@ export function ActivosPage() {
         <CardContent className="pt-4">
           <FilterSheet activeCount={activeFilterCount} onReset={resetFilters}>
             <Input
-              placeholder="Buscar nombre o ticker..."
+              placeholder={t('assets.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full sm:max-w-xs"
             />
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="flex-1 sm:w-36">
-                <SelectValue placeholder="Tipo" />
+                <SelectValue placeholder={t('common.type')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos los tipos</SelectItem>
-                <SelectItem value="STOCK">Accion</SelectItem>
-                <SelectItem value="ETF">ETF</SelectItem>
-                <SelectItem value="FUND">Fondo</SelectItem>
-                <SelectItem value="CRYPTO">Crypto</SelectItem>
+                <SelectItem value="ALL">{t('assets.allTypes')}</SelectItem>
+                <SelectItem value="STOCK">{t('assets.stock')}</SelectItem>
+                <SelectItem value="ETF">{t('assets.etf')}</SelectItem>
+                <SelectItem value="FUND">{t('assets.fund')}</SelectItem>
+                <SelectItem value="CRYPTO">{t('assets.crypto')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="flex-1 sm:w-36">
-                <SelectValue placeholder="Estado" />
+                <SelectValue placeholder={t('common.status')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">Todos</SelectItem>
-                <SelectItem value="OK">OK</SelectItem>
-                <SelectItem value="ERROR">Error</SelectItem>
-                <SelectItem value="NO_TICKER">Sin ticker</SelectItem>
+                <SelectItem value="ALL">{t('assets.allStatuses')}</SelectItem>
+                <SelectItem value="OK">{t('assets.statusOk')}</SelectItem>
+                <SelectItem value="ERROR">{t('assets.statusError')}</SelectItem>
+                <SelectItem value="NO_TICKER">{t('assets.noTicker')}</SelectItem>
               </SelectContent>
             </Select>
           </FilterSheet>
@@ -175,7 +184,7 @@ export function ActivosPage() {
             {isLoading
               ? Array.from({ length: 5 }).map((_, i) => <AssetRowSkeleton key={i} />)
               : assets.length === 0
-                ? <p className="py-12 text-center text-sm text-muted-foreground">No hay activos</p>
+                ? <p className="py-12 text-center text-sm text-muted-foreground">{t('assets.noAssets')}</p>
                 : assets.map((asset) => (
                     <AssetRow
                       key={asset.id}
@@ -192,13 +201,13 @@ export function ActivosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Ticker</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead>{t('common.name')}</TableHead>
+                  <TableHead>{t('common.ticker')}</TableHead>
+                  <TableHead>{t('common.type')}</TableHead>
                   <TableHead>Pais</TableHead>
-                  <TableHead className="text-right">Precio</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Actualizado</TableHead>
+                  <TableHead className="text-right">{t('common.price')}</TableHead>
+                  <TableHead>{t('common.status')}</TableHead>
+                  <TableHead>{t('assets.updated')}</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -251,7 +260,7 @@ export function ActivosPage() {
                 {assets.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                      No hay activos
+                      {t('assets.noAssets')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -264,30 +273,30 @@ export function ActivosPage() {
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nuevo activo</DialogTitle>
+            <DialogTitle>{t('assets.newAsset')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div>
-              <label className="text-sm font-medium">Nombre *</label>
+              <label className="text-sm font-medium">{t('common.name')} *</label>
               <Input
-                placeholder="Apple Inc."
+                placeholder={t('common.namePlaceholder')}
                 value={newForm.name ?? ''}
                 onChange={(e) => setNewForm((f) => ({ ...f, name: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Ticker</label>
+                <label className="text-sm font-medium">{t('common.ticker')}</label>
                 <Input
-                  placeholder="AAPL"
+                  placeholder={t('common.tickerPlaceholder')}
                   value={newForm.ticker ?? ''}
                   onChange={(e) => setNewForm((f) => ({ ...f, ticker: e.target.value || undefined }))}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">ISIN</label>
+                <label className="text-sm font-medium">{t('common.isin')}</label>
                 <Input
-                  placeholder="US0378331005"
+                  placeholder={t('common.isinPlaceholder')}
                   maxLength={12}
                   value={newForm.isin ?? ''}
                   onChange={(e) => setNewForm((f) => ({ ...f, isin: e.target.value.toUpperCase() || undefined }))}
@@ -296,19 +305,19 @@ export function ActivosPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-sm font-medium">Tipo</label>
+                <label className="text-sm font-medium">{t('common.type')}</label>
                 <Select value={newForm.type} onValueChange={(v) => setNewForm((f) => ({ ...f, type: v as Asset['type'] }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="STOCK">Accion</SelectItem>
-                    <SelectItem value="ETF">ETF</SelectItem>
-                    <SelectItem value="FUND">Fondo</SelectItem>
-                    <SelectItem value="CRYPTO">Crypto</SelectItem>
+                    <SelectItem value="STOCK">{t('assets.stock')}</SelectItem>
+                    <SelectItem value="ETF">{t('assets.etf')}</SelectItem>
+                    <SelectItem value="FUND">{t('assets.fund')}</SelectItem>
+                    <SelectItem value="CRYPTO">{t('assets.crypto')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium">Moneda</label>
+                <label className="text-sm font-medium">{t('common.currency')}</label>
                 <Input
                   maxLength={3}
                   value={newForm.currency ?? 'EUR'}
@@ -316,12 +325,12 @@ export function ActivosPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Modo precio</label>
+                <label className="text-sm font-medium">{t('assets.priceMode')}</label>
                 <Select value={newForm.price_mode} onValueChange={(v) => setNewForm((f) => ({ ...f, price_mode: v as Asset['price_mode'] }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="AUTO">Auto</SelectItem>
-                    <SelectItem value="MANUAL">Manual</SelectItem>
+                    <SelectItem value="AUTO">{t('common.auto')}</SelectItem>
+                    <SelectItem value="MANUAL">{t('common.manual')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -329,12 +338,12 @@ export function ActivosPage() {
             {newError && <p className="text-sm text-destructive">{newError}</p>}
           </div>
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setNewOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setNewOpen(false)}>{t('common.cancel')}</Button>
             <Button
               onClick={() => createMut.mutate(newForm)}
               disabled={!newForm.name || createMut.isPending}
             >
-              {createMut.isPending ? 'Creando...' : 'Crear activo'}
+              {createMut.isPending ? t('assets.creating') : t('assets.createAsset')}
             </Button>
           </div>
         </DialogContent>

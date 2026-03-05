@@ -1,10 +1,11 @@
+from django.conf import settings as django_settings
 from django.db import models
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
-from apps.core.models import TimeStampedModel
+from apps.core.models import TimeStampedModel, UserOwnedModel
 
 
-class Asset(TimeStampedModel):
+class Asset(UserOwnedModel):
     class AssetType(models.TextChoices):
         STOCK = "STOCK", "Stock"
         ETF = "ETF", "ETF"
@@ -25,8 +26,8 @@ class Asset(TimeStampedModel):
         NO_TICKER = "NO_TICKER", "No ticker"
 
     name = models.CharField(max_length=200)
-    ticker = models.CharField(max_length=20, unique=True, null=True, blank=True)
-    isin = models.CharField(max_length=12, unique=True, null=True, blank=True)
+    ticker = models.CharField(max_length=20, null=True, blank=True)
+    isin = models.CharField(max_length=12, null=True, blank=True)
     type = models.CharField(max_length=10, choices=AssetType.choices, default=AssetType.STOCK)
     currency = models.CharField(max_length=3, default="EUR")
     current_price = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
@@ -40,6 +41,7 @@ class Asset(TimeStampedModel):
 
     class Meta:
         ordering = ["name"]
+        unique_together = [("owner", "ticker"), ("owner", "isin")]
 
     def save(self, *args, **kwargs):
         if self.isin and not self.issuer_country:
@@ -50,7 +52,7 @@ class Asset(TimeStampedModel):
         return f"{self.name} ({self.ticker or 'N/A'})"
 
 
-class Account(TimeStampedModel):
+class Account(UserOwnedModel):
     class AccountType(models.TextChoices):
         OPERATIVA = "OPERATIVA", "Operativa"
         AHORRO = "AHORRO", "Ahorro"
@@ -58,19 +60,20 @@ class Account(TimeStampedModel):
         DEPOSITOS = "DEPOSITOS", "Depósitos"
         ALTERNATIVOS = "ALTERNATIVOS", "Alternativos"
 
-    name = models.CharField(max_length=200, unique=True)
+    name = models.CharField(max_length=200)
     type = models.CharField(max_length=15, choices=AccountType.choices, default=AccountType.OPERATIVA)
     currency = models.CharField(max_length=3, default="EUR")
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
 
     class Meta:
         ordering = ["name"]
+        unique_together = [("owner", "name")]
 
     def __str__(self):
         return self.name
 
 
-class AccountSnapshot(TimeStampedModel):
+class AccountSnapshot(UserOwnedModel):
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="snapshots")
     date = models.DateField()
     balance = models.DecimalField(max_digits=20, decimal_places=2)
@@ -102,6 +105,11 @@ def sync_account_balance_on_delete(sender, instance, **kwargs):
 
 
 class PortfolioSnapshot(models.Model):
+    owner = models.ForeignKey(
+        django_settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="assets_portfoliosnapshot_set",
+    )
     captured_at = models.DateTimeField(db_index=True)
     batch_id = models.UUIDField(db_index=True)
     total_market_value = models.DecimalField(max_digits=20, decimal_places=2)
@@ -118,6 +126,11 @@ class PortfolioSnapshot(models.Model):
 class PositionSnapshot(models.Model):
     """Per-asset position snapshot linked to a PortfolioSnapshot via batch_id."""
 
+    owner = models.ForeignKey(
+        django_settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="assets_positionsnapshot_set",
+    )
     batch_id = models.UUIDField(db_index=True)
     captured_at = models.DateTimeField(db_index=True)
     asset = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name="position_snapshots")
@@ -142,6 +155,11 @@ class Settings(models.Model):
         ZERO = "ZERO", "Zero cost"
         MARKET = "MARKET", "Market price"
 
+    user = models.OneToOneField(
+        django_settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="fintrack_settings",
+    )
     base_currency = models.CharField(max_length=3, default="EUR")
     cost_basis_method = models.CharField(
         max_length=10, choices=CostBasisMethod.choices, default=CostBasisMethod.FIFO
@@ -174,14 +192,10 @@ class Settings(models.Model):
     class Meta:
         verbose_name_plural = "settings"
 
-    def save(self, *args, **kwargs):
-        self.pk = 1
-        super().save(*args, **kwargs)
-
     @classmethod
-    def load(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
+    def load(cls, user):
+        obj, _ = cls.objects.get_or_create(user=user)
         return obj
 
     def __str__(self):
-        return "Settings"
+        return f"Settings ({self.user})"

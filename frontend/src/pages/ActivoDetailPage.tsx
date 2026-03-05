@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { assetsApi } from '@/api/assets'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ import type { Asset } from '@/types'
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function ActivoDetailPage() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -73,7 +75,7 @@ export function ActivoDetailPage() {
     },
   })
 
-  if (isLoading) return <div className="text-muted-foreground">Cargando...</div>
+  if (isLoading) return <div className="text-muted-foreground">{t('common.loading')}</div>
   if (!asset) return <div className="text-muted-foreground">Activo no encontrado</div>
 
   const statusVariant = asset.price_status === 'OK' ? 'default' as const
@@ -84,7 +86,7 @@ export function ActivoDetailPage() {
     <div className="space-y-6">
       <PageHeader title={asset.name}>
         <Button variant="ghost" size="sm" onClick={() => navigate('/activos')}>
-          <ArrowLeft className="mr-1 h-4 w-4" /> Volver
+          <ArrowLeft className="mr-1 h-4 w-4" /> {t('assets.back')}
         </Button>
         {editing ? (
           <>
@@ -102,15 +104,15 @@ export function ActivoDetailPage() {
                 })
               }}
             >
-              <X className="mr-1.5 h-3.5 w-3.5" /> Cancelar
+              <X className="mr-1.5 h-3.5 w-3.5" /> {t('common.cancel')}
             </Button>
             <Button size="sm" onClick={() => updateMut.mutate(form)} disabled={updateMut.isPending}>
-              {updateMut.isPending ? 'Guardando...' : 'Guardar'}
+              {updateMut.isPending ? t('common.saving') : t('common.save')}
             </Button>
           </>
         ) : (
           <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" /> Editar
+            <Pencil className="mr-1.5 h-3.5 w-3.5" /> {t('common.edit')}
           </Button>
         )}
       </PageHeader>
@@ -139,30 +141,30 @@ export function ActivoDetailPage() {
             {/* Precio */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">Precio</CardTitle>
+                <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">{t('common.price')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-6">
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Precio actual</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('assets.currentPrice')}</p>
                     <p className="text-2xl font-bold tabular-nums"><MoneyCell value={asset.current_price} /></p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Modo</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('common.mode')}</p>
                     <p className="text-sm font-medium">{asset.price_mode}</p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Fuente</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('common.source')}</p>
                     <p className="text-sm">{asset.price_source ?? '-'}</p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Estado</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('common.status')}</p>
                     {asset.price_status
                       ? <Badge variant={statusVariant}>{asset.price_status}</Badge>
                       : <span className="text-sm text-muted-foreground">-</span>}
                   </div>
                   <div className="col-span-2">
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Actualizado</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('assets.updated')}</p>
                     <p className="text-sm">
                       {asset.price_updated_at
                         ? new Date(asset.price_updated_at).toLocaleDateString('es-ES', {
@@ -176,11 +178,11 @@ export function ActivoDetailPage() {
 
                 {asset.price_mode === 'MANUAL' && (
                   <div className="border-t mt-4 pt-4">
-                    <p className="text-sm text-muted-foreground mb-3">Actualizar precio manualmente</p>
+                    <p className="text-sm text-muted-foreground mb-3">{t('assets.updateManualPrice')}</p>
                     <div className="flex items-center gap-3 max-w-xs">
                       <Input
                         type="number" step="any"
-                        placeholder={asset.current_price ?? 'Precio'}
+                        placeholder={asset.current_price ?? t('common.price')}
                         value={manualPrice}
                         onChange={(e) => setManualPrice(e.target.value)}
                       />
@@ -189,11 +191,11 @@ export function ActivoDetailPage() {
                         disabled={!manualPrice || setPriceMut.isPending}
                         size="sm"
                       >
-                        {setPriceMut.isPending ? 'Guardando...' : 'Guardar'}
+                        {setPriceMut.isPending ? t('common.saving') : t('common.save')}
                       </Button>
                     </div>
-                    {priceSaved && <p className="mt-2 text-sm text-green-600">Precio actualizado</p>}
-                    {setPriceMut.isError && <p className="mt-2 text-sm text-destructive">Error al guardar</p>}
+                    {priceSaved && <p className="mt-2 text-sm text-green-600">{t('assets.priceUpdated')}</p>}
+                    {setPriceMut.isError && <p className="mt-2 text-sm text-destructive">{t('assets.saveError')}</p>}
                   </div>
                 )}
               </CardContent>
@@ -202,28 +204,28 @@ export function ActivoDetailPage() {
             {/* Datos fiscales */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">Datos fiscales</CardTitle>
+                <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">{t('assets.fiscalData')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">ISIN</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('common.isin')}</p>
                     <p className="text-sm font-mono">{asset.isin ?? '-'}</p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Pais emisor</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('assets.issuerCountry')}</p>
                     <p className="text-sm font-mono">{asset.issuer_country ?? '-'}</p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Domicilio</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('assets.domicile')}</p>
                     <p className="text-sm font-mono">{asset.domicile_country ?? '-'}</p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Retención origen</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('assets.sourceWithholding')}</p>
                     <p className="text-sm font-mono">{asset.withholding_country ?? '-'}</p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">Moneda</p>
+                    <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground mb-1">{t('common.currency')}</p>
                     <p className="text-sm font-mono">{asset.currency}</p>
                   </div>
                 </div>
@@ -239,12 +241,12 @@ export function ActivoDetailPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Datos del activo</CardTitle>
+                <CardTitle className="text-base">{t('assets.assetData')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
                   <div>
-                    <label className="text-sm font-medium">Nombre</label>
+                    <label className="text-sm font-medium">{t('common.name')}</label>
                     <Input
                       value={form.name ?? ''}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -252,14 +254,14 @@ export function ActivoDetailPage() {
                   </div>
                   <div className="grid gap-4 grid-cols-3">
                     <div>
-                      <label className="text-sm font-medium">Ticker</label>
+                      <label className="text-sm font-medium">{t('common.ticker')}</label>
                       <Input
                         value={form.ticker ?? ''}
                         onChange={(e) => setForm((f) => ({ ...f, ticker: e.target.value || null }))}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">ISIN</label>
+                      <label className="text-sm font-medium">{t('common.isin')}</label>
                       <Input
                         value={form.isin ?? ''}
                         onChange={(e) => {
@@ -273,11 +275,11 @@ export function ActivoDetailPage() {
                           })
                         }}
                         maxLength={12}
-                        placeholder="US0378331005"
+                        placeholder={t('common.isinPlaceholder')}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Moneda</label>
+                      <label className="text-sm font-medium">{t('common.currency')}</label>
                       <Input
                         value={form.currency ?? ''}
                         onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value.toUpperCase() }))}
@@ -287,24 +289,24 @@ export function ActivoDetailPage() {
                   </div>
                   <div className="grid gap-4 grid-cols-2">
                     <div>
-                      <label className="text-sm font-medium">Tipo</label>
+                      <label className="text-sm font-medium">{t('common.type')}</label>
                       <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as Asset['type'] }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="STOCK">Accion</SelectItem>
-                          <SelectItem value="ETF">ETF</SelectItem>
-                          <SelectItem value="FUND">Fondo</SelectItem>
-                          <SelectItem value="CRYPTO">Crypto</SelectItem>
+                          <SelectItem value="STOCK">{t('assets.stock')}</SelectItem>
+                          <SelectItem value="ETF">{t('assets.etf')}</SelectItem>
+                          <SelectItem value="FUND">{t('assets.fund')}</SelectItem>
+                          <SelectItem value="CRYPTO">{t('assets.crypto')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Modo precio</label>
+                      <label className="text-sm font-medium">{t('assets.priceMode')}</label>
                       <Select value={form.price_mode} onValueChange={(v) => setForm((f) => ({ ...f, price_mode: v as Asset['price_mode'] }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="MANUAL">Manual</SelectItem>
-                          <SelectItem value="AUTO">Auto</SelectItem>
+                          <SelectItem value="MANUAL">{t('common.manual')}</SelectItem>
+                          <SelectItem value="AUTO">{t('common.auto')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -315,12 +317,12 @@ export function ActivoDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Datos fiscales</CardTitle>
+                <CardTitle className="text-base">{t('assets.fiscalData')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
                   <div>
-                    <label className="text-sm font-medium">Pais emisor (ISO alpha-2)</label>
+                    <label className="text-sm font-medium">{t('assets.issuerCountryIso')}</label>
                     <Input
                       value={form.issuer_country ?? ''}
                       onChange={(e) => setForm((f) => ({ ...f, issuer_country: e.target.value.toUpperCase() || null }))}
@@ -329,7 +331,7 @@ export function ActivoDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Domicilio instrumento</label>
+                    <label className="text-sm font-medium">{t('assets.instrumentDomicile')}</label>
                     <Input
                       value={form.domicile_country ?? ''}
                       onChange={(e) => setForm((f) => ({ ...f, domicile_country: e.target.value.toUpperCase() || null }))}
@@ -338,7 +340,7 @@ export function ActivoDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Pais retencion origen</label>
+                    <label className="text-sm font-medium">{t('assets.sourceWithholdingCountry')}</label>
                     <Input
                       value={form.withholding_country ?? ''}
                       onChange={(e) => setForm((f) => ({ ...f, withholding_country: e.target.value.toUpperCase() || null }))}
@@ -355,13 +357,13 @@ export function ActivoDetailPage() {
           {asset.price_mode === 'MANUAL' && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Precio manual</CardTitle>
+                <CardTitle className="text-base">{t('assets.manualPrice')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-3 max-w-xs">
                   <Input
                     type="number" step="any"
-                    placeholder={asset.current_price ?? 'Precio'}
+                    placeholder={asset.current_price ?? t('common.price')}
                     value={manualPrice}
                     onChange={(e) => setManualPrice(e.target.value)}
                   />
@@ -370,11 +372,11 @@ export function ActivoDetailPage() {
                     disabled={!manualPrice || setPriceMut.isPending}
                     size="sm"
                   >
-                    {setPriceMut.isPending ? 'Guardando...' : 'Actualizar'}
+                    {setPriceMut.isPending ? t('common.saving') : t('common.update')}
                   </Button>
                 </div>
-                {priceSaved && <p className="mt-2 text-sm text-green-600">Precio actualizado</p>}
-                {setPriceMut.isError && <p className="mt-2 text-sm text-destructive">Error al guardar</p>}
+                {priceSaved && <p className="mt-2 text-sm text-green-600">{t('assets.priceUpdated')}</p>}
+                {setPriceMut.isError && <p className="mt-2 text-sm text-destructive">{t('assets.saveError')}</p>}
               </CardContent>
             </Card>
           )}

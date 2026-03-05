@@ -12,11 +12,7 @@ export const assetsApi = {
   positionHistory: (id: string) => client.get<AssetPositionPoint[]>(`/assets/${id}/position-history/`),
   priceHistory: (id: string, period = '1y') =>
     client.get<OHLCBar[]>(`/assets/${id}/price-history/`, { params: { period } }),
-  updatePrices: () => client.post<{
-    updated: number
-    errors: string[]
-    prices: Array<{ ticker: string; name: string; price: string }>
-  }>('/assets/update-prices/'),
+  updatePrices: () => client.post<{ task_id: string; status: 'queued' }>('/assets/update-prices/'),
 }
 
 export const accountsApi = {

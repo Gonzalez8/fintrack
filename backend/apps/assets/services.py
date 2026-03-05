@@ -47,32 +47,24 @@ def _fetch_batch(tickers, period="5d"):
     return prices
 
 
-def create_portfolio_snapshot_now() -> None:
-    """Create a PortfolioSnapshot and one PositionSnapshot per open position.
+def create_portfolio_snapshot_now(user) -> None:
+    """Create a PortfolioSnapshot and one PositionSnapshot per open position for `user`.
 
-    Skips creation if portfolio totals are identical to the last snapshot,
-    which avoids storing redundant data during nights and weekends when
-    market prices do not change.
-
-    Wrapped in a single atomic transaction so PortfolioSnapshot and all its
-    PositionSnapshots are always committed together or not at all, regardless
-    of the call site (scheduler, management command, view, test, shell).
+    Skips creation if portfolio totals are identical to the last snapshot.
+    Wrapped in a single atomic transaction for consistency.
     """
     from apps.portfolio.services import calculate_portfolio
 
-    data = calculate_portfolio()
+    data = calculate_portfolio(user)
 
-    # Abort if positions exist but total is 0: prices are missing or broken.
-    # Allow 0 only when there are genuinely no open positions (empty portfolio).
     has_positions = len(data["positions"]) > 0
     if has_positions and Decimal(data["total_market_value"]) <= 0:
         return
 
-    # Skip if totals are identical to the last snapshot (prices unchanged).
     new_market_value = Decimal(data["total_market_value"])
     new_cost = Decimal(data["total_cost"])
     new_pnl = Decimal(data["total_unrealized_pnl"])
-    last = PortfolioSnapshot.objects.order_by("-captured_at").first()
+    last = PortfolioSnapshot.objects.filter(owner=user).order_by("-captured_at").first()
     if (
         last is not None
         and last.total_market_value == new_market_value
@@ -86,6 +78,7 @@ def create_portfolio_snapshot_now() -> None:
 
     with transaction.atomic():
         PortfolioSnapshot.objects.create(
+            owner=user,
             captured_at=now,
             batch_id=batch_id,
             total_market_value=new_market_value,
@@ -95,6 +88,7 @@ def create_portfolio_snapshot_now() -> None:
 
         position_snapshots = [
             PositionSnapshot(
+                owner=user,
                 batch_id=batch_id,
                 captured_at=now,
                 asset_id=pos["asset_id"],
@@ -110,8 +104,8 @@ def create_portfolio_snapshot_now() -> None:
             PositionSnapshot.objects.bulk_create(position_snapshots)
 
 
-def update_prices():
-    """Fetch latest prices from Yahoo Finance and update Asset.current_price.
+def update_prices(user):
+    """Fetch latest prices from Yahoo Finance and update Asset.current_price for `user`.
 
     Does NOT create any snapshots — snapshot creation is handled exclusively
     by the background scheduler via create_portfolio_snapshot_now().
@@ -119,7 +113,7 @@ def update_prices():
     import yfinance as yf
 
     assets = list(
-        Asset.objects.filter(price_mode=Asset.PriceMode.AUTO)
+        Asset.objects.filter(owner=user, price_mode=Asset.PriceMode.AUTO)
         .exclude(ticker__isnull=True)
         .exclude(ticker="")
     )

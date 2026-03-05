@@ -1,5 +1,6 @@
 import { useState, Fragment } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { portfolioApi, reportsApi } from '@/api/portfolio'
 import { dividendsApi, interestsApi } from '@/api/transactions'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -12,6 +13,7 @@ import { formatQty, formatPercent, formatMoney } from '@/lib/utils'
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function FiscalPage() {
+  const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
   const [year, setYear] = useState(String(currentYear))
   const years = Array.from({ length: 6 }, (_, i) => currentYear - i)
@@ -89,7 +91,7 @@ export function FiscalPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Fiscal" subtitle="Declaración de la Renta">
+      <PageHeader title={t('fiscal.title')} subtitle={t('fiscal.subtitle')}>
         <Select value={year} onValueChange={setYear}>
           <SelectTrigger className="w-24 font-mono"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -102,22 +104,22 @@ export function FiscalPage() {
 
       {/* ── KPIs ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label="Dividendos netos" value={summary?.dividends_net ?? '0'} />
-        <KpiCard label="Intereses netos"  value={summary?.interests_net ?? '0'} />
-        <KpiCard label="Ganancias ventas" value={summary?.sales_pnl ?? '0'} colored />
-        <KpiCard label={`Total neto ${year}`} value={summary?.total_net ?? '0'} colored highlight />
+        <KpiCard label={t('fiscal.netDividends')} value={summary?.dividends_net ?? '0'} />
+        <KpiCard label={t('fiscal.netInterests')}  value={summary?.interests_net ?? '0'} />
+        <KpiCard label={t('fiscal.salesGains')} value={summary?.sales_pnl ?? '0'} colored />
+        <KpiCard label={t('fiscal.totalNet', { year })} value={summary?.total_net ?? '0'} colored highlight />
       </div>
 
       {/* ── Ventas ── */}
       <section className="space-y-3">
         <SectionHeader
-          eyebrow="Ganancias y pérdidas patrimoniales"
-          title={`Ventas ${year}`}
+          eyebrow={t('fiscal.gainsSection')}
+          title={t('fiscal.salesTitle', { year })}
           total={salesYear.length > 0 ? { value: String(salesTotals.pnl.toFixed(2)), colored: true } : undefined}
         />
 
         {salesYear.length === 0 ? (
-          <EmptyState label={`Sin ventas en ${year}`} />
+          <EmptyState label={t('fiscal.noSales', { year })} />
         ) : (
           <>
             {/* Mobile: cards */}
@@ -144,11 +146,11 @@ export function FiscalPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 border-t border-border/40 pt-2">
                       <div>
-                        <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">Adquisición</p>
+                        <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">{t('fiscal.acquisition')}</p>
                         <p className="font-mono text-xs tabular-nums">{formatMoney(s.cost_basis)}</p>
                       </div>
                       <div>
-                        <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">Transmisión</p>
+                        <p className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">{t('fiscal.transfer')}</p>
                         <p className="font-mono text-xs tabular-nums">{formatMoney(s.sell_total)}</p>
                       </div>
                     </div>
@@ -157,11 +159,11 @@ export function FiscalPage() {
               })}
               {/* Totales mobile */}
               <TotalRow
-                label="Suma total"
+                label={t('fiscal.total')}
                 cells={[
-                  { label: 'Adquisición', value: formatMoney(String(salesTotals.cost.toFixed(2))) },
-                  { label: 'Transmisión', value: formatMoney(String(salesTotals.sell.toFixed(2))) },
-                  { label: 'Ganancia',    value: formatMoney(String(salesTotals.pnl.toFixed(2))),  colored: true, positive: salesTotals.pnl >= 0 },
+                  { label: t('fiscal.acquisition'), value: formatMoney(String(salesTotals.cost.toFixed(2))) },
+                  { label: t('fiscal.transfer'), value: formatMoney(String(salesTotals.sell.toFixed(2))) },
+                  { label: t('fiscal.gain'),    value: formatMoney(String(salesTotals.pnl.toFixed(2))),  colored: true, positive: salesTotals.pnl >= 0 },
                 ]}
               />
             </div>
@@ -171,12 +173,12 @@ export function FiscalPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Entidad</TableHead>
-                    <TableHead className="text-right">Cantidad</TableHead>
-                    <TableHead className="text-right">Valor adquisición</TableHead>
-                    <TableHead className="text-right">Valor transmisión</TableHead>
-                    <TableHead className="text-right">Ganancia</TableHead>
-                    <TableHead className="text-right">% Relativo venta</TableHead>
+                    <TableHead>{t('fiscal.entity')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.quantity')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.acquisitionValue')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.transferValue')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.gain')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.relativeGain')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -196,7 +198,7 @@ export function FiscalPage() {
                 </TableBody>
                 <TableFooter>
                   <TableRow className="font-semibold">
-                    <TableCell>Suma total</TableCell>
+                    <TableCell>{t('fiscal.total')}</TableCell>
                     <TableCell className="text-right">{formatQty(String(salesTotals.qty))}</TableCell>
                     <TableCell className="text-right">{formatMoney(String(salesTotals.cost.toFixed(2)))}</TableCell>
                     <TableCell className="text-right">{formatMoney(String(salesTotals.sell.toFixed(2)))}</TableCell>
@@ -213,13 +215,13 @@ export function FiscalPage() {
       {/* ── Dividendos ── */}
       <section className="space-y-3">
         <SectionHeader
-          eyebrow="Rendimientos del capital mobiliario"
-          title={`Dividendos ${year}`}
+          eyebrow={t('fiscal.incomeSection')}
+          title={t('fiscal.dividendsTitle', { year })}
           total={divTotals.net > 0 ? { value: String(divTotals.net.toFixed(2)) } : undefined}
         />
 
         {sortedCountries.length === 0 ? (
-          <EmptyState label={`Sin dividendos en ${year}`} />
+          <EmptyState label={t('fiscal.noDividends', { year })} />
         ) : (
           <>
             {/* Mobile: cards agrupadas por país */}
@@ -228,14 +230,14 @@ export function FiscalPage() {
                 const assetMap     = divByCountryAsset.get(country)!
                 const assets       = [...assetMap.values()].sort((a, b) => b.net - a.net)
                 const cTotals      = assets.reduce((t, r) => ({ gross: t.gross + r.gross, tax: t.tax + r.tax, net: t.net + r.net }), { gross: 0, tax: 0, net: 0 })
-                const countryLabel = country === '__none__' ? 'Sin país' : country
+                const countryLabel = country === '__none__' ? t('fiscal.noCountry') : country
                 return (
                   <div key={country} className="rounded-lg border border-border overflow-hidden">
                     {/* Cabecera de país */}
                     <div className="flex items-center justify-between px-3 py-2 bg-secondary/40">
                       <span className="font-mono text-[10px] tracking-[2px] uppercase font-semibold">{countryLabel}</span>
                       <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                        {formatMoney(String(cTotals.net.toFixed(2)))} neto
+                        {formatMoney(String(cTotals.net.toFixed(2)))} {t('fiscal.net')}
                       </span>
                     </div>
                     {/* Activos */}
@@ -252,15 +254,15 @@ export function FiscalPage() {
                         </div>
                         <div className="grid grid-cols-3 gap-1">
                           <div>
-                            <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">Bruto</p>
+                            <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">{t('fiscal.gross')}</p>
                             <p className="font-mono text-[11px] tabular-nums">{formatMoney(String(d.gross.toFixed(2)))}</p>
                           </div>
                           <div>
-                            <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">Retención</p>
+                            <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">{t('fiscal.withholding')}</p>
                             <p className="font-mono text-[11px] tabular-nums">{formatMoney(String(d.tax.toFixed(2)))}</p>
                           </div>
                           <div>
-                            <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">% Ret.</p>
+                            <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">{t('fiscal.withholdingPct')}</p>
                             <p className="font-mono text-[11px] tabular-nums">
                               {d.gross > 0 ? formatPercent(String((d.tax / d.gross * 100).toFixed(2))) : '-'}
                             </p>
@@ -273,11 +275,11 @@ export function FiscalPage() {
               })}
               {/* Total global */}
               <TotalRow
-                label="Total dividendos"
+                label={t('fiscal.total')}
                 cells={[
-                  { label: 'Bruto',      value: formatMoney(String(divTotals.gross.toFixed(2))) },
-                  { label: 'Retención',  value: formatMoney(String(divTotals.tax.toFixed(2))) },
-                  { label: 'Neto',       value: formatMoney(String(divTotals.net.toFixed(2))) },
+                  { label: t('fiscal.gross'),      value: formatMoney(String(divTotals.gross.toFixed(2))) },
+                  { label: t('fiscal.withholding'),  value: formatMoney(String(divTotals.tax.toFixed(2))) },
+                  { label: t('fiscal.net'),       value: formatMoney(String(divTotals.net.toFixed(2))) },
                 ]}
               />
             </div>
@@ -287,12 +289,12 @@ export function FiscalPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>País</TableHead>
-                    <TableHead>Entidad</TableHead>
-                    <TableHead className="text-right">Bruto</TableHead>
-                    <TableHead className="text-right">Retención</TableHead>
-                    <TableHead className="text-right">% Ret.</TableHead>
-                    <TableHead className="text-right">Neto</TableHead>
+                    <TableHead>{t('fiscal.country')}</TableHead>
+                    <TableHead>{t('fiscal.entity')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.gross')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.withholding')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.withholdingPct')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.net')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -300,7 +302,7 @@ export function FiscalPage() {
                     const assetMap     = divByCountryAsset.get(country)!
                     const assets       = [...assetMap.values()].sort((a, b) => b.net - a.net)
                     const cTotals      = assets.reduce((t, r) => ({ gross: t.gross + r.gross, tax: t.tax + r.tax, net: t.net + r.net }), { gross: 0, tax: 0, net: 0 })
-                    const countryLabel = country === '__none__' ? 'Sin país' : country
+                    const countryLabel = country === '__none__' ? t('fiscal.noCountry') : country
                     return (
                       <Fragment key={country}>
                         {assets.map((d, i) => (
@@ -321,7 +323,7 @@ export function FiscalPage() {
                           </TableRow>
                         ))}
                         <TableRow key={`${country}-subtotal`} className="bg-muted/50">
-                          <TableCell className="font-medium text-sm">Subtotal {countryLabel}</TableCell>
+                          <TableCell className="font-medium text-sm">{t('fiscal.countrySubtotal', { country: countryLabel })}</TableCell>
                           <TableCell className="text-right font-medium">{formatMoney(String(cTotals.gross.toFixed(2)))}</TableCell>
                           <TableCell className="text-right font-medium">{formatMoney(String(cTotals.tax.toFixed(2)))}</TableCell>
                           <TableCell className="text-right font-medium">{cTotals.gross > 0 ? formatPercent(String((cTotals.tax / cTotals.gross * 100).toFixed(2))) : '-'}</TableCell>
@@ -333,7 +335,7 @@ export function FiscalPage() {
                 </TableBody>
                 <TableFooter>
                   <TableRow className="font-semibold">
-                    <TableCell colSpan={2}>Suma total</TableCell>
+                    <TableCell colSpan={2}>{t('fiscal.total')}</TableCell>
                     <TableCell className="text-right">{formatMoney(String(divTotals.gross.toFixed(2)))}</TableCell>
                     <TableCell className="text-right">{formatMoney(String(divTotals.tax.toFixed(2)))}</TableCell>
                     <TableCell className="text-right">{divTotals.gross > 0 ? formatPercent(String((divTotals.tax / divTotals.gross * 100).toFixed(2))) : '-'}</TableCell>
@@ -349,13 +351,13 @@ export function FiscalPage() {
       {/* ── Intereses ── */}
       <section className="space-y-3">
         <SectionHeader
-          eyebrow="Rendimientos del capital mobiliario"
-          title={`Intereses ${year}`}
+          eyebrow={t('fiscal.incomeSection')}
+          title={t('fiscal.interestsTitle', { year })}
           total={intTotals.net > 0 ? { value: String(intTotals.net.toFixed(2)) } : undefined}
         />
 
         {intRows.length === 0 ? (
-          <EmptyState label={`Sin intereses en ${year}`} />
+          <EmptyState label={t('fiscal.noInterests', { year })} />
         ) : (
           <>
             {/* Mobile: cards */}
@@ -366,16 +368,16 @@ export function FiscalPage() {
                   <div className="text-right shrink-0">
                     <p className="font-mono text-sm tabular-nums font-semibold">{formatMoney(String(r.net.toFixed(2)))}</p>
                     <p className="font-mono text-[11px] text-muted-foreground tabular-nums">
-                      Bruto: {formatMoney(String(r.gross.toFixed(2)))}
+                      {t('fiscal.gross')}: {formatMoney(String(r.gross.toFixed(2)))}
                     </p>
                   </div>
                 </div>
               ))}
               <TotalRow
-                label="Total intereses"
+                label={t('fiscal.total')}
                 cells={[
-                  { label: 'Bruto', value: formatMoney(String(intTotals.gross.toFixed(2))) },
-                  { label: 'Neto',  value: formatMoney(String(intTotals.net.toFixed(2))) },
+                  { label: t('fiscal.gross'), value: formatMoney(String(intTotals.gross.toFixed(2))) },
+                  { label: t('fiscal.net'),  value: formatMoney(String(intTotals.net.toFixed(2))) },
                 ]}
               />
             </div>
@@ -385,9 +387,9 @@ export function FiscalPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Cuenta</TableHead>
-                    <TableHead className="text-right">Bruto</TableHead>
-                    <TableHead className="text-right">Neto</TableHead>
+                    <TableHead>{t('common.account')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.gross')}</TableHead>
+                    <TableHead className="text-right">{t('fiscal.net')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -401,7 +403,7 @@ export function FiscalPage() {
                 </TableBody>
                 <TableFooter>
                   <TableRow className="font-semibold">
-                    <TableCell>Suma total</TableCell>
+                    <TableCell>{t('fiscal.total')}</TableCell>
                     <TableCell className="text-right">{formatMoney(String(intTotals.gross.toFixed(2)))}</TableCell>
                     <TableCell className="text-right">{formatMoney(String(intTotals.net.toFixed(2)))}</TableCell>
                   </TableRow>

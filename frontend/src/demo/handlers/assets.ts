@@ -180,12 +180,24 @@ export const assetHandlers = [
   }),
 
   http.post('/api/assets/update-prices/', () => {
-    return HttpResponse.json({
-      updated: store.assets.filter((a) => a.price_mode === 'AUTO').length,
-      errors: [],
-      prices: store.assets
-        .filter((a) => a.ticker && a.current_price)
-        .map((a) => ({ ticker: a.ticker!, name: a.name, price: a.current_price! })),
-    })
+    return HttpResponse.json({ task_id: 'demo-task-update-prices', status: 'queued' }, { status: 202 })
+  }),
+
+  // Task status endpoint — instantly resolves with SUCCESS for demo mode
+  http.get('/api/tasks/:taskId/', ({ params }) => {
+    if (params.taskId === 'demo-task-update-prices') {
+      return HttpResponse.json({
+        task_id: params.taskId,
+        status: 'SUCCESS',
+        result: {
+          updated: store.assets.filter((a) => a.price_mode === 'AUTO').length,
+          errors: [],
+          prices: store.assets
+            .filter((a) => a.ticker && a.current_price)
+            .map((a) => ({ ticker: a.ticker!, name: a.name, price: a.current_price! })),
+        },
+      })
+    }
+    return HttpResponse.json({ task_id: params.taskId, status: 'SUCCESS', result: {} })
   }),
 ]

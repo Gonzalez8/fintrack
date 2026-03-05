@@ -4,21 +4,25 @@ from apps.assets.models import Account, Settings
 from apps.transactions.models import Transaction
 
 
-def _process_fifo():
-    """Single FIFO pass over all transactions.
+def _process_fifo(user):
+    """Single FIFO pass over all transactions belonging to `user`.
 
     Returns (lots, realized_sales, asset_map, settings) where:
-    - lots: dict[asset_id] -> deque of remaining lots [{qty, price_per_unit}]
+    - lots: dict[asset_id] -> deque of remaining lots [{qty, price_per_unit, account_id}]
     - realized_sales: list of sale dicts
     - asset_map: dict[asset_id] -> Asset instance
-    - settings: Settings singleton
+    - settings: Settings for this user
     """
-    settings = Settings.load()
+    settings = Settings.load(user)
     money_exp = Decimal(10) ** -settings.rounding_money
 
-    transactions = Transaction.objects.select_related("asset").order_by("date", "created_at")
+    transactions = (
+        Transaction.objects.filter(owner=user)
+        .select_related("asset")
+        .order_by("date", "created_at")
+    )
 
-    lots = {}        # asset_id -> deque of [{qty, price_per_unit}]
+    lots = {}        # asset_id -> deque of [{qty, price_per_unit, account_id}]
     asset_map = {}   # asset_id -> Asset
     realized_sales = []
 
@@ -76,9 +80,9 @@ def _process_fifo():
     return lots, realized_sales, asset_map, settings
 
 
-def calculate_realized_pnl():
+def calculate_realized_pnl(user):
     """Calculate realized P&L using FIFO (First In, First Out) method."""
-    _, realized_sales, _, settings = _process_fifo()
+    _, realized_sales, _, settings = _process_fifo(user)
     money_exp = Decimal(10) ** -settings.rounding_money
     total = sum((Decimal(s["realized_pnl"]) for s in realized_sales), Decimal("0"))
 
@@ -88,8 +92,8 @@ def calculate_realized_pnl():
     }
 
 
-def _build_portfolio(lots, asset_map, money_exp, qty_exp):
-    """Build portfolio dict from remaining FIFO lots."""
+def _build_portfolio(lots, asset_map, money_exp, qty_exp, user):
+    """Build portfolio dict from remaining FIFO lots for a given user."""
     positions = []
     total_market_value = Decimal("0")
 
@@ -152,7 +156,7 @@ def _build_portfolio(lots, asset_map, money_exp, qty_exp):
 
     accounts = []
     total_cash = Decimal("0")
-    for acc in Account.objects.all():
+    for acc in Account.objects.filter(owner=user):
         bal = acc.balance or Decimal("0")
         if bal != 0:
             total_cash += bal
@@ -176,23 +180,21 @@ def _build_portfolio(lots, asset_map, money_exp, qty_exp):
     }
 
 
-def calculate_portfolio():
-    lots, _, asset_map, settings = _process_fifo()
+def calculate_portfolio(user):
+    lots, _, asset_map, settings = _process_fifo(user)
     money_exp = Decimal(10) ** -settings.rounding_money
     qty_exp = Decimal(10) ** -settings.rounding_qty
-    return _build_portfolio(lots, asset_map, money_exp, qty_exp)
+    return _build_portfolio(lots, asset_map, money_exp, qty_exp, user)
 
 
-def calculate_portfolio_full():
+def calculate_portfolio_full(user):
     """Single FIFO pass returning both portfolio positions and realized sales."""
-    lots, realized_sales, asset_map, settings = _process_fifo()
+    lots, realized_sales, asset_map, settings = _process_fifo(user)
     money_exp = Decimal(10) ** -settings.rounding_money
     qty_exp = Decimal(10) ** -settings.rounding_qty
 
-    # Build portfolio from remaining lots (reuse _process_fifo output)
-    data = _build_portfolio(lots, asset_map, money_exp, qty_exp)
+    data = _build_portfolio(lots, asset_map, money_exp, qty_exp, user)
 
-    # Attach realized sales
     total_realized = sum((Decimal(s["realized_pnl"]) for s in realized_sales), Decimal("0"))
     data["realized_pnl_total"] = str(total_realized.quantize(money_exp, rounding=ROUND_HALF_UP))
     data["realized_sales"] = realized_sales

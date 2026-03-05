@@ -3,6 +3,26 @@ export interface User {
   username: string
 }
 
+export interface ProfileData {
+  id: number
+  username: string
+  email: string
+  date_joined: string
+}
+
+export interface RegisterRequest {
+  username: string
+  email?: string
+  password: string
+  password_confirm: string
+}
+
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+  new_password_confirm: string
+}
+
 export interface Asset {
   id: string
   name: string
@@ -233,4 +253,17 @@ export interface MonthlySavingsStats {
 export interface MonthlySavingsData {
   months: MonthlySavingsPoint[]
   stats: MonthlySavingsStats | null
+}
+
+export interface TaskStatus {
+  task_id: string
+  status: 'PENDING' | 'STARTED' | 'SUCCESS' | 'FAILURE' | 'RETRY' | 'REVOKED'
+  result?: unknown
+  error?: string
+}
+
+export interface UpdatePricesResult {
+  updated: number
+  errors: string[]
+  prices: Array<{ ticker: string; name: string; price: string }>
 }

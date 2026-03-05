@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { accountsApi, snapshotsApi } from '@/api/assets'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ function todayStr() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function CuentasPage() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { data: accountsData } = useQuery({
     queryKey: ['accounts-all'],
@@ -116,14 +118,14 @@ export function CuentasPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Cuentas">
+      <PageHeader title={t('accounts.title')}>
         <Button size="sm" variant="outline" onClick={openBulkDialog} disabled={accounts.length === 0}>
           <Camera className="h-4 w-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">Snapshot</span>
+          <span className="hidden sm:inline">{t('accounts.snapshot')}</span>
         </Button>
         <Button size="sm" onClick={() => setShowNewAccount(true)}>
           <Plus className="h-4 w-4 sm:mr-1.5" />
-          <span className="hidden sm:inline">Nueva cuenta</span>
+          <span className="hidden sm:inline">{t('accounts.newAccount')}</span>
         </Button>
       </PageHeader>
 
@@ -131,7 +133,7 @@ export function CuentasPage() {
       {accounts.length > 0 && (
         <div className="rounded-lg border border-border px-4 py-3 flex items-center justify-between">
           <span className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">
-            Total cuentas
+            {t('accounts.totalAccounts')}
           </span>
           <span className="font-mono text-xl font-bold tabular-nums">
             <MoneyCell value={totalBalance.toFixed(2)} />
@@ -142,9 +144,9 @@ export function CuentasPage() {
       {/* Grid de cuentas */}
       {accounts.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <p className="text-sm text-muted-foreground">No hay cuentas registradas.</p>
+          <p className="text-sm text-muted-foreground">{t('accounts.noAccounts')}</p>
           <Button size="sm" className="mt-3" onClick={() => setShowNewAccount(true)}>
-            <Plus className="mr-1.5 h-4 w-4" /> Crear primera cuenta
+            <Plus className="mr-1.5 h-4 w-4" /> {t('accounts.createFirst')}
           </Button>
         </div>
       ) : (
@@ -169,14 +171,14 @@ export function CuentasPage() {
       <Dialog open={showNewAccount} onOpenChange={(open) => !open && setShowNewAccount(false)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Nueva cuenta</DialogTitle>
+            <DialogTitle>{t('accounts.newAccount')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 pt-1">
             <div>
-              <label className="text-sm font-medium">Nombre</label>
+              <label className="text-sm font-medium">{t('common.name')}</label>
               <Input
                 className="mt-1"
-                placeholder="Ej: Santander"
+                placeholder={t('accounts.namePlaceholder')}
                 value={newAccount.name}
                 onChange={(e) => setNewAccount((p) => ({ ...p, name: e.target.value }))}
                 autoFocus
@@ -187,7 +189,7 @@ export function CuentasPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Tipo</label>
+              <label className="text-sm font-medium">{t('common.type')}</label>
               <Select value={newAccount.type} onValueChange={(v) => setNewAccount((p) => ({ ...p, type: v }))}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -201,7 +203,7 @@ export function CuentasPage() {
               disabled={!newAccount.name.trim() || createAccountMut.isPending}
               onClick={() => createAccountMut.mutate({ name: newAccount.name.trim(), type: newAccount.type })}
             >
-              {createAccountMut.isPending ? 'Creando...' : 'Crear cuenta'}
+              {createAccountMut.isPending ? t('accounts.creating') : t('accounts.createAccount')}
             </Button>
           </div>
         </DialogContent>
@@ -211,12 +213,12 @@ export function CuentasPage() {
       <Dialog open={!!snapshotDialog} onOpenChange={(open) => !open && setSnapshotDialog(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Actualizar saldo</DialogTitle>
+            <DialogTitle>{t('accounts.updateBalance')}</DialogTitle>
             <p className="text-sm text-muted-foreground">{snapshotDialog?.name}</p>
           </DialogHeader>
           <div className="grid gap-4 pt-1">
             <div>
-              <label className="text-sm font-medium">Fecha</label>
+              <label className="text-sm font-medium">{t('common.date')}</label>
               <Input
                 className="mt-1"
                 type="date"
@@ -225,7 +227,7 @@ export function CuentasPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Saldo</label>
+              <label className="text-sm font-medium">{t('accounts.balance')}</label>
               <Input
                 className="mt-1"
                 type="number"
@@ -236,12 +238,12 @@ export function CuentasPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Nota <span className="text-muted-foreground font-normal">(opcional)</span></label>
+              <label className="text-sm font-medium">{t('accounts.note')} <span className="text-muted-foreground font-normal">{t('common.note')}</span></label>
               <Input
                 className="mt-1"
                 value={snapshotForm.note}
                 onChange={(e) => setSnapshotForm((p) => ({ ...p, note: e.target.value }))}
-                placeholder="Ej: cierre enero"
+                placeholder={t('common.notePlaceholder')}
               />
             </div>
             <Button
@@ -256,7 +258,7 @@ export function CuentasPage() {
                 })
               }
             >
-              {createSnapshotMut.isPending ? 'Guardando...' : 'Guardar'}
+              {createSnapshotMut.isPending ? t('accounts.saving') : t('accounts.save')}
             </Button>
           </div>
         </DialogContent>
@@ -266,12 +268,12 @@ export function CuentasPage() {
       <Dialog open={showBulk} onOpenChange={(open) => !open && setShowBulk(false)}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Snapshot mensual</DialogTitle>
-            <p className="text-sm text-muted-foreground">Actualiza el saldo de todas las cuentas</p>
+            <DialogTitle>{t('accounts.monthlySnapshot')}</DialogTitle>
+            <p className="text-sm text-muted-foreground">{t('accounts.monthlySnapshotDesc')}</p>
           </DialogHeader>
           <div className="space-y-4 pt-1">
             <div>
-              <label className="text-sm font-medium">Fecha</label>
+              <label className="text-sm font-medium">{t('common.date')}</label>
               <Input
                 className="mt-1"
                 type="date"
@@ -291,7 +293,7 @@ export function CuentasPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">Saldo</label>
+                      <label className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">{t('accounts.balance')}</label>
                       <Input
                         className="mt-0.5"
                         type="number"
@@ -306,10 +308,10 @@ export function CuentasPage() {
                       />
                     </div>
                     <div>
-                      <label className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">Nota</label>
+                      <label className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">{t('accounts.note')}</label>
                       <Input
                         className="mt-0.5"
-                        placeholder="Opcional"
+                        placeholder={t('common.optional')}
                         value={bulkBalances[account.id]?.note ?? ''}
                         onChange={(e) =>
                           setBulkBalances((p) => ({
@@ -325,7 +327,7 @@ export function CuentasPage() {
             </div>
 
             <Button onClick={submitBulk} disabled={bulkSnapshotMut.isPending} className="w-full">
-              {bulkSnapshotMut.isPending ? 'Guardando...' : 'Guardar snapshot'}
+              {bulkSnapshotMut.isPending ? t('accounts.saving') : t('accounts.save')} snapshot
             </Button>
           </div>
         </DialogContent>
@@ -347,6 +349,7 @@ function AccountCard({
   onDelete: () => void
   onDeleteSnapshot: (id: string) => void
 }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 
   const { data: snapshotsData } = useQuery({
@@ -374,7 +377,7 @@ function AccountCard({
               variant="ghost"
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
               onClick={onSnapshot}
-              title="Actualizar saldo"
+              title={t('accounts.updateBalance')}
             >
               <Camera className="h-3.5 w-3.5" />
             </Button>
@@ -400,14 +403,14 @@ function AccountCard({
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          Historial
+          {t('accounts.history')}
         </button>
 
         {/* Lista de snapshots */}
         {expanded && (
           <div className="mt-2 space-y-0 border-t border-border/50">
             {snapshots.length === 0 ? (
-              <p className="py-3 text-xs text-muted-foreground">Sin snapshots registrados</p>
+              <p className="py-3 text-xs text-muted-foreground">{t('accounts.noSnapshots')}</p>
             ) : (
               snapshots.map((s: AccountSnapshot) => (
                 <div

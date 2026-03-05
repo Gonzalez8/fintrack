@@ -7,6 +7,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.mixins import OwnedByUserMixin
 from .models import Asset, Account, AccountSnapshot, Settings, PositionSnapshot
 from .serializers import (
     AssetSerializer, AccountSerializer, AccountSnapshotSerializer,
@@ -15,7 +16,7 @@ from .serializers import (
 from .services import update_prices
 
 
-class AssetViewSet(viewsets.ModelViewSet):
+class AssetViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
     queryset = Asset.objects.all()
     serializer_class = AssetSerializer
     search_fields = ["name", "ticker"]
@@ -34,7 +35,9 @@ class AssetViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="position-history")
     def position_history(self, request, pk=None):
-        snapshots = PositionSnapshot.objects.filter(asset_id=pk).order_by("captured_at")
+        snapshots = PositionSnapshot.objects.filter(
+            owner=request.user, asset_id=pk
+        ).order_by("captured_at")
         data = [
             {
                 "captured_at": s.captured_at.isoformat(),
@@ -114,17 +117,12 @@ class AssetViewSet(viewsets.ModelViewSet):
 
 class UpdatePricesView(APIView):
     def post(self, request):
-        try:
-            result = update_prices()
-        except Exception as e:
-            return Response(
-                {"detail": f"Price update failed: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-        return Response(result)
+        from apps.assets.tasks import update_prices_task
+        task = update_prices_task.delay(request.user.pk)
+        return Response({"task_id": task.id, "status": "queued"}, status=status.HTTP_202_ACCEPTED)
 
 
-class AccountViewSet(viewsets.ModelViewSet):
+class AccountViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
 
@@ -139,7 +137,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             )
 
 
-class AccountSnapshotViewSet(viewsets.ModelViewSet):
+class AccountSnapshotViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
     queryset = AccountSnapshot.objects.select_related("account").all()
     serializer_class = AccountSnapshotSerializer
     filterset_fields = ["account"]
@@ -150,12 +148,12 @@ class AccountSnapshotViewSet(viewsets.ModelViewSet):
         snapshot, created = AccountSnapshot.objects.update_or_create(
             account=account,
             date=date,
+            owner=self.request.user,
             defaults={
                 "balance": serializer.validated_data["balance"],
                 "note": serializer.validated_data.get("note", ""),
             },
         )
-        # Trigger balance sync (update_or_create bypasses model save when updating)
         snapshot._sync_account_balance()
         serializer.instance = snapshot
 
@@ -165,11 +163,26 @@ class BulkSnapshotView(APIView):
         serializer = BulkSnapshotSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         date = serializer.validated_data["date"]
+
+        # Validate all referenced accounts belong to the requesting user.
+        item_account_ids = [item["account"] for item in serializer.validated_data["snapshots"]]
+        valid_ids = set(
+            Account.objects.filter(owner=request.user, id__in=item_account_ids)
+            .values_list("id", flat=True)
+        )
+        invalid = [str(aid) for aid in item_account_ids if aid not in valid_ids]
+        if invalid:
+            return Response(
+                {"detail": f"Cuentas no encontradas: {', '.join(invalid)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         results = []
         for item in serializer.validated_data["snapshots"]:
             snapshot, created = AccountSnapshot.objects.update_or_create(
                 account_id=item["account"],
                 date=date,
+                owner=request.user,
                 defaults={"balance": item["balance"], "note": item.get("note", "")},
             )
             snapshot._sync_account_balance()
@@ -181,7 +194,7 @@ class SettingsView(RetrieveUpdateAPIView):
     serializer_class = SettingsSerializer
 
     def get_object(self):
-        return Settings.load()
+        return Settings.load(self.request.user)
 
 
 _APP_TABLE_PREFIXES = ("assets_", "transactions_", "portfolio_", "reports_", "importer_", "core_")

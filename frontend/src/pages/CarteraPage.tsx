@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { portfolioApi } from '@/api/portfolio'
 import { assetsApi } from '@/api/assets'
+import { pollTask } from '@/api/tasks'
+import type { UpdatePricesResult } from '@/types'
 import { DataTable, type Column } from '@/components/app/DataTable'
 import { MoneyCell } from '@/components/app/MoneyCell'
 import { AssetEvolutionChart } from '@/components/app/AssetEvolutionChart'
@@ -15,49 +17,7 @@ import { formatQty, formatPercent, formatMoney } from '@/lib/utils'
 import { TYPE_BADGE_COLORS } from '@/lib/constants'
 import { RefreshCw } from 'lucide-react'
 import type { Position } from '@/types'
-
-const columns: Column<Position>[] = [
-  {
-    header: 'Activo',
-    accessor: (r) => (
-      <div>
-        <span className="font-medium">{r.asset_name}</span>
-        {r.asset_ticker && <span className="ml-2 text-xs text-muted-foreground">{r.asset_ticker}</span>}
-      </div>
-    ),
-  },
-  {
-    header: 'Tipo',
-    accessor: (r) => (
-      <Badge className={TYPE_BADGE_COLORS[r.asset_type] ?? ''} variant="secondary">
-        {r.asset_type}
-      </Badge>
-    ),
-  },
-  { header: 'Cantidad', accessor: (r) => formatQty(r.quantity), className: 'text-right' },
-  { header: 'Coste Total', accessor: (r) => <MoneyCell value={r.cost_total} />, className: 'text-right' },
-  { header: 'Precio Actual', accessor: (r) => <MoneyCell value={r.current_price} />, className: 'text-right' },
-  {
-    header: 'Valor Mercado',
-    accessor: (r) => <span className="font-semibold text-base">{formatMoney(r.market_value)}</span>,
-    className: 'text-right',
-  },
-  {
-    header: 'P&L',
-    accessor: (r) => {
-      const pnl = parseFloat(r.unrealized_pnl)
-      const colorClass = pnl > 0 ? 'money-positive' : pnl < 0 ? 'money-negative' : ''
-      return (
-        <div className="text-right">
-          <span className={`font-semibold text-base ${colorClass}`}>{formatMoney(r.unrealized_pnl)}</span>
-          <div className={`text-xs ${colorClass || 'text-muted-foreground'}`}>{formatPercent(r.unrealized_pnl_pct)}</div>
-        </div>
-      )
-    },
-    className: 'text-right',
-  },
-  { header: 'Peso', accessor: (r) => `${r.weight_pct}%`, className: 'text-right' },
-]
+import { useTranslation } from 'react-i18next'
 
 export function CarteraPage() {
   const queryClient = useQueryClient()
@@ -66,6 +26,50 @@ export function CarteraPage() {
     updated: number
     errors: string[]
   } | null>(null)
+  const { t } = useTranslation()
+
+  const columns: Column<Position>[] = [
+    {
+      header: t('common.asset'),
+      accessor: (r) => (
+        <div>
+          <span className="font-medium">{r.asset_name}</span>
+          {r.asset_ticker && <span className="ml-2 text-xs text-muted-foreground">{r.asset_ticker}</span>}
+        </div>
+      ),
+    },
+    {
+      header: t('common.type'),
+      accessor: (r) => (
+        <Badge className={TYPE_BADGE_COLORS[r.asset_type] ?? ''} variant="secondary">
+          {r.asset_type}
+        </Badge>
+      ),
+    },
+    { header: t('common.quantity'), accessor: (r) => formatQty(r.quantity), className: 'text-right' },
+    { header: t('portfolio.totalCost'), accessor: (r) => <MoneyCell value={r.cost_total} />, className: 'text-right' },
+    { header: t('assets.currentPrice'), accessor: (r) => <MoneyCell value={r.current_price} />, className: 'text-right' },
+    {
+      header: t('portfolio.marketValue'),
+      accessor: (r) => <span className="font-semibold text-base">{formatMoney(r.market_value)}</span>,
+      className: 'text-right',
+    },
+    {
+      header: 'P&L',
+      accessor: (r) => {
+        const pnl = parseFloat(r.unrealized_pnl)
+        const colorClass = pnl > 0 ? 'money-positive' : pnl < 0 ? 'money-negative' : ''
+        return (
+          <div className="text-right">
+            <span className={`font-semibold text-base ${colorClass}`}>{formatMoney(r.unrealized_pnl)}</span>
+            <div className={`text-xs ${colorClass || 'text-muted-foreground'}`}>{formatPercent(r.unrealized_pnl_pct)}</div>
+          </div>
+        )
+      },
+      className: 'text-right',
+    },
+    { header: 'Peso', accessor: (r) => `${r.weight_pct}%`, className: 'text-right' },
+  ]
 
   const { data, isLoading } = useQuery({
     queryKey: ['portfolio'],
@@ -73,7 +77,12 @@ export function CarteraPage() {
   })
 
   const updatePricesMut = useMutation({
-    mutationFn: () => assetsApi.updatePrices().then((r) => r.data),
+    mutationFn: async () => {
+      const { data } = await assetsApi.updatePrices()
+      const taskResult = await pollTask(data.task_id)
+      if (taskResult.status === 'FAILURE') throw new Error(taskResult.error ?? 'Error desconocido')
+      return taskResult.result as UpdatePricesResult
+    },
     onSuccess: (result) => {
       setPriceResult({ updated: result.updated, errors: result.errors })
       queryClient.invalidateQueries({ queryKey: ['portfolio'] })
@@ -95,26 +104,26 @@ export function CarteraPage() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Cartera">
+      <PageHeader title={t('portfolio.title')}>
         <Button
           variant="outline"
           size="sm"
           onClick={() => { setPriceResult(null); updatePricesMut.mutate() }}
           disabled={updatePricesMut.isPending}
-          aria-label="Actualizar precios"
+          aria-label={t('portfolio.updatePrices')}
         >
           <RefreshCw className={`h-4 w-4 sm:mr-2 ${updatePricesMut.isPending ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">
-            {updatePricesMut.isPending ? 'Actualizando...' : 'Actualizar precios'}
+            {updatePricesMut.isPending ? t('portfolio.updating') : t('portfolio.updatePrices')}
           </span>
         </Button>
       </PageHeader>
 
       {priceResult && (
         <p className="text-sm text-muted-foreground">
-          <span className="font-medium">{priceResult.updated}</span> precios actualizados
+          <span className="font-medium">{priceResult.updated}</span> {t('portfolio.pricesUpdated')}
           {priceResult.errors.length > 0 && (
-            <span className="text-destructive ml-1">· {priceResult.errors.length} errores</span>
+            <span className="text-destructive ml-1">· {priceResult.errors.length} {t('portfolio.errors')}</span>
           )}
         </p>
       )}
@@ -123,26 +132,26 @@ export function CarteraPage() {
         <div className="grid gap-3 grid-cols-2 sm:gap-4 md:grid-cols-4">
           <Card>
             <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">Valor de Mercado</p>
+              <p className="text-xs text-muted-foreground">{t('portfolio.marketValue')}</p>
               <p className="text-lg sm:text-2xl font-bold">{formatMoney(data.total_market_value)}</p>
             </CardContent>
           </Card>
           <Card className={totalPnl >= 0 ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}>
             <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">P&L No Realizado</p>
+              <p className="text-xs text-muted-foreground">{t('portfolio.unrealizedPnl')}</p>
               <p className={`text-lg sm:text-2xl font-bold ${pnlColor}`}>{formatMoney(data.total_unrealized_pnl)}</p>
               <p className={`text-sm ${pnlColor}`}>{formatPercent(totalPnlPct)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">Coste Total</p>
+              <p className="text-xs text-muted-foreground">{t('portfolio.totalCost')}</p>
               <p className="text-base sm:text-lg font-semibold">{formatMoney(data.total_cost)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">Efectivo</p>
+              <p className="text-xs text-muted-foreground">{t('portfolio.cash')}</p>
               <p className="text-base sm:text-lg font-semibold">{formatMoney(data.total_cash)}</p>
             </CardContent>
           </Card>
@@ -156,7 +165,7 @@ export function CarteraPage() {
           : filteredPositions.length === 0
             ? (
               <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
-                <p className="text-sm">Sin posiciones activas</p>
+                <p className="text-sm">{t('portfolio.noPositions')}</p>
               </div>
             )
             : filteredPositions.map((p) => (

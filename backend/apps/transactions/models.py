@@ -1,8 +1,8 @@
 from django.db import models
-from apps.core.models import TimeStampedModel
+from apps.core.models import UserOwnedModel
 
 
-class Transaction(TimeStampedModel):
+class Transaction(UserOwnedModel):
     class TransactionType(models.TextChoices):
         BUY = "BUY", "Buy"
         SELL = "SELL", "Sell"
@@ -21,16 +21,17 @@ class Transaction(TimeStampedModel):
     commission = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     notes = models.TextField(blank=True, default="")
-    import_hash = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    import_hash = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         ordering = ["-date", "-created_at"]
+        unique_together = [("owner", "import_hash")]
 
     def __str__(self):
         return f"{self.date} {self.type} {self.asset.name} x{self.quantity}"
 
 
-class Dividend(TimeStampedModel):
+class Dividend(UserOwnedModel):
     date = models.DateField()
     asset = models.ForeignKey(
         "assets.Asset", on_delete=models.PROTECT, related_name="dividends"
@@ -42,16 +43,17 @@ class Dividend(TimeStampedModel):
     withholding_rate = models.DecimalField(
         max_digits=6, decimal_places=4, null=True, blank=True
     )
-    import_hash = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    import_hash = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         ordering = ["-date", "-created_at"]
+        unique_together = [("owner", "import_hash")]
 
     def __str__(self):
         return f"{self.date} Dividend {self.asset.name} {self.net}"
 
 
-class Interest(TimeStampedModel):
+class Interest(UserOwnedModel):
     date = models.DateField()
     account = models.ForeignKey(
         "assets.Account", on_delete=models.PROTECT, related_name="interests"
@@ -62,10 +64,11 @@ class Interest(TimeStampedModel):
     annual_rate = models.DecimalField(
         max_digits=8, decimal_places=6, null=True, blank=True
     )
-    import_hash = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    import_hash = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:
         ordering = ["-date", "-created_at"]
+        unique_together = [("owner", "import_hash")]
 
     def __str__(self):
         return f"{self.date} Interest {self.account.name} {self.net}"

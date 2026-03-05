@@ -24,31 +24,33 @@ from .serializers import (
     BackupSettingsSerializer,
 )
 
+
 class BackupExportView(APIView):
     def get(self, request):
+        user = request.user
         payload = {
             "version": "1.0",
             "exported_at": datetime.now(timezone.utc).isoformat(),
-            "settings": BackupSettingsSerializer(Settings.load()).data,
-            "assets": BackupAssetSerializer(Asset.objects.all(), many=True).data,
-            "accounts": BackupAccountSerializer(Account.objects.all(), many=True).data,
+            "settings": BackupSettingsSerializer(Settings.load(user)).data,
+            "assets": BackupAssetSerializer(Asset.objects.filter(owner=user), many=True).data,
+            "accounts": BackupAccountSerializer(Account.objects.filter(owner=user), many=True).data,
             "account_snapshots": BackupAccountSnapshotSerializer(
-                AccountSnapshot.objects.select_related("account").all(), many=True
+                AccountSnapshot.objects.filter(owner=user).select_related("account"), many=True
             ).data,
             "portfolio_snapshots": BackupPortfolioSnapshotSerializer(
-                PortfolioSnapshot.objects.all(), many=True
+                PortfolioSnapshot.objects.filter(owner=user), many=True
             ).data,
             "position_snapshots": BackupPositionSnapshotSerializer(
-                PositionSnapshot.objects.select_related("asset").all(), many=True
+                PositionSnapshot.objects.filter(owner=user).select_related("asset"), many=True
             ).data,
             "transactions": BackupTransactionSerializer(
-                Transaction.objects.all(), many=True
+                Transaction.objects.filter(owner=user), many=True
             ).data,
             "dividends": BackupDividendSerializer(
-                Dividend.objects.all(), many=True
+                Dividend.objects.filter(owner=user), many=True
             ).data,
             "interests": BackupInterestSerializer(
-                Interest.objects.all(), many=True
+                Interest.objects.filter(owner=user), many=True
             ).data,
         }
         content = json.dumps(payload, indent=2, default=str)
@@ -80,6 +82,7 @@ class BackupImportView(APIView):
                 {"detail": "Invalid backup format"}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        user = request.user
         counts = {
             "assets": 0,
             "accounts": 0,
@@ -106,7 +109,7 @@ class BackupImportView(APIView):
         try:
             with db_transaction.atomic():
                 if "settings" in payload:
-                    settings_obj = Settings.load()
+                    settings_obj = Settings.load(user)
                     ser = SettingsSerializer(
                         settings_obj, data=payload["settings"], partial=True
                     )
@@ -116,35 +119,44 @@ class BackupImportView(APIView):
 
                 for item in payload.get("assets", []):
                     record_id = item["id"]
-                    Asset.objects.update_or_create(id=record_id, defaults=to_defaults(item))
+                    Asset.objects.update_or_create(
+                        id=record_id,
+                        owner=user,
+                        defaults=to_defaults(item),
+                    )
                     counts["assets"] += 1
 
                 for item in payload.get("accounts", []):
                     record_id = item["id"]
-                    Account.objects.update_or_create(id=record_id, defaults=to_defaults(item))
+                    Account.objects.update_or_create(
+                        id=record_id,
+                        owner=user,
+                        defaults=to_defaults(item),
+                    )
                     counts["accounts"] += 1
 
                 for item in payload.get("account_snapshots", []):
                     record_id = item["id"]
                     AccountSnapshot.objects.update_or_create(
-                        id=record_id, defaults=to_defaults(item, fk_fields=("account",))
+                        id=record_id,
+                        owner=user,
+                        defaults=to_defaults(item, fk_fields=("account",)),
                     )
                     counts["account_snapshots"] += 1
 
                 for item in payload.get("portfolio_snapshots", []):
-                    # Use batch_id (UUID) as the natural key — avoids integer
-                    # sequence conflicts when importing into a fresh database.
                     PortfolioSnapshot.objects.update_or_create(
                         batch_id=item["batch_id"],
+                        owner=user,
                         defaults=to_defaults(item, exclude=("batch_id",)),
                     )
                     counts["portfolio_snapshots"] += 1
 
                 for item in payload.get("position_snapshots", []):
-                    # batch_id + asset_id uniquely identifies a position snapshot.
                     PositionSnapshot.objects.update_or_create(
                         batch_id=item["batch_id"],
                         asset_id=item["asset"],
+                        owner=user,
                         defaults=to_defaults(item, fk_fields=("asset",), exclude=("batch_id",)),
                     )
                     counts["position_snapshots"] += 1
@@ -152,21 +164,27 @@ class BackupImportView(APIView):
                 for item in payload.get("transactions", []):
                     record_id = item["id"]
                     Transaction.objects.update_or_create(
-                        id=record_id, defaults=to_defaults(item, fk_fields=("asset", "account"))
+                        id=record_id,
+                        owner=user,
+                        defaults=to_defaults(item, fk_fields=("asset", "account")),
                     )
                     counts["transactions"] += 1
 
                 for item in payload.get("dividends", []):
                     record_id = item["id"]
                     Dividend.objects.update_or_create(
-                        id=record_id, defaults=to_defaults(item, fk_fields=("asset",))
+                        id=record_id,
+                        owner=user,
+                        defaults=to_defaults(item, fk_fields=("asset",)),
                     )
                     counts["dividends"] += 1
 
                 for item in payload.get("interests", []):
                     record_id = item["id"]
                     Interest.objects.update_or_create(
-                        id=record_id, defaults=to_defaults(item, fk_fields=("account",))
+                        id=record_id,
+                        owner=user,
+                        defaults=to_defaults(item, fk_fields=("account",)),
                     )
                     counts["interests"] += 1
 

@@ -1,339 +1,429 @@
+<div align="center">
+
 # Fintrack
 
-Personal investment tracking application. Monitor your portfolio, transactions, dividends, interests and taxes from a single interface.
+**Self-hosted investment portfolio tracker — built for privacy and clarity.**
 
-## Features
+Track your portfolio, transactions, dividends, interests and taxes from a single interface. No subscriptions, no data sharing, fully open source.
 
-### Dashboard
-- Summary cards: total net worth (investments + cash), unrealized P&L %, current year income (dividends, interests, realized sales)
-- Asset allocation pie chart (Renta Variable / Renta Fija / Efectivo)
-- Per-asset distribution with progress bars and portfolio weight
-- Year-by-year income bar chart (dividends, interests, realized sales)
-- **Patrimony evolution chart**: stacked area (Efectivo + Inversiones) with range selectors (3M, 6M, 1A, 2A, MAX), period return % for total and cash. For months without a portfolio snapshot, the chart falls back to cumulative transaction cost basis so the investment line is never blank
-- **Portfolio value evolution chart** (Renta Variable): snapshot-based time series with range selectors (1D, 1S, 1M, 3M, 1A, MAX), hover-to-inspect, and a LIVE badge when live prices differ from the last snapshot
-- **Persistent top bar** (desktop): shows total patrimony, unrealized P&L, market value and cash at a glance without navigating away
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-active-brightgreen.svg)]()
+[![Django](https://img.shields.io/badge/Django-5.1-green?logo=django)](https://www.djangoproject.com/)
+[![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)](https://www.docker.com/)
 
-### Portfolio (Cartera)
-- Current positions table: asset name/ticker, type, quantity, total cost, current price, market value, P&L €, P&L % and portfolio weight
-- One-click price update via Yahoo Finance
-- Position detail drawer with historical evolution chart (market value, cost basis, unrealized P&L over time)
+[Live Demo](https://fintrack-quintela.vercel.app) · [Report a Bug](https://github.com/Gonzalez8/Fintrack/issues) · [Request a Feature](https://github.com/Gonzalez8/Fintrack/issues)
 
-### Assets (Activos)
-- Asset catalog: name, ticker, ISIN, type (Stock, ETF, Fund, Crypto), currency, issuer/domicile/withholding countries
-- Automatic price mode (Yahoo Finance) or manual price override
-- Price status tracking per asset (OK / Error / No ticker)
-- **Asset detail page**: inline edit of all fields, manual price form, and an interactive **price history chart** (lightweight-charts) with period selector (1M, 3M, 6M, 1A, 2A, 5A, MAX) and period-return badge
-- Delete protection when an asset has associated transactions
-
-### Accounts (Cuentas)
-- Cash account management: operating, savings, investment, deposits, alternatives
-- Balance snapshot history with notes
-- Bulk snapshot creation for multiple accounts on the same date
-- Automatic balance denormalization for fast reads
-
-### Transactions (Operaciones)
-- Buy, sell and gift operations with date, quantity, price, commission and tax
-- FIFO cost basis engine: single-pass algorithm calculates realized P&L on every sale, including commission and tax in the cost basis
-- Configurable gift cost mode: zero or market price at gift date
-- Pagination, filters and CSV export
-
-### Dividends (Dividendos)
-- Gross amount, withholding tax, net income, withholding rate and shares at payment date
-- Filters by asset and date range
-- CSV export
-
-### Interests (Intereses)
-- Gross amount, net income, balance, annual rate and account
-- Filters by account and date range
-- CSV export
-
-### Monthly Savings (Ahorro mensual)
-- **Real savings calculation**: ΔEfectivo + ΔCoste inv. — cash flow adjusted for invested capital, so money deployed into investments is not counted as a loss
-- Investment cost basis tracked via incremental FIFO: BUY/GIFT lots added at cost price, SELL consumes actual FIFO cost (not sell price)
-- KPI cards: Efectivo actual, Ahorro último mes, Media mensual (range-aware), Mejor/Peor mes
-- **"Sin outliers" toggle**: trimmed mean (drops best + worst month) when ≥ 6 months in range
-- Bar chart (Ahorro mensual real) with range selector (3M / 6M / 1A / 2A / MAX) and rich tooltip (Ahorro real, ΔEfectivo, ΔCoste inv., Efectivo fin)
-- Historical table with columns: Mes, Efectivo fin, ΔEfectivo, ΔCoste inv., Ahorro real
-- MAX range groups rows by year (collapsible, previous years collapsed by default); year header shows net annual real savings
-- **Mobile-first**: card-per-month layout on small screens (month + ahorro real prominent, breakdown in 3-column grid below); range buttons expand to full width for touch
-
-### Tax Report (Fiscal)
-- Year-by-year summary table: dividend income (gross/net), interest income (gross/net), realized sales P&L, total net
-- Detailed breakdown per year: dividends, realized sales and interests
-- Year selector for the last 6 fiscal years
-
-### Backup & Restore
-- Full JSON export: settings, assets, accounts, snapshots, transactions, dividends, interests
-- Atomic import with foreign-key handling and duplicate skipping
-
-### Settings (Configuracion)
-- Cost basis method (FIFO)
-- Gift cost mode (Zero / Market)
-- Money and quantity rounding decimals
-- Price update interval and default price source
-- Portfolio snapshot frequency (minutes)
-- Data retention policy (auto-purge old snapshots)
-- Database storage usage breakdown by table
-- Last snapshot time and next eligible snapshot countdown
-
-### UI & Design System
-- **APEX dark theme**: consistent dark card palette with blue accent borders and JetBrains Mono typography throughout
-- **Chart theme tokens** (`chartTheme.ts`): single source of truth for all chart colors, tooltip styles, axis ticks, legend and gradient definitions — shared by every Recharts and lightweight-charts component
-- **Mobile-first responsive layout**: bottom navigation bar on small screens, collapsible sidebar on desktop
-- Dark / light mode toggle
+</div>
 
 ---
 
-## Tech Stack
+## Screenshots
 
-| Layer | Technologies |
+<p align="center">
+  <img src=".github/screenshots/01-dashboard.png" alt="Dashboard" width="49%" />
+  <img src=".github/screenshots/02-cartera.png" alt="Portfolio" width="49%" />
+</p>
+<p align="center">
+  <img src=".github/screenshots/03-activos.png" alt="Assets" width="49%" />
+  <img src=".github/screenshots/04-cuentas.png" alt="Accounts" width="49%" />
+</p>
+<p align="center">
+  <img src=".github/screenshots/05-operaciones.png" alt="Transactions" width="49%" />
+  <img src=".github/screenshots/06-dividendos.png" alt="Dividends" width="49%" />
+</p>
+<p align="center">
+  <img src=".github/screenshots/08-ahorro.png" alt="Monthly Savings" width="49%" />
+  <img src=".github/screenshots/09-fiscal.png" alt="Tax Report" width="49%" />
+</p>
+<p align="center">
+  <img src=".github/screenshots/10-cartera-detalle.png" alt="Position detail chart" width="49%" />
+  <img src=".github/screenshots/11-activo-detalle.png" alt="Asset price history chart" width="49%" />
+</p>
+
+---
+
+## Features
+
+### 📊 Dashboard
+- Net worth cards: total patrimony, unrealized P&L, current-year income (dividends + interests + realized sales)
+- Asset allocation pie chart (Equities / Fixed Income / Cash)
+- **Patrimony evolution chart** — stacked area with range selectors (3M, 6M, 1Y, 2Y, MAX)
+- **Portfolio value chart** — snapshot-based time series with LIVE badge when prices differ from last snapshot
+- Persistent top bar on desktop: patrimony, unrealized P&L, market value and cash always visible
+
+### 💼 Portfolio
+- Positions table: quantity, total cost, current price, market value, P&L € and P&L %
+- One-click price update via Yahoo Finance (async via Celery, no UI freeze)
+- Position detail drawer with historical market value, cost basis and unrealized P&L chart
+
+### 📈 Assets
+- Catalog: name, ticker, ISIN, type (Stock / ETF / Fund / Crypto), currency, withholding countries
+- Automatic prices via Yahoo Finance or manual override
+- Interactive OHLC price history chart with period selector (1M → MAX)
+
+### 🏦 Accounts
+- Cash account types: operating, savings, investment, deposits, alternatives
+- Balance snapshot history with notes
+- Bulk snapshot creation for multiple accounts on the same date
+
+### 🔄 Transactions
+- BUY / SELL / GIFT operations with date, quantity, price, commission and tax
+- **FIFO cost basis engine** — single-pass algorithm, commission and tax included in cost basis
+- Configurable gift cost mode: zero or market price at gift date
+- Pagination, filters, CSV export
+
+### 💰 Dividends & Interests
+- Dividends: gross amount, withholding tax, net income, withholding rate, shares at payment date
+- Interests: gross amount, net income, balance, annual rate and account
+- Both: filters by asset/account and date range, CSV export
+
+### 🐷 Monthly Savings
+- **Real savings calculation**: ΔCash + ΔInvestment cost — capital deployed is not counted as a loss
+- KPI cards: current cash, last month savings, period average, best/worst month
+- "No outliers" toggle: trimmed mean when ≥ 6 months in range
+- Mobile-first: card-per-month layout on small screens
+
+### 📋 Tax Report
+- Year-by-year summary: gross/net dividends, gross/net interest, realized sales P&L
+- Detailed breakdown per year
+- Year selector for the last 6 fiscal years
+
+### 🔐 Authentication & Security
+- **Registration** with username + optional email + password (can be disabled server-side)
+- **Google OAuth2** one-click login — no password required; account created automatically
+- **JWT** — access token in memory only (XSS-safe), refresh token as `httpOnly SameSite=Lax` cookie
+- **Profile page** — edit username/email, change password with token rotation
+- Rate limiting on all auth endpoints (brute-force protection)
+- Django password validators (minimum length, common passwords, similarity check)
+
+### ⚙️ Settings
+- FIFO cost basis configuration
+- Gift cost mode (Zero / Market price)
+- Money and quantity rounding decimals
+- Portfolio snapshot frequency and data retention policy
+- Database storage usage breakdown by table
+
+---
+
+## Quick Start
+
+### Docker (recommended)
+
+```bash
+git clone https://github.com/Gonzalez8/Fintrack.git && cd Fintrack
+cp .env.example .env
+docker compose up
+```
+
+That's it! 🎉
+
+| Service | URL |
 |---|---|
-| Backend | Django 5.1, Django REST Framework, PostgreSQL 16, yfinance, openpyxl |
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui (Radix), React Query, Zustand, Recharts, lightweight-charts |
-| Infra | Docker Compose |
+| App | http://localhost:5173 |
+| API | http://localhost:8000/api/ |
+| Swagger UI | http://localhost:8000/api/schema/swagger-ui/ |
+| Django Admin | http://localhost:8000/admin/ |
+
+Default credentials: `admin` / `admin`
 
 ---
 
 ## Deployment
 
-### Option A — Production (pre-built images, no source code needed)
+### Option A — Production (pre-built images)
 
-Uses the images published on GitHub Container Registry. This is the recommended approach for self-hosting.
-
-**1. Create a working directory and download the compose file:**
+No source code needed — uses images from GitHub Container Registry.
 
 ```bash
 mkdir fintrack && cd fintrack
 curl -O https://raw.githubusercontent.com/Gonzalez8/Fintrack/main/docker-compose.prod.yml
 curl -O https://raw.githubusercontent.com/Gonzalez8/Fintrack/main/.env.production.example
 cp .env.production.example .env
-```
-
-**2. Edit `.env` with your values:**
-
-```env
-# Database
-DB_NAME=fintrack
-DB_USER=fintrack
-DB_PASSWORD=CHANGE_ME_STRONG_PASSWORD
-
-# Django
-DJANGO_SECRET_KEY=CHANGE_ME_RANDOM_STRING_50_CHARS
-ALLOWED_HOSTS=fintrack.yourdomain.com,localhost
-CORS_ALLOWED_ORIGINS=https://fintrack.yourdomain.com
-CSRF_TRUSTED_ORIGINS=https://fintrack.yourdomain.com
-
-# Port exposed by the container (e.g. 80 or 8000)
-APP_PORT=80
-
-# Initial superuser — created automatically on first start
-DJANGO_SUPERUSER_USERNAME=admin
-DJANGO_SUPERUSER_PASSWORD=CHANGE_ME_STRONG_PASSWORD
-```
-
-**3. Start:**
-
-```bash
+# Edit .env with your values
 docker compose -f docker-compose.prod.yml --env-file .env up -d
 ```
 
 The superuser is created automatically on first start. No manual scripts needed.
 
-| Service | URL |
-|---|---|
-| App + API | http://localhost (or your domain) |
-| Django Admin | http://localhost/admin/ |
-
----
-
 ### Option B — Portainer (Stack)
 
 1. In Portainer, go to **Stacks → Add stack**.
-2. Paste the contents of [`docker-compose.prod.yml`](docker-compose.prod.yml) into the web editor.
-3. Scroll down to **Environment variables** and add:
-
-| Variable | Value |
-|---|---|
-| `DB_PASSWORD` | your database password |
-| `DJANGO_SECRET_KEY` | a long random string |
-| `ALLOWED_HOSTS` | your domain or `*` |
-| `CSRF_TRUSTED_ORIGINS` | `https://yourdomain.com` |
-| `CORS_ALLOWED_ORIGINS` | `https://yourdomain.com` |
-| `DJANGO_SUPERUSER_USERNAME` | `admin` (or your preferred username) |
-| `DJANGO_SUPERUSER_PASSWORD` | your admin password |
-| `APP_PORT` | `80` |
-
+2. Paste the contents of [`docker-compose.prod.yml`](docker-compose.prod.yml).
+3. Add the required environment variables (see [Environment Variables](#environment-variables)).
 4. Click **Deploy the stack**.
 
-The backend entrypoint runs migrations and creates the superuser automatically on every start (idempotent — skips if the user already exists).
+### Option C — Live Demo (Vercel, no backend)
 
----
+A static frontend-only demo using [MSW (Mock Service Worker)](https://mswjs.io/) — no database or backend needed.
 
-### Option C — Local development (from source)
-
-```bash
-git clone https://github.com/Gonzalez8/Fintrack.git && cd Fintrack
-cp .env.example .env          # defaults work out of the box
-docker compose up
-```
-
-| Service | URL |
-|---|---|
-| Frontend | http://localhost:5173 |
-| API | http://localhost:8000/api/ |
-| Django Admin | http://localhost:8000/admin/ |
-
-Default user: `admin` / `admin`
-
----
-
-### Option D — Live Demo (Vercel, no backend required)
-
-A static frontend-only demo can be deployed to Vercel using [MSW (Mock Service Worker)](https://mswjs.io/) to intercept all API calls and return realistic sample data. No database or backend is needed.
-
-**How it works**
-
-All API requests are intercepted by a Service Worker registered in the browser. The mock layer lives entirely in `frontend/src/demo/` and is only included in the bundle when `VITE_DEMO_MODE=true`. The sample data represents a Spanish investor's portfolio over 2 years (ETFs, IBEX stocks, savings accounts).
-
-- The user is auto-logged in on first load — no credentials needed.
-- All pages and features are fully navigable (Cartera, Activos, Operaciones, Dividendos, Intereses, Fiscal, Ahorro, Configuración).
-- CRUD operations (add/edit/delete) work in memory for the session but reset on page reload.
-- CSV exports and JSON backup download work with demo data.
-
-**Deploy to Vercel**
-
-1. Fork or push the repo to GitHub.
-2. Create a new project in [Vercel](https://vercel.com) pointing to the repo.
-3. Set the following in the Vercel project settings:
-
-| Setting | Value |
+| Vercel Setting | Value |
 |---|---|
 | Root Directory | `frontend` |
 | Build Command | `npm run build` |
 | Output Directory | `dist` |
 | Environment Variable | `VITE_DEMO_MODE=true` |
 
-4. Deploy. Vercel will build the frontend with MSW enabled and serve it as a static site.
+The `frontend/vercel.json` is already configured for SPA routing and MSW service worker headers.
 
-The `frontend/vercel.json` is already configured to handle SPA routing and serve the MSW service worker with the correct `Service-Worker-Allowed` header.
-
-**Test the demo locally**
-
+**Test demo locally:**
 ```bash
-cd frontend
-VITE_DEMO_MODE=true npm run dev
-# Open http://localhost:5173 — lands directly on Dashboard with sample data
+cd frontend && VITE_DEMO_MODE=true npm run dev
 ```
 
 ---
 
-## Environment Variables Reference
+## Security & Authentication
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `DB_NAME` | | `fintrack` | PostgreSQL database name |
-| `DB_USER` | | `fintrack` | PostgreSQL user |
-| `DB_PASSWORD` | **yes** | — | PostgreSQL password |
-| `DJANGO_SECRET_KEY` | **yes** | — | Django secret key (long random string) |
-| `ALLOWED_HOSTS` | | `*` | Comma-separated allowed hostnames |
-| `CORS_ALLOWED_ORIGINS` | | — | Comma-separated allowed origins |
-| `CSRF_TRUSTED_ORIGINS` | | — | Comma-separated trusted origins for CSRF |
-| `APP_PORT` | | `8000` | Host port mapped to the backend container |
-| `DJANGO_SUPERUSER_USERNAME` | | `admin` | Initial admin username |
-| `DJANGO_SUPERUSER_PASSWORD` | | `admin` | Initial admin password |
+### JWT token flow
 
-> **Security note:** Always set strong, unique values for `DB_PASSWORD`, `DJANGO_SECRET_KEY` and `DJANGO_SUPERUSER_PASSWORD` before deploying to a public server.
+```
+Browser
+  ├── Zustand store ──► access token (memory only — never persisted)
+  └── httpOnly cookie ──► refresh token (SameSite=Lax, no JS access)
+        │
+        └─► POST /api/auth/token/refresh/  ──►  new access token
+```
+
+- Access token disappears on page reload — fetched silently via refresh cookie on next load.
+- Refresh token rotates on every use and is blacklisted after rotation (replay-safe).
+- All requests attach Bearer token automatically; 401 triggers a single transparent retry.
+
+### Google OAuth2
+
+The integration uses the **Google Identity Services ID Token flow** — no redirects, no OAuth callback URLs needed.
+
+```
+1. Load Google GIS script on login page
+2. User clicks "Continue with Google"
+3. Google returns an ID token (credential)
+4. POST /api/auth/google/ { credential }
+5. Backend verifies token with Google's public keys
+6. Get or create user by email
+7. Issue JWT pair → login complete
+```
+
+**Setup in 2 minutes:**
+1. [Create an OAuth 2.0 Client ID](https://console.cloud.google.com/apis/credentials) (Web application)
+2. Add `http://localhost:5173` (and your production domain) to **Authorized JavaScript origins**
+3. Set `GOOGLE_CLIENT_ID=<your-id>` in `.env` and `VITE_GOOGLE_CLIENT_ID=<your-id>` in `frontend/.env.local`
+4. Restart backend — the Google button appears automatically
+
+> No Authorized redirect URIs needed.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Backend** | Django 5.1 · Django REST Framework · PostgreSQL 16 · Celery 5 · Redis |
+| **Auth** | djangorestframework-simplejwt · google-auth |
+| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS · shadcn/ui (Radix) |
+| **State** | Zustand (auth) · TanStack Query (server state) |
+| **Charts** | Recharts · lightweight-charts |
+| **Infra** | Docker Compose · GitHub Actions CI |
+| **API Docs** | drf-spectacular (OpenAPI 3 / Swagger UI / ReDoc) |
 
 ---
 
 ## Project Structure
 
 ```
-backend/                Django 5.1 + DRF
-  apps/
-    core/               Auth (session + CSRF cookies)
-    assets/             Asset, Account, Settings + Yahoo Finance
-    transactions/       Transaction (BUY/SELL/GIFT), Dividend, Interest
-    portfolio/          FIFO engine (positions, realized P&L)
-    importer/           Excel import + JSON backup/restore
-    reports/            Yearly tax summaries + patrimony evolution
-  config/
-    settings/           base.py, development.py
-    urls.py
-
-frontend/               Vite + React 18 + TypeScript
-  src/
-    api/                Axios clients (CSRF interceptor)
-    pages/              Dashboard, Cartera, Activos, Cuentas,
-                        Operaciones, Dividendos, Intereses,
-                        AhorroMensual, Fiscal, Configuracion
-    components/
-      ui/               shadcn/ui (Radix + Tailwind)
-      app/              Sidebar, TopBar, MobileNav, PageHeader,
-                        DataTable, MoneyCell, PriceChart,
-                        PatrimonioEvolutionChart, RVEvolutionChart,
-                        MonthlySavingsChart, MonthlySavingsTable,
-                        PositionCard
-    stores/             Zustand (authStore)
-    types/              TypeScript interfaces
-    lib/                chartTheme.ts, savingsUtils.ts, utils, constants
+fintrack/
+├── backend/                    Django 5.1 + DRF
+│   ├── apps/
+│   │   ├── core/               Auth (JWT, register, Google OAuth2, profile)
+│   │   │                       Base models (TimeStampedModel, UserOwnedModel)
+│   │   │                       Multi-tenancy mixin (OwnedByUserMixin)
+│   │   ├── assets/             Asset, Account, Settings + Yahoo Finance prices
+│   │   │                       Celery tasks (price updates, snapshots)
+│   │   ├── transactions/       Transaction (BUY/SELL/GIFT), Dividend, Interest
+│   │   ├── portfolio/          FIFO engine — pure service functions
+│   │   ├── reports/            Tax summaries, patrimony & savings evolution
+│   │   └── importer/           JSON backup / restore
+│   └── config/
+│       ├── settings/           base.py · development.py
+│       ├── urls.py
+│       └── celery.py
+│
+├── frontend/                   Vite + React 18 + TypeScript
+│   └── src/
+│       ├── api/                client.ts (interceptor) · auth.ts · tasks.ts
+│       ├── pages/              Dashboard, Cartera, Activos, Cuentas,
+│       │                       Operaciones, Dividendos, Intereses,
+│       │                       AhorroMensual, Fiscal, Configuracion, Perfil
+│       ├── components/
+│       │   ├── ui/             shadcn/ui (Radix + Tailwind)
+│       │   └── app/            Sidebar, TopBar, MobileNav, charts, tables
+│       ├── stores/             Zustand (authStore)
+│       ├── demo/               MSW handlers (Vercel demo mode)
+│       └── types/              TypeScript interfaces
+│
+├── docker-compose.yml          Development (6 services)
+├── docker-compose.prod.yml     Production
+└── .github/workflows/ci.yml    Backend tests + TypeScript check
 ```
 
-## Common Commands
+---
+
+## API
+
+Interactive docs available at [`/api/schema/swagger-ui/`](http://localhost:8000/api/schema/swagger-ui/) when running locally.
+
+```
+# Auth
+POST    /api/auth/token/                  Login → { access, user } + httpOnly cookie
+POST    /api/auth/token/refresh/          Rotate refresh token → { access }
+POST    /api/auth/logout/                 Blacklist token + clear cookie
+GET     /api/auth/me/                     Current user
+POST    /api/auth/register/               Create account (403 if disabled)
+POST    /api/auth/google/                 Google ID-token login / register
+GET     /api/auth/profile/               User profile
+PUT     /api/auth/profile/               Update username / email
+POST    /api/auth/change-password/        Change password + rotate JWT
+
+# Data (all owner-scoped, require Bearer token)
+CRUD    /api/assets/
+POST    /api/assets/{id}/set-price/
+GET     /api/assets/{id}/price-history/   ?period=1mo|3mo|6mo|1y|2y|5y|max
+POST    /api/assets/update-prices/        Enqueue → 202 { task_id }
+GET     /api/tasks/{task_id}/            Celery task status
+CRUD    /api/accounts/
+CRUD    /api/account-snapshots/
+POST    /api/accounts/bulk-snapshot/
+GET/PUT /api/settings/
+
+CRUD    /api/transactions/
+CRUD    /api/dividends/
+CRUD    /api/interests/
+GET     /api/portfolio/
+
+GET     /api/reports/year-summary/
+GET     /api/reports/patrimonio-evolution/
+GET     /api/reports/rv-evolution/
+GET     /api/reports/monthly-savings/
+
+GET     /api/export/transactions.csv
+GET     /api/export/dividends.csv
+GET     /api/export/interests.csv
+GET     /api/backup/export/
+POST    /api/backup/import/
+
+GET     /api/health/                      Liveness probe
+```
+
+---
+
+## Development
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/) + Docker Compose
+- (Optional) Node 20 + Python 3.12 for local development without Docker
+
+### Common commands
 
 ```bash
-# Migrations
-docker compose exec backend python manage.py makemigrations <app>
-docker compose exec backend python manage.py migrate
+# Start all services
+docker compose up
 
-# Django shell
-docker compose exec backend python manage.py shell
-
-# Tests
+# Run backend tests
 docker compose exec backend pytest
 
 # TypeScript check
 docker compose exec frontend npx tsc --noEmit
+
+# Create migrations
+docker compose exec backend python manage.py makemigrations <app>
+
+# Django shell
+docker compose exec backend python manage.py shell
+
+# View Celery logs
+docker compose logs -f celery_worker
 ```
 
-## API
+### Optional: enable Google login locally
 
+```bash
+# frontend/.env.local  (gitignored — never commit)
+VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+VITE_ALLOW_REGISTRATION=true
+
+# Then restart frontend
+docker compose restart frontend
 ```
-POST    /api/auth/login/                  Login (session)
-POST    /api/auth/logout/                 Logout
-GET     /api/auth/me/                     Current user
 
-CRUD    /api/assets/                      Assets
-POST    /api/assets/{id}/set-price/       Manual price override
-GET     /api/assets/{id}/position-history/ Position snapshot history
-GET     /api/assets/{id}/price-history/   OHLC price history from Yahoo Finance (?period=1mo|3mo|6mo|1y|2y|5y|max)
-POST    /api/assets/update-prices/        Fetch prices (Yahoo Finance)
-CRUD    /api/accounts/                    Accounts
-CRUD    /api/account-snapshots/           Account balance snapshots
-POST    /api/accounts/bulk-snapshot/      Bulk snapshot creation
-GET/PUT /api/settings/                    Settings (singleton)
-GET     /api/storage-info/                DB size by table
+---
 
-CRUD    /api/transactions/                Transactions
-CRUD    /api/dividends/                   Dividends
-CRUD    /api/interests/                   Interests
+## Environment Variables
 
-GET     /api/portfolio/                   Positions + realized sales (FIFO)
+### Backend (`.env`)
 
-GET     /api/reports/year-summary/        Year-by-year income summary
-GET     /api/reports/patrimonio-evolution/ Monthly patrimony evolution
-GET     /api/reports/rv-evolution/        Portfolio value time series
-GET     /api/reports/monthly-savings/     Monthly cash + investment cost basis + real savings
-GET     /api/reports/snapshot-status/     Last/next snapshot info
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DB_PASSWORD` | **yes** | — | PostgreSQL password |
+| `DJANGO_SECRET_KEY` | **yes** | — | Django secret key (≥ 50 random chars) |
+| `DB_NAME` | | `fintrack` | Database name |
+| `DB_USER` | | `fintrack` | Database user |
+| `ALLOWED_HOSTS` | | `*` | Comma-separated allowed hostnames |
+| `CORS_ALLOWED_ORIGINS` | | — | Comma-separated allowed origins |
+| `CSRF_TRUSTED_ORIGINS` | | — | Comma-separated CSRF trusted origins |
+| `REDIS_URL` | | `redis://redis:6379/0` | Celery broker + result backend |
+| `GOOGLE_CLIENT_ID` | | _(empty)_ | Google OAuth2 client ID — leave empty to disable |
+| `ALLOW_REGISTRATION` | | `true` | `false` = admin creates users via Django admin |
+| `DJANGO_SUPERUSER_USERNAME` | | `admin` | Initial superuser username |
+| `DJANGO_SUPERUSER_PASSWORD` | | `admin` | Initial superuser password |
+| `APP_PORT` | | `8000` | Host port for the backend container |
 
-GET     /api/export/transactions.csv      CSV export
-GET     /api/export/dividends.csv         CSV export
-GET     /api/export/interests.csv         CSV export
+### Frontend (`frontend/.env.local`)
 
-GET     /api/backup/export/               Full JSON backup
-POST    /api/backup/import/               Restore from JSON backup
-```
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_GOOGLE_CLIENT_ID` | _(empty)_ | Same value as backend `GOOGLE_CLIENT_ID` |
+| `VITE_ALLOW_REGISTRATION` | `true` | `false` hides the registration tab |
+| `VITE_DEMO_MODE` | — | `true` enables MSW demo layer (Vercel only) |
+
+> ⚠️ Always set strong, unique values for `DB_PASSWORD`, `DJANGO_SECRET_KEY` and `DJANGO_SUPERUSER_PASSWORD` in production. Never commit `frontend/.env.local`.
+
+---
+
+## Contributing
+
+Contributions are welcome! Here's how to get started:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Make your changes and add tests where applicable
+4. Run the test suite: `docker compose exec backend pytest`
+5. Check TypeScript: `docker compose exec frontend npx tsc --noEmit`
+6. Open a pull request
+
+Please keep PRs focused — one feature or fix per PR. Open an issue first for larger changes.
+
+### Roadmap
+
+- [ ] Password reset via email
+- [ ] Two-factor authentication (TOTP)
+- [ ] Multi-currency support (FX rates)
+- [ ] Price alerts / notifications
+- [ ] Benchmark comparison (S&P 500, IBEX)
+- [ ] Excel / broker statement import (DEGIRO, ING, Interactive Brokers)
+- [ ] Audit log
+- [ ] Mobile app (React Native)
+
+---
 
 ## License
 
-Personal project. All rights reserved.
+[MIT](LICENSE) — free to use, modify and self-host.
+
+---
+
+<div align="center">
+
+Made with ❤️ for investors who value privacy
+
+</div>

@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { portfolioApi } from '@/api/portfolio'
 import { formatMoney } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 export function TopBar() {
+  const { t } = useTranslation()
   const { data } = useQuery({
     queryKey: ['portfolio'],
     queryFn: () => portfolioApi.get().then((r) => r.data),
@@ -17,7 +19,7 @@ export function TopBar() {
       style={{ borderColor: 'hsl(var(--sidebar-border))' }}
     >
       <div className="flex items-center gap-1">
-        <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground/60">Patrimonio</span>
+        <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground/60">{t('topbar.patrimony')}</span>
         <span className="font-mono text-sm font-medium tabular-nums ml-1.5">
           {data ? formatMoney(data.grand_total) : '—'}
         </span>
@@ -26,7 +28,7 @@ export function TopBar() {
       <div className="h-4 w-px bg-border" />
 
       <div className="flex items-center gap-1">
-        <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground/60">P&L</span>
+        <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground/60">{t('topbar.pnl')}</span>
         <span className={`font-mono text-sm font-medium tabular-nums ml-1.5 ${pnlClass}`}>
           {data ? (unrealizedPnl >= 0 ? '+' : '') + formatMoney(data.total_unrealized_pnl) : '—'}
         </span>
@@ -35,7 +37,7 @@ export function TopBar() {
       <div className="h-4 w-px bg-border" />
 
       <div className="flex items-center gap-1">
-        <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground/60">Mercado</span>
+        <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground/60">{t('topbar.market')}</span>
         <span className="font-mono text-sm font-medium tabular-nums ml-1.5">
           {data ? formatMoney(data.total_market_value) : '—'}
         </span>
@@ -44,7 +46,7 @@ export function TopBar() {
       <div className="h-4 w-px bg-border" />
 
       <div className="flex items-center gap-1">
-        <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground/60">Efectivo</span>
+        <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground/60">{t('topbar.cash')}</span>
         <span className="font-mono text-sm font-medium tabular-nums ml-1.5">
           {data ? formatMoney(data.total_cash) : '—'}
         </span>

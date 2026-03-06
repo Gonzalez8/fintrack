@@ -26,6 +26,7 @@ declare global {
         id: {
           initialize: (config: { client_id: string; callback: (r: { credential: string }) => void }) => void
           renderButton: (el: HTMLElement, opts: Record<string, unknown>) => void
+          prompt: () => void
         }
       }
     }

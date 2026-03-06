@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import axios from 'axios'
 import { authApi } from '@/api/auth'
 import { setAccessToken } from '@/api/client'
 import type { User, RegisterRequest } from '@/types'
@@ -50,9 +51,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   fetchMe: async () => {
     try {
-      // Try to get a fresh access token using the httpOnly refresh_token cookie.
-      // On first page load after login the cookie is present; on expiry this fails.
-      const { data: refreshData } = await authApi.tokenRefresh()
+      // Use raw axios (bypasses interceptors) to avoid the 401 interceptor
+      // triggering a redundant second refresh attempt when the cookie is missing.
+      const { data: refreshData } = await axios.post<{ access: string }>(
+        '/api/auth/token/refresh/',
+        {},
+        { withCredentials: true },
+      )
       setAccessToken(refreshData.access)
       const { data: user } = await authApi.me()
       set({ user, loading: false })

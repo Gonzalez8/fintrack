@@ -49,11 +49,6 @@ function useAutoUpdatePrices() {
       .then(invalidateAfterPriceUpdate)
       .catch(() => {}) // silent — background update, non-critical
 
-  // Update prices once on mount
-  useEffect(() => {
-    triggerPriceUpdate()
-  }, [queryClient])
-
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current)
     if (minutes > 0) {

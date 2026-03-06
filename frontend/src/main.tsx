@@ -13,11 +13,19 @@ async function bootstrap() {
     })
   }
 
-  ReactDOM.createRoot(document.getElementById('root')!).render(
+  const root = document.getElementById('root')!
+  const app = (
     <React.StrictMode>
       <App />
-    </React.StrictMode>,
+    </React.StrictMode>
   )
+
+  // Use hydrateRoot if pre-rendered content exists (SSG), otherwise createRoot
+  if (root.children.length > 0) {
+    ReactDOM.hydrateRoot(root, app)
+  } else {
+    ReactDOM.createRoot(root).render(app)
+  }
 }
 
 bootstrap()

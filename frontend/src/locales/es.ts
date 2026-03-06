@@ -102,6 +102,92 @@ const es = {
     tryDemo: 'Probar Demo',
     subtitle: 'Investment Terminal',
     or: 'o',
+    continueWithGoogle: 'Continuar con Google',
+  },
+
+  // ── Landing ─────────────────────────────────────────────────────────────────
+  landing: {
+    // Navbar
+    navFeatures: 'Funciones',
+    navAbout: 'Solución',
+
+    // Hero
+    heroTagline: 'Tu terminal de inversión personal',
+    heroTitle: 'Toma el control total\nde tus inversiones',
+    heroSubtitle: 'Portfolio, dividendos, fiscalidad y ahorro en un solo lugar. Self-hosted, privado y completamente tuyo.',
+    heroCta: 'Empezar gratis',
+    heroSecondaryCta: 'Ver demo en vivo',
+
+    // Stats bar
+    statSelfHosted: 'Self-hosted',
+    statSelfHostedDesc: 'Tus datos, tu servidor',
+    statLanguages: '5 idiomas',
+    statLanguagesDesc: 'ES, EN, DE, FR, IT',
+    statMethods: 'FIFO / LIFO / WAC',
+    statMethodsDesc: 'Métodos de coste',
+    statPrices: 'Tiempo real',
+    statPricesDesc: 'Vía Yahoo Finance',
+
+    // Showcase sections
+    showcasePortfolioTitle: 'Tu cartera, en tiempo real',
+    showcasePortfolioDesc: 'Seguimiento de acciones, ETFs, fondos y crypto con precios actualizados automáticamente. Visualiza tu patrimonio total, P&L y distribución de activos de un vistazo.',
+    showcasePortfolioHighlight1: 'Precios automáticos vía Yahoo Finance',
+    showcasePortfolioHighlight2: 'P&L no realizado en tiempo real',
+    showcasePortfolioHighlight3: 'Distribución de patrimonio visual',
+
+    showcaseFiscalTitle: 'Fiscalidad simplificada',
+    showcaseFiscalDesc: 'Cálculo automático de plusvalías con FIFO, LIFO o coste medio ponderado. Informes listos para la declaración de la renta.',
+    showcaseFiscalHighlight1: 'Tres métodos de coste: FIFO, LIFO, WAC',
+    showcaseFiscalHighlight2: 'Informes anuales detallados',
+    showcaseFiscalHighlight3: 'Método fiscal independiente configurable',
+
+    showcaseAccountsTitle: 'Gestión multi-cuenta',
+    showcaseAccountsDesc: 'Gestiona varias cuentas y brokers simultáneamente. Snapshots periódicos automáticos para seguir la evolución de tu efectivo.',
+    showcaseAccountsHighlight1: 'Múltiples cuentas y brokers',
+    showcaseAccountsHighlight2: 'Snapshots automáticos configurables',
+    showcaseAccountsHighlight3: 'Evolución patrimonial histórica',
+
+    // Feature grid
+    featureGridTitle: 'Diseñado para inversores exigentes',
+    featureGridSubtitle: 'Cada función está pensada para darte el control total de tus finanzas personales.',
+    featurePortfolioTitle: 'Cartera en tiempo real',
+    featurePortfolioDesc: 'Seguimiento de acciones, ETFs, fondos y crypto con precios actualizados automáticamente vía Yahoo Finance.',
+    featureAllocationTitle: 'Asignación de activos',
+    featureAllocationDesc: 'Visualiza la distribución de tu patrimonio entre renta variable, renta fija y efectivo.',
+    featureFiscalTitle: 'Informes fiscales',
+    featureFiscalDesc: 'Cálculo automático de plusvalías con FIFO, LIFO o coste medio ponderado para la declaración de la renta.',
+    featureAccountsTitle: 'Multi-cuenta',
+    featureAccountsDesc: 'Gestiona varias cuentas y brokers. Snapshots periódicos para seguir la evolución de tu efectivo.',
+    featurePrivacyTitle: 'Privacidad total',
+    featurePrivacyDesc: 'Self-hosted. Tus datos financieros se quedan en tu servidor. Backup y restauración en JSON.',
+    featurePricesTitle: 'Precios automáticos',
+    featurePricesDesc: 'Actualización periódica de cotizaciones. Configurable desde cada 5 minutos hasta manual.',
+
+    // CTA
+    ctaTitle: '¿Listo para tomar el control?',
+    ctaSubtitle: 'Despliega Fintrack en tu servidor en minutos. Tus datos financieros nunca salen de tu infraestructura.',
+    ctaButton: 'Empezar ahora',
+    ctaSecondary: 'Ver código fuente',
+
+    // Footer
+    footerProduct: 'Producto',
+    footerFeatures: 'Funciones',
+    footerDemo: 'Demo',
+    footerResources: 'Recursos',
+    footerDocs: 'Documentación',
+    footerGithub: 'GitHub',
+    footerLegal: 'Legal',
+    footerPrivacy: 'Privacidad',
+    footerTerms: 'Términos',
+    footerLicense: 'Licencia MIT',
+    footerTagline: 'Terminal de inversión personal. Self-hosted y privado.',
+    footerCopyright: '© 2024 Fintrack. Software de código abierto.',
+
+    // Mockup labels
+    mockupDashboard: 'Dashboard',
+    mockupPatrimony: 'Patrimonio Total',
+    mockupPnl: 'P&L No Realizado',
+    mockupCash: 'Efectivo',
   },
 
   // ── Dashboard ────────────────────────────────────────────────────────────────

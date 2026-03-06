@@ -137,6 +137,24 @@
     animation: fade-in-up 0.35s ease-out both;
   }
 
+  /* Float animation for mockup frames */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Slow spin for decorative rings */
+  @keyframes slow-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .animate-slow-spin {
+    animation: slow-spin 30s linear infinite;
+  }
+
   /* Pulse dot for live market indicator */
   @keyframes pulse-dot {
     0%, 100% {

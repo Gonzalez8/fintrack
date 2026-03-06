@@ -193,6 +193,14 @@ class Settings(models.Model):
         default=None,
         help_text="Delete data older than this many days. Null = never delete.",
     )
+    purge_portfolio_snapshots = models.BooleanField(
+        default=True,
+        help_text="Include PortfolioSnapshot in automatic purge.",
+    )
+    purge_position_snapshots = models.BooleanField(
+        default=True,
+        help_text="Include PositionSnapshot in automatic purge.",
+    )
 
     class Meta:
         verbose_name_plural = "settings"

@@ -59,3 +59,41 @@ def snapshot_all_users_task() -> None:
 
             create_portfolio_snapshot_now(settings.user)
             logger.info("Portfolio snapshot created for user %s", settings.user)
+
+
+@shared_task
+def purge_old_snapshots_task() -> None:
+    """Delete old PortfolioSnapshot / PositionSnapshot records based on per-user retention settings.
+
+    Triggered by Celery Beat once a day.  Skips users with data_retention_days = None.
+    Respects the per-user purge_portfolio_snapshots / purge_position_snapshots flags.
+    """
+    from datetime import timedelta
+
+    from django.db import transaction
+    from django.utils import timezone
+
+    from apps.assets.models import PortfolioSnapshot, PositionSnapshot, Settings
+
+    for settings in Settings.objects.select_related("user").exclude(data_retention_days__isnull=True):
+        cutoff = timezone.now() - timedelta(days=settings.data_retention_days)
+        user = settings.user
+
+        with transaction.atomic():
+            if settings.purge_portfolio_snapshots:
+                deleted, _ = (
+                    PortfolioSnapshot.objects
+                    .filter(owner=user, captured_at__lt=cutoff)
+                    .delete()
+                )
+                if deleted:
+                    logger.info("Purged %d PortfolioSnapshot(s) for user %s", deleted, user)
+
+            if settings.purge_position_snapshots:
+                deleted, _ = (
+                    PositionSnapshot.objects
+                    .filter(owner=user, captured_at__lt=cutoff)
+                    .delete()
+                )
+                if deleted:
+                    logger.info("Purged %d PositionSnapshot(s) for user %s", deleted, user)

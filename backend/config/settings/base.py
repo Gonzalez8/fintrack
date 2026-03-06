@@ -187,4 +187,8 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.assets.tasks.snapshot_all_users_task",
         "schedule": 60.0,            # every 60 seconds
     },
+    "purge-old-snapshots": {
+        "task": "apps.assets.tasks.purge_old_snapshots_task",
+        "schedule": 86400.0,          # once a day
+    },
 }

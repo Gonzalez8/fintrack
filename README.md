@@ -121,18 +121,15 @@ That's it! 🎉
 
 | Service | URL |
 |---|---|
-| App | http://localhost:5173 |
-| API | http://localhost:8000/api/ |
-| Swagger UI | http://localhost:8000/api/schema/swagger-ui/ |
-| Django Admin | http://localhost:8000/admin/ |
+| App | `http://localhost:5173` |
+| API | `http://localhost:8000/api/` |
+| Swagger UI | `http://localhost:8000/api/schema/swagger-ui/` |
+| Django Admin | `http://localhost:8000/admin/` |
 
-Default credentials: `admin` / `admin`
+- Username: `admin`
+- Password: `admin`
 
----
-
-## Deployment
-
-### Option A — Production (pre-built images)
+### Option 2: Production (Pre-built Images) 🏭
 
 No source code needed — uses images from GitHub Container Registry.
 
@@ -141,20 +138,22 @@ mkdir fintrack && cd fintrack
 curl -O https://raw.githubusercontent.com/Gonzalez8/Fintrack/main/docker-compose.prod.yml
 curl -O https://raw.githubusercontent.com/Gonzalez8/Fintrack/main/.env.production.example
 cp .env.production.example .env
-# Edit .env with your values
+# Edit .env with your values (DB_PASSWORD, DJANGO_SECRET_KEY, etc.)
 docker compose -f docker-compose.prod.yml --env-file .env up -d
 ```
 
 The superuser is created automatically on first start. No manual scripts needed.
 
-### Option B — Portainer (Stack)
+> ⚠️ Always set strong, unique values for `DB_PASSWORD`, `DJANGO_SECRET_KEY` and `DJANGO_SUPERUSER_PASSWORD` before deploying.
 
-1. In Portainer, go to **Stacks → Add stack**.
-2. Paste the contents of [`docker-compose.prod.yml`](docker-compose.prod.yml).
-3. Add the required environment variables (see [Environment Variables](#environment-variables)).
-4. Click **Deploy the stack**.
+### Option 3: Portainer 🖥️
 
-### Option C — Live Demo (Vercel, no backend)
+1. In Portainer, go to **Stacks → Add stack**
+2. Paste the contents of [`docker-compose.prod.yml`](docker-compose.prod.yml)
+3. Add the required [environment variables](#environment-variables)
+4. Click **Deploy the stack**
+
+### Option 4 — Live Demo (Vercel, no backend)
 
 A static frontend-only demo using [MSW (Mock Service Worker)](https://mswjs.io/) — no database or backend needed.
 
@@ -171,6 +170,8 @@ The `frontend/vercel.json` is already configured for SPA routing and MSW service
 ```bash
 cd frontend && VITE_DEMO_MODE=true npm run dev
 ```
+
+[Full deployment documentation →](docker-compose.prod.yml)
 
 ---
 

@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Info } from 'lucide-react'
 import { settingsApi, backupApi, storageApi } from '@/api/assets'
 import { reportsApi } from '@/api/portfolio'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -8,8 +9,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { PageHeader } from '@/components/app/PageHeader'
 import type { Settings } from '@/types'
+
+const TABLE_TOOLTIP_KEYS: Record<string, string> = {
+  assets_asset: 'settings.tableTooltipAssetsAsset',
+  assets_account: 'settings.tableTooltipAssetsAccount',
+  assets_accountsnapshot: 'settings.tableTooltipAssetsAccountsnapshot',
+  assets_settings: 'settings.tableTooltipAssetsSettings',
+  assets_portfoliosnapshot: 'settings.tableTooltipAssetsPortfoliosnapshot',
+  assets_positionsnapshot: 'settings.tableTooltipAssetsPositionsnapshot',
+  transactions_transaction: 'settings.tableTooltipTransactionsTransaction',
+  transactions_dividend: 'settings.tableTooltipTransactionsDividend',
+  transactions_interest: 'settings.tableTooltipTransactionsInterest',
+}
 
 function useNow(intervalMs = 60_000) {
   const [now, setNow] = useState(() => new Date())
@@ -91,6 +105,11 @@ export function ConfiguracionPage() {
 
   const [retentionDays, setRetentionDays] = useState<number | null | undefined>(undefined)
   const currentRetention = retentionDays !== undefined ? retentionDays : (settings?.data_retention_days ?? null)
+
+  const [purgePortfolio, setPurgePortfolio] = useState<boolean | undefined>(undefined)
+  const currentPurgePortfolio = purgePortfolio !== undefined ? purgePortfolio : (settings?.purge_portfolio_snapshots ?? true)
+  const [purgePosition, setPurgePosition] = useState<boolean | undefined>(undefined)
+  const currentPurgePosition = purgePosition !== undefined ? purgePosition : (settings?.purge_position_snapshots ?? true)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importResult, setImportResult] = useState<Record<string, number | boolean> | null>(null)
@@ -292,15 +311,32 @@ export function ConfiguracionPage() {
                 )}
               </div>
               {storageInfo && storageInfo.tables.length > 0 && (
-                <div className="mt-3 space-y-1">
-                  {storageInfo.tables
-                    .map((t_item) => (
-                      <div key={t_item.table} className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-mono">{t_item.table}</span>
-                        <span className="tabular-nums">{t_item.size_mb.toFixed(3)} {t('settings.mb')}</span>
-                      </div>
-                    ))}
-                </div>
+                <TooltipProvider delayDuration={200}>
+                  <div className="mt-3 space-y-1">
+                    {storageInfo.tables
+                      .map((t_item) => {
+                        const tooltipKey = TABLE_TOOLTIP_KEYS[t_item.table]
+                        return (
+                          <div key={t_item.table} className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1 font-mono">
+                              {t_item.table}
+                              {tooltipKey && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="h-3 w-3 shrink-0 cursor-help text-muted-foreground/60" />
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="max-w-xs">
+                                    {t(tooltipKey)}
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </span>
+                            <span className="tabular-nums">{t_item.size_mb.toFixed(3)} {t('settings.mb')}</span>
+                          </div>
+                        )
+                      })}
+                  </div>
+                </TooltipProvider>
               )}
             </div>
 
@@ -326,14 +362,49 @@ export function ConfiguracionPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    settingsMut.mutate({ data_retention_days: currentRetention } as Partial<Settings>)
+                    const payload: Partial<Settings> = { data_retention_days: currentRetention }
+                    if (purgePortfolio !== undefined) payload.purge_portfolio_snapshots = purgePortfolio
+                    if (purgePosition !== undefined) payload.purge_position_snapshots = purgePosition
+                    settingsMut.mutate(payload)
                     setRetentionDays(undefined)
+                    setPurgePortfolio(undefined)
+                    setPurgePosition(undefined)
                   }}
-                  disabled={retentionDays === undefined || settingsMut.isPending}
+                  disabled={(retentionDays === undefined && purgePortfolio === undefined && purgePosition === undefined) || settingsMut.isPending}
                 >
                   {t('common.save')}
                 </Button>
               </div>
+
+              {currentRetention !== null && currentRetention !== undefined && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">{t('settings.purgeTargets')}</p>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
+                      checked={currentPurgePortfolio}
+                      onChange={(e) => setPurgePortfolio(e.target.checked)}
+                    />
+                    <span className="text-xs">
+                      <span className="font-medium">{t('settings.purgePortfolioSnapshots')}</span>
+                      <span className="text-muted-foreground"> — {t('settings.purgePortfolioSnapshotsDesc')}</span>
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
+                      checked={currentPurgePosition}
+                      onChange={(e) => setPurgePosition(e.target.checked)}
+                    />
+                    <span className="text-xs">
+                      <span className="font-medium">{t('settings.purgePositionSnapshots')}</span>
+                      <span className="text-muted-foreground"> — {t('settings.purgePositionSnapshotsDesc')}</span>
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>

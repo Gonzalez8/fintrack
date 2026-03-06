@@ -30,5 +30,7 @@ export const store = {
     default_price_source: 'YAHOO',
     snapshot_frequency: 1440,
     data_retention_days: null,
+    purge_portfolio_snapshots: true,
+    purge_position_snapshots: true,
   } as Settings,
 }

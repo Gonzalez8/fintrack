@@ -320,6 +320,51 @@ GET     /api/health/                      Liveness probe
 
 ---
 
+## Database Schema
+
+All domain tables use UUID primary keys and `created_at` / `updated_at` timestamps. Every table has an `owner` foreign key enforcing row-level multi-tenancy — users can only see their own data.
+
+### Assets & Accounts
+
+| Table | Description |
+|---|---|
+| `assets_asset` | Securities catalog: stocks, ETFs, funds, crypto. Stores ticker, ISIN, type, currency, current price and price source (Yahoo / manual). One row per security per user. |
+| `assets_account` | Cash accounts: operating, savings, investment, deposits, alternatives. Balance is auto-synced from the latest `AccountSnapshot`. |
+| `assets_accountsnapshot` | Point-in-time balance recording for an account (date + balance + optional note). Used to build the patrimony evolution chart. Unique per `(account, date)`. |
+| `assets_settings` | Per-user configuration (1:1 with User): cost basis method, fiscal method, gift cost mode, rounding, snapshot frequency, data retention, base currency. |
+
+### Transactions & Income
+
+| Table | Description |
+|---|---|
+| `transactions_transaction` | Buy / Sell / Gift operations linking an asset and an account. Fields: date, quantity, unit price, commission, tax. Feeds the cost basis engine (FIFO/LIFO/WAC) to calculate positions and realized P&L. |
+| `transactions_dividend` | Dividend payments: gross amount, withholding tax, net income, withholding rate, shares held at payment date. Linked to an asset. |
+| `transactions_interest` | Interest income on accounts: gross, net, balance at date, annual rate. Linked to an account. |
+
+### Portfolio Snapshots
+
+Created automatically by Celery Beat every N minutes (configurable via `snapshot_frequency` in Settings). Used for time-series charts on the Dashboard.
+
+| Table | Description |
+|---|---|
+| `assets_portfoliosnapshot` | **Aggregate** snapshot at a point in time: total market value, total cost, total unrealized P&L. Each snapshot gets a unique `batch_id`. |
+| `assets_positionsnapshot` | **Per-asset detail** linked to a portfolio snapshot via `batch_id`: quantity, cost basis, market value, unrealized P&L (€ and %). One row per open position per snapshot. This is typically the largest table. |
+
+**How they work together:**
+
+```
+Celery Beat (every 60s)
+  └─► snapshot_all_users_task
+        └─► For each user (if due):
+              1. Calculate current positions (cost basis engine)
+              2. INSERT PortfolioSnapshot  { batch_id, totals }
+              3. INSERT PositionSnapshot[] { batch_id, per-asset details }
+```
+
+The Dashboard's "Portfolio value" chart reads `PortfolioSnapshot` records over time. The position detail drawer reads `PositionSnapshot` records filtered by asset.
+
+---
+
 ## Development
 
 ### Prerequisites

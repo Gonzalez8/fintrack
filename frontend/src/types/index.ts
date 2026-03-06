@@ -196,6 +196,8 @@ export interface Settings {
   default_price_source: string
   snapshot_frequency: number
   data_retention_days: number | null
+  purge_portfolio_snapshots: boolean
+  purge_position_snapshots: boolean
 }
 
 export interface OHLCBar {

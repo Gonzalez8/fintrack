@@ -1,0 +1,14 @@
+Django>=5.1,<5.2
+djangorestframework>=3.15,<3.16
+djangorestframework-simplejwt>=5.3,<5.4
+django-cors-headers>=4.4,<5
+django-filter>=24,<25
+psycopg[binary]>=3.2,<4
+yfinance>=0.2,<1
+celery[redis]>=5.3,<6
+google-auth>=2.28,<3
+gunicorn>=23,<24
+whitenoise>=6,<7
+drf-spectacular>=0.28,<1
+pytest>=8,<9
+pytest-django>=4.8,<5

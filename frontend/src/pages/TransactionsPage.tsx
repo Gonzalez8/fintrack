@@ -19,7 +19,7 @@ import { formatQty, formatErrors } from '@/lib/utils'
 import { TX_TYPE_BADGE_COLORS, TX_TYPE_LABELS } from '@/lib/constants'
 import type { Transaction } from '@/types'
 
-export function OperacionesPage() {
+export function TransactionsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)

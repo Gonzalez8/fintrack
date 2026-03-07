@@ -145,7 +145,7 @@ function BestWorstCard({ best, worst, bestLabel, worstLabel }: {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export function AhorroMensualPage() {
+export function MonthlySavingsPage() {
   const { t } = useTranslation()
   const [range, setRange]           = useState<Range>('1A')
   const [normalize, setNormalize]   = useState(false)

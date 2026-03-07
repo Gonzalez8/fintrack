@@ -255,9 +255,9 @@ fintrack/
 ├── frontend/                   Vite + React 18 + TypeScript
 │   └── src/
 │       ├── api/                client.ts (interceptor) · auth.ts · tasks.ts
-│       ├── pages/              Dashboard, Cartera, Activos, Cuentas,
-│       │                       Operaciones, Dividendos, Intereses,
-│       │                       AhorroMensual, Fiscal, Configuracion, Perfil
+│       ├── pages/              Dashboard, Portfolio, Assets, Accounts,
+│       │                       Transactions, Dividends, Interest,
+│       │                       MonthlySavings, Fiscal, Settings, Profile
 │       ├── components/
 │       │   ├── ui/             shadcn/ui (Radix + Tailwind)
 │       │   └── app/            Sidebar, TopBar, MobileNav, charts, tables

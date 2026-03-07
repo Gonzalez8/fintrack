@@ -261,7 +261,7 @@ function ChangePasswordCard() {
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-export function PerfilPage() {
+export function ProfilePage() {
   const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 max-w-2xl">

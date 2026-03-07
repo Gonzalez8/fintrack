@@ -19,7 +19,7 @@ import { RefreshCw } from 'lucide-react'
 import type { Position } from '@/types'
 import { useTranslation } from 'react-i18next'
 
-export function CarteraPage() {
+export function PortfolioPage() {
   const queryClient = useQueryClient()
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null)
   const [priceResult, setPriceResult] = useState<{

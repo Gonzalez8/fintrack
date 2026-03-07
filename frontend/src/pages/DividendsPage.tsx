@@ -17,7 +17,7 @@ import { Download, Plus, Trash2 } from 'lucide-react'
 import { formatQty, formatErrors } from '@/lib/utils'
 import type { Dividend, Position } from '@/types'
 
-export function DividendosPage() {
+export function DividendsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)

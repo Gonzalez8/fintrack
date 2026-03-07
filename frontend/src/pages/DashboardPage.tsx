@@ -4,7 +4,7 @@ import { reportsApi } from '@/api/portfolio'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { MoneyCell } from '@/components/app/MoneyCell'
 import { RVEvolutionChart } from '@/components/app/RVEvolutionChart'
-import { PatrimonioEvolutionChart } from '@/components/app/PatrimonioEvolutionChart'
+import { NetWorthEvolutionChart } from '@/components/app/NetWorthEvolutionChart'
 import { formatMoney, formatPercent } from '@/lib/utils'
 import { PageHeader } from '@/components/app/PageHeader'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
@@ -215,7 +215,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <PatrimonioEvolutionChart />
+      <NetWorthEvolutionChart />
       <RVEvolutionChart />
     </div>
   )

@@ -30,7 +30,7 @@ function filterByRange(data: PatrimonioPoint[], range: Range): PatrimonioPoint[]
   return data.filter((p) => p.month >= cutoffKey)
 }
 
-export function PatrimonioEvolutionChart() {
+export function NetWorthEvolutionChart() {
   const ct = useChartTheme()
   const [range, setRange] = useState<Range>('MAX')
 

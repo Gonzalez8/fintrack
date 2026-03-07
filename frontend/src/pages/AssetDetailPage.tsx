@@ -17,7 +17,7 @@ import type { Asset } from '@/types'
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export function ActivoDetailPage() {
+export function AssetDetailPage() {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()

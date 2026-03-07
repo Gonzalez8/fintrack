@@ -49,7 +49,7 @@ function formatDateTime(iso: string): string {
   })
 }
 
-export function ConfiguracionPage() {
+export function SettingsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { data: settings } = useQuery({

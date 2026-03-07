@@ -10,17 +10,17 @@ import { TopBar } from '@/components/app/TopBar'
 import { DemoBanner } from '@/components/app/DemoBanner'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
-import { CarteraPage } from '@/pages/CarteraPage'
-import { OperacionesPage } from '@/pages/OperacionesPage'
-import { DividendosPage } from '@/pages/DividendosPage'
-import { InteresesPage } from '@/pages/InteresesPage'
+import { PortfolioPage } from '@/pages/PortfolioPage'
+import { TransactionsPage } from '@/pages/TransactionsPage'
+import { DividendsPage } from '@/pages/DividendsPage'
+import { InterestPage } from '@/pages/InterestPage'
 import { FiscalPage } from '@/pages/FiscalPage'
-import { CuentasPage } from '@/pages/CuentasPage'
-import { ActivosPage } from '@/pages/ActivosPage'
-import { ActivoDetailPage } from '@/pages/ActivoDetailPage'
-import { ConfiguracionPage } from '@/pages/ConfiguracionPage'
-import { AhorroMensualPage } from '@/pages/AhorroMensualPage'
-import { PerfilPage } from '@/pages/PerfilPage'
+import { AccountsPage } from '@/pages/AccountsPage'
+import { AssetsPage } from '@/pages/AssetsPage'
+import { AssetDetailPage } from '@/pages/AssetDetailPage'
+import { SettingsPage } from '@/pages/SettingsPage'
+import { MonthlySavingsPage } from '@/pages/MonthlySavingsPage'
+import { ProfilePage } from '@/pages/ProfilePage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,17 +109,17 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/cartera" element={<CarteraPage />} />
-            <Route path="/activos" element={<ActivosPage />} />
-            <Route path="/activos/:id" element={<ActivoDetailPage />} />
-            <Route path="/cuentas" element={<CuentasPage />} />
-            <Route path="/operaciones" element={<OperacionesPage />} />
-            <Route path="/dividendos" element={<DividendosPage />} />
-            <Route path="/intereses" element={<InteresesPage />} />
+            <Route path="/cartera" element={<PortfolioPage />} />
+            <Route path="/activos" element={<AssetsPage />} />
+            <Route path="/activos/:id" element={<AssetDetailPage />} />
+            <Route path="/cuentas" element={<AccountsPage />} />
+            <Route path="/operaciones" element={<TransactionsPage />} />
+            <Route path="/dividendos" element={<DividendsPage />} />
+            <Route path="/intereses" element={<InterestPage />} />
             <Route path="/fiscal" element={<FiscalPage />} />
-            <Route path="/ahorro" element={<AhorroMensualPage />} />
-            <Route path="/configuracion" element={<ConfiguracionPage />} />
-            <Route path="/perfil" element={<PerfilPage />} />
+            <Route path="/ahorro" element={<MonthlySavingsPage />} />
+            <Route path="/configuracion" element={<SettingsPage />} />
+            <Route path="/perfil" element={<ProfilePage />} />
           </Route>
         </Routes>
       </BrowserRouter>

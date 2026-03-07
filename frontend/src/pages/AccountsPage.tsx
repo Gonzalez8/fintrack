@@ -20,7 +20,7 @@ function todayStr() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export function CuentasPage() {
+export function AccountsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { data: accountsData } = useQuery({

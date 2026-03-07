@@ -25,7 +25,7 @@ const statusVariant = (s: string | null) => {
   return 'secondary' as const
 }
 
-export function ActivosPage() {
+export function AssetsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const navigate = useNavigate()

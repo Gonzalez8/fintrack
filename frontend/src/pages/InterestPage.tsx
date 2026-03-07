@@ -16,7 +16,7 @@ import { Download, Pencil, Plus, Trash2 } from 'lucide-react'
 import { formatErrors } from '@/lib/utils'
 import type { Interest } from '@/types'
 
-export function InteresesPage() {
+export function InterestPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)

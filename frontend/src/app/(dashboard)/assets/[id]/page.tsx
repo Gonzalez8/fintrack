@@ -452,7 +452,7 @@ export default function AssetDetailPage({
                       <Select
                         value={form.type}
                         onValueChange={(v) =>
-                          setForm((f) => ({
+                          v && setForm((f) => ({
                             ...f,
                             type: v as Asset["type"],
                           }))
@@ -477,7 +477,7 @@ export default function AssetDetailPage({
                       <Select
                         value={form.price_mode}
                         onValueChange={(v) =>
-                          setForm((f) => ({
+                          v && setForm((f) => ({
                             ...f,
                             price_mode: v as Asset["price_mode"],
                           }))

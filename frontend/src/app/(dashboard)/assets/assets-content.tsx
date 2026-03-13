@@ -581,7 +581,7 @@ function AssetDialog({
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">{t("common.type")}</label>
-              <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as AssetFormData["type"] }))}>
+              <Select value={form.type} onValueChange={(v) => v && setForm((f) => ({ ...f, type: v as AssetFormData["type"] }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => (
@@ -596,7 +596,7 @@ function AssetDialog({
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-medium">{t("assets.priceMode")}</label>
-              <Select value={form.price_mode} onValueChange={(v) => setForm((f) => ({ ...f, price_mode: v as "MANUAL" | "AUTO" }))}>
+              <Select value={form.price_mode} onValueChange={(v) => v && setForm((f) => ({ ...f, price_mode: v as "MANUAL" | "AUTO" }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="AUTO">Automatico</SelectItem>

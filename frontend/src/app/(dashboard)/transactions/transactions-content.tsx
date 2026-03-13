@@ -512,7 +512,7 @@ function TransactionDialog({
 
           <div>
             <label className="text-sm font-medium">{t("common.account")} *</label>
-            <Select value={form.account} onValueChange={(v) => setForm((f) => ({ ...f, account: v }))}>
+            <Select value={form.account} onValueChange={(v) => setForm((f) => ({ ...f, account: v || "" }))}>
               <SelectTrigger className="w-full">
                 <span className="flex flex-1 text-left truncate" data-slot="select-value">
                   {selectedAccountLabel || <span className="text-muted-foreground">{t("common.select")}</span>}

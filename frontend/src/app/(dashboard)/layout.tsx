@@ -6,7 +6,8 @@ import { Sidebar } from "@/components/app/sidebar";
 import { TopBar } from "@/components/app/top-bar";
 import { MobileNav } from "@/components/app/mobile-nav";
 import { getDictionary } from "@/i18n/config";
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@/lib/constants";
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, IS_DEMO } from "@/lib/constants";
+import { DemoBanner } from "@/components/app/demo-banner";
 import type { Locale } from "@/lib/constants";
 import type { User } from "@/types";
 
@@ -34,6 +35,7 @@ export default async function DashboardLayout({
 
   return (
     <Providers user={user} dictionary={dictionary}>
+      {IS_DEMO && <DemoBanner />}
       <div className="flex min-h-screen">
         <Sidebar />
         <div className="flex flex-1 flex-col min-w-0">

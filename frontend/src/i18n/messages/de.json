@@ -250,5 +250,8 @@
   "marketing.ctaTitle1": "Beginne deine Investitionen zu verfolgen",
   "marketing.ctaTitle2": "noch heute",
   "marketing.ctaSubtitle": "Bereitstellung in Minuten. Fuer immer kostenlos.",
-  "marketing.footerLicense": "Open Source · Self-Hosted · MIT License"
+  "marketing.footerLicense": "Open Source · Self-Hosted · MIT License",
+
+  "demo.banner": "Demo-Modus",
+  "demo.bannerMessage": "Beispieldaten. Aenderungen werden beim Neuladen nicht gespeichert."
 }

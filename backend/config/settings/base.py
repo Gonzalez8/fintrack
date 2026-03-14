@@ -8,8 +8,11 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
 
 DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 
-_allowed = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,backend").strip()
+_allowed = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").strip()
 ALLOWED_HOSTS = ["*"] if _allowed in ("*", "") else [h.strip() for h in _allowed.split(",") if h.strip()]
+# Always allow Docker internal hostname (frontend → backend communication)
+if "backend" not in ALLOWED_HOSTS and "*" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("backend")
 
 # ---------------------------------------------------------------------------
 # Application definition

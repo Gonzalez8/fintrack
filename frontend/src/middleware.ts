@@ -24,11 +24,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Demo mode: skip auth, just apply locale
-  if (IS_DEMO) {
-    return withLocale(req, NextResponse.next());
-  }
-
   // ── Auth check for dashboard routes ──
   const access = req.cookies.get(COOKIE_ACCESS)?.value;
   const refresh = req.cookies.get(COOKIE_REFRESH)?.value;
@@ -52,6 +47,11 @@ export async function middleware(req: NextRequest) {
     } catch {
       // Malformed token, try refresh
     }
+  }
+
+  // Demo mode: no Django backend to refresh against
+  if (IS_DEMO) {
+    return NextResponse.redirect(new URL("/welcome", req.url));
   }
 
   // Access token expired or missing — try refresh

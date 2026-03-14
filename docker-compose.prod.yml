@@ -26,6 +26,9 @@ services:
   backend:
     image: ghcr.io/gonzalez8/fintrack-backend:latest
     restart: unless-stopped
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"]
+    ports:
+      - "8001:8000"
     environment:
       - DB_NAME=${DB_NAME:-fintrack}
       - DB_USER=${DB_USER:-fintrack}
@@ -42,6 +45,12 @@ services:
       - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-true}
       - DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-admin}
       - DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-admin}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:8000/api/health/\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     depends_on:
       db:
         condition: service_healthy
@@ -51,11 +60,13 @@ services:
   frontend:
     image: ghcr.io/gonzalez8/fintrack-frontend:latest
     restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost}
       - DJANGO_INTERNAL_URL=http://backend:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   celery_worker:
     image: ghcr.io/gonzalez8/fintrack-backend:latest
@@ -74,6 +85,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      backend:
         condition: service_healthy
 
   celery_beat:
@@ -94,17 +107,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-
-  nginx:
-    image: nginx:alpine
-    restart: unless-stopped
-    ports:
-      - "${APP_PORT:-80}:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:

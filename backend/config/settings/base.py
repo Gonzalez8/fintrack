@@ -8,10 +8,8 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
 
 DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = [
-    h.strip()
-    for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,backend").split(",")
-]
+_allowed = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,backend").strip()
+ALLOWED_HOSTS = ["*"] if _allowed in ("*", "") else [h.strip() for h in _allowed.split(",") if h.strip()]
 
 # ---------------------------------------------------------------------------
 # Application definition

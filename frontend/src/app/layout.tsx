@@ -13,10 +13,27 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://fintrack-quintela.vercel.app";
+
 export const metadata: Metadata = {
   title: "Fintrack — Seguimiento de inversiones",
   description:
-    "Controla tu cartera, operaciones, dividendos, intereses y fiscalidad desde un unico panel.",
+    "Controla tu cartera, operaciones, dividendos, intereses y fiscalidad desde un unico panel. Self-hosted, open source, 100% privado.",
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    title: "Fintrack — Seguimiento de inversiones",
+    description:
+      "Controla tu cartera, operaciones, dividendos, intereses y fiscalidad desde un unico panel.",
+    url: SITE_URL,
+    siteName: "Fintrack",
+    locale: "es_ES",
+    type: "website",
+    // Image auto-detected from opengraph-image.tsx
+  },
+  twitter: {
+    card: "summary_large_image",
+    // Image auto-detected from twitter-image.tsx
+  },
 };
 
 export default function RootLayout({

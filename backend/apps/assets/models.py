@@ -222,5 +222,10 @@ class Settings(models.Model):
         set_user_cache(user.pk, NS_SETTINGS, obj, timeout=3600)
         return obj
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        from apps.core.cache import invalidate_user_cache, NS_SETTINGS
+        invalidate_user_cache(self.user_id, NS_SETTINGS)
+
     def __str__(self):
         return f"Settings ({self.user})"

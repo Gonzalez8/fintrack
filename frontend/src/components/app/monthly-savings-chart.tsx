@@ -121,7 +121,8 @@ export function MonthlySavingsChart({
 
   const minWidth = Math.max(chartData.length * 30, 260);
 
-  const handleBarClick = (data: { month?: string }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleBarClick = (data: any) => {
     if (!onMonthSelect) return;
     const month = data?.month;
     if (!month) return;

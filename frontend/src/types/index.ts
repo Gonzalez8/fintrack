@@ -39,7 +39,7 @@ export interface AuthResponse {
 export type AssetType = "STOCK" | "ETF" | "FUND" | "CRYPTO";
 export type PriceMode = "MANUAL" | "AUTO";
 export type PriceSource = "YAHOO" | "MANUAL";
-export type PriceStatus = "OK" | "ERROR" | "PENDING" | "NOT_FOUND";
+export type PriceStatus = "OK" | "ERROR" | "PENDING" | "NOT_FOUND" | "NO_TICKER";
 
 export interface Asset {
   id: string;

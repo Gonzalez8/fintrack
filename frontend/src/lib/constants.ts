@@ -51,23 +51,23 @@ export const ACCOUNT_TYPE_BADGE_COLORS: Record<string, string> = {
   ALTERNATIVOS: "bg-pink-500/10 text-pink-600 dark:text-pink-400",
 };
 
-export const ASSET_TYPE_LABELS: Record<string, string> = {
-  STOCK: "Acciones",
-  ETF: "ETFs",
-  FUND: "Fondos",
-  CRYPTO: "Cripto",
+export const ASSET_TYPE_KEYS: Record<string, string> = {
+  STOCK: "label.assetType.STOCK",
+  ETF: "label.assetType.ETF",
+  FUND: "label.assetType.FUND",
+  CRYPTO: "label.assetType.CRYPTO",
 };
 
-export const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  OPERATIVA: "Operativa",
-  AHORRO: "Ahorro",
-  INVERSION: "Inversion",
-  DEPOSITOS: "Depositos",
-  ALTERNATIVOS: "Alternativos",
+export const ACCOUNT_TYPE_KEYS: Record<string, string> = {
+  OPERATIVA: "label.accountType.OPERATIVA",
+  AHORRO: "label.accountType.AHORRO",
+  INVERSION: "label.accountType.INVERSION",
+  DEPOSITOS: "label.accountType.DEPOSITOS",
+  ALTERNATIVOS: "label.accountType.ALTERNATIVOS",
 };
 
-export const TRANSACTION_TYPE_LABELS: Record<string, string> = {
-  BUY: "Compra",
-  SELL: "Venta",
-  GIFT: "Regalo",
+export const TRANSACTION_TYPE_KEYS: Record<string, string> = {
+  BUY: "label.txType.BUY",
+  SELL: "label.txType.SELL",
+  GIFT: "label.txType.GIFT",
 };

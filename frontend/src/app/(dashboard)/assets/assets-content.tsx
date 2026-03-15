@@ -19,7 +19,7 @@ import { SwipeCard } from "@/components/app/swipe-card";
 import { Plus, Search, Pencil, Trash2, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Clock, MinusCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { Asset, AssetFormData, PaginatedResponse } from "@/types";
-import { ASSET_TYPE_LABELS, ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
+import { ASSET_TYPE_KEYS, ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import { useTranslations } from "@/i18n/use-translations";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -102,9 +102,11 @@ function AssetCard({
   onTap,
   onEdit,
   onDelete,
+  t,
 }: {
   asset: Asset;
   onTap: () => void;
+  t: (key: string) => string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -132,7 +134,7 @@ function AssetCard({
               variant="secondary"
               className={cn("text-[9px] px-1.5 h-4", badgeColor)}
             >
-              {ASSET_TYPE_LABELS[asset.type] || asset.type}
+              {t(ASSET_TYPE_KEYS[asset.type]) || asset.type}
             </Badge>
             <SyncStatusBadge asset={asset} />
           </div>
@@ -294,7 +296,7 @@ export function AssetsContent() {
           variant="secondary"
           className={ASSET_TYPE_BADGE_COLORS[a.type] ?? ""}
         >
-          {ASSET_TYPE_LABELS[a.type] || a.type}
+          {t(ASSET_TYPE_KEYS[a.type]) || a.type}
         </Badge>
       ),
     },
@@ -373,12 +375,12 @@ export function AssetsContent() {
         <div className="flex gap-2">
           <Select value={typeFilter} onValueChange={(v) => setParam("type", v === "ALL" ? "" : v || "")}>
             <SelectTrigger className="flex-1 sm:w-[150px]">
-              <span data-slot="select-value">{typeFilter ? (ASSET_TYPE_LABELS[typeFilter] || typeFilter) : t("common.all")}</span>
+              <span data-slot="select-value">{typeFilter ? (t(ASSET_TYPE_KEYS[typeFilter]) || typeFilter) : t("common.all")}</span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">{t("common.all")}</SelectItem>
-              {Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
+              {Object.entries(ASSET_TYPE_KEYS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{t(v)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -401,6 +403,7 @@ export function AssetsContent() {
               <AssetCard
                 key={a.id}
                 asset={a}
+                t={t}
                 onTap={() => router.push(`/assets/${a.id}`)}
                 onEdit={() => { setEditing(a); setDialogOpen(true); }}
                 onDelete={() => {
@@ -545,10 +548,10 @@ function AssetDialog({
             <div className="space-y-1.5">
               <label className="text-sm font-medium">{t("common.type")}</label>
               <Select value={form.type} onValueChange={(v) => v && setForm((f) => ({ ...f, type: v as AssetFormData["type"] }))}>
-                <SelectTrigger><span data-slot="select-value">{ASSET_TYPE_LABELS[form.type] || form.type}</span></SelectTrigger>
+                <SelectTrigger><span data-slot="select-value">{t(ASSET_TYPE_KEYS[form.type]) || form.type}</span></SelectTrigger>
                 <SelectContent>
-                  {Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  {Object.entries(ASSET_TYPE_KEYS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{t(v)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

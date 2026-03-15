@@ -4,6 +4,7 @@ from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -30,7 +31,7 @@ class AssetViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
             return super().destroy(request, *args, **kwargs)
         except ProtectedError:
             return Response(
-                {"detail": "No se puede eliminar este activo porque tiene operaciones o dividendos asociados."},
+                {"detail": "Cannot delete this asset because it has associated transactions or dividends."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -58,7 +59,7 @@ class AssetViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
 
         asset = self.get_object()
         if not asset.ticker:
-            return Response({"detail": "Este activo no tiene ticker."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "This asset has no ticker."}, status=status.HTTP_400_BAD_REQUEST)
 
         period = request.query_params.get("period", "1y")
         if period not in {"1mo", "3mo", "6mo", "1y", "2y", "5y", "max"}:
@@ -96,20 +97,20 @@ class AssetViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
         asset = self.get_object()
         if asset.price_mode != Asset.PriceMode.MANUAL:
             return Response(
-                {"detail": "El activo no esta en modo de precio manual."},
+                {"detail": "Asset is not in manual price mode."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         price_raw = request.data.get("price")
         if price_raw is None:
             return Response(
-                {"detail": "El campo 'price' es obligatorio."},
+                {"detail": "The 'price' field is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
             price = Decimal(str(price_raw))
         except (InvalidOperation, ValueError):
             return Response(
-                {"detail": "Precio no valido."},
+                {"detail": "Invalid price."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         now = timezone.now()
@@ -141,7 +142,7 @@ class AccountViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
             return super().destroy(request, *args, **kwargs)
         except ProtectedError:
             return Response(
-                {"detail": "No se puede eliminar esta cuenta porque tiene operaciones o intereses asociados."},
+                {"detail": "Cannot delete this account because it has associated transactions or interests."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -181,7 +182,7 @@ class BulkSnapshotView(APIView):
         invalid = [str(aid) for aid in item_account_ids if aid not in valid_ids]
         if invalid:
             return Response(
-                {"detail": f"Cuentas no encontradas: {', '.join(invalid)}"},
+                {"detail": f"Accounts not found: {', '.join(invalid)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -214,6 +215,8 @@ _APP_TABLE_PREFIXES = ("assets_", "transactions_", "portfolio_", "reports_", "im
 
 
 class StorageInfoView(APIView):
+    permission_classes = [IsAdminUser]
+
     def get(self, request):
         from django.db import connection
         with connection.cursor() as cursor:

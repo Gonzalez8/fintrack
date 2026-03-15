@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { MoneyCell } from "@/components/app/money-cell";
 import { ArrowLeft, Pencil, X, Check } from "lucide-react";
-import { ASSET_TYPE_LABELS, ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
+import { ASSET_TYPE_KEYS, ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import { useTranslations } from "@/i18n/use-translations";
 import { cn } from "@/lib/utils";
 import type { Asset } from "@/types";
@@ -198,7 +198,7 @@ export default function AssetDetailPage({
               variant="secondary"
               className={cn(badgeColor)}
             >
-              {ASSET_TYPE_LABELS[asset.type] || asset.type}
+              {t(ASSET_TYPE_KEYS[asset.type]) || asset.type}
             </Badge>
             <Badge variant="outline" className="font-mono text-xs">
               {asset.currency}
@@ -459,12 +459,12 @@ export default function AssetDetailPage({
                         }
                       >
                         <SelectTrigger>
-                          <span data-slot="select-value">{(form.type && ASSET_TYPE_LABELS[form.type]) || form.type}</span>
+                          <span data-slot="select-value">{(form.type && t(ASSET_TYPE_KEYS[form.type])) || form.type}</span>
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => (
+                          {Object.entries(ASSET_TYPE_KEYS).map(([k, v]) => (
                             <SelectItem key={k} value={k}>
-                              {v}
+                              {t(v)}
                             </SelectItem>
                           ))}
                         </SelectContent>

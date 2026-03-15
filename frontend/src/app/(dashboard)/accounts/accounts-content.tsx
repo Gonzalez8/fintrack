@@ -17,7 +17,7 @@ import { MoneyCell } from "@/components/app/money-cell";
 import { SwipeCard } from "@/components/app/swipe-card";
 import { Plus, Pencil, Trash2, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { ACCOUNT_TYPE_LABELS } from "@/lib/constants";
+import { ACCOUNT_TYPE_KEYS } from "@/lib/constants";
 import { formatMoney } from "@/lib/utils";
 import type { Account, AccountFormData, AccountSnapshot, PaginatedResponse } from "@/types";
 import { useTranslations } from "@/i18n/use-translations";
@@ -93,7 +93,7 @@ export function AccountsContent() {
               <div className="flex items-center gap-2">
                 <p className="font-medium text-sm">{account.name}</p>
                 <Badge variant="secondary" className="text-[10px]">
-                  {ACCOUNT_TYPE_LABELS[account.type] || account.type}
+                  {t(ACCOUNT_TYPE_KEYS[account.type]) || account.type}
                 </Badge>
               </div>
               <button
@@ -129,7 +129,7 @@ export function AccountsContent() {
                 <div>
                   <p className="font-medium">{account.name}</p>
                   <Badge variant="secondary" className="mt-1">
-                    {ACCOUNT_TYPE_LABELS[account.type] || account.type}
+                    {t(ACCOUNT_TYPE_KEYS[account.type]) || account.type}
                   </Badge>
                 </div>
                 <div className="flex gap-1">
@@ -385,10 +385,10 @@ function AccountDialog({
           <div className="space-y-1.5">
             <label className="text-sm font-medium">{t("common.type")}</label>
             <Select value={form.type} onValueChange={(v) => v && setForm((f) => ({ ...f, type: v as AccountFormData["type"] }))}>
-              <SelectTrigger><span data-slot="select-value">{ACCOUNT_TYPE_LABELS[form.type] || form.type}</span></SelectTrigger>
+              <SelectTrigger><span data-slot="select-value">{t(ACCOUNT_TYPE_KEYS[form.type]) || form.type}</span></SelectTrigger>
               <SelectContent>
-                {Object.entries(ACCOUNT_TYPE_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                {Object.entries(ACCOUNT_TYPE_KEYS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{t(v)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

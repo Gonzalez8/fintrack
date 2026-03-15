@@ -142,6 +142,8 @@ def update_prices(user):
                 pass
 
     now = timezone.now()
+    updated_assets = []
+    error_assets = []
 
     for ticker, asset in ticker_map.items():
         if ticker in prices:
@@ -151,10 +153,7 @@ def update_prices(user):
                 asset.price_source = Asset.PriceSource.YAHOO
                 asset.price_status = Asset.PriceStatus.OK
                 asset.price_updated_at = now
-                asset.save(update_fields=[
-                    "current_price", "price_source", "price_status",
-                    "price_updated_at", "updated_at",
-                ])
+                updated_assets.append(asset)
                 results["updated"] += 1
                 results["prices"].append({
                     "ticker": ticker,
@@ -164,12 +163,18 @@ def update_prices(user):
             except (InvalidOperation, ValueError) as e:
                 asset.price_status = Asset.PriceStatus.ERROR
                 asset.price_updated_at = now
-                asset.save(update_fields=["price_status", "price_updated_at", "updated_at"])
+                error_assets.append(asset)
                 results["errors"].append(f"{ticker}: {str(e)}")
         else:
             asset.price_status = Asset.PriceStatus.ERROR
             asset.price_updated_at = now
-            asset.save(update_fields=["price_status", "price_updated_at", "updated_at"])
+            error_assets.append(asset)
             results["errors"].append(f"{ticker}: no price data found")
+
+    update_fields = ["current_price", "price_source", "price_status", "price_updated_at", "updated_at"]
+    if updated_assets:
+        Asset.objects.bulk_update(updated_assets, update_fields, batch_size=100)
+    if error_assets:
+        Asset.objects.bulk_update(error_assets, ["price_status", "price_updated_at", "updated_at"], batch_size=100)
 
     return results

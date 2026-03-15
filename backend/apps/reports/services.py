@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict, deque
 from decimal import Decimal
 from django.db.models import Sum
@@ -5,6 +6,8 @@ from django.db.models.functions import ExtractYear
 from django.utils import timezone
 from apps.transactions.models import Dividend, Interest
 from apps.portfolio.services import calculate_realized_pnl_fiscal
+
+logger = logging.getLogger(__name__)
 
 
 def _default_year(y):
@@ -157,7 +160,8 @@ def patrimonio_evolution(user):
                 live_rv += mv
             else:
                 live_rf += mv
-    except Exception:
+    except (KeyError, ValueError, TypeError, ZeroDivisionError):
+        logger.exception("Failed to calculate live portfolio for user %s", user.pk)
         live_total = Decimal("0")
 
     current_month = timezone.now().strftime("%Y-%m")

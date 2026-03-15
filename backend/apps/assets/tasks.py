@@ -32,36 +32,39 @@ def update_prices_task(self, user_id: int) -> dict:
 
 @shared_task
 def snapshot_all_users_task() -> None:
-    """Create PortfolioSnapshot for every user whose snapshot interval is due."""
+    """Dispatch per-user snapshot tasks for every user whose snapshot interval is due."""
     from apps.assets.models import PortfolioSnapshot, Settings
-    from apps.assets.services import create_portfolio_snapshot_now
-    from django.db import transaction
     from django.utils import timezone
 
     for user_settings in Settings.objects.select_related("user").filter(snapshot_frequency__gt=0):
-        with transaction.atomic():
-            try:
-                settings = Settings.objects.select_for_update().get(pk=user_settings.pk)
-            except Settings.DoesNotExist:
+        freq = user_settings.snapshot_frequency
+        last = (
+            PortfolioSnapshot.objects
+            .filter(owner=user_settings.user)
+            .order_by("-captured_at")
+            .first()
+        )
+        if last is not None:
+            elapsed_minutes = (timezone.now() - last.captured_at).total_seconds() / 60
+            if elapsed_minutes < freq:
                 continue
 
-            freq = settings.snapshot_frequency
-            if freq <= 0:
-                continue
+        snapshot_single_user_task.delay(user_settings.user_id)
 
-            last = (
-                PortfolioSnapshot.objects
-                .filter(owner=settings.user)
-                .order_by("-captured_at")
-                .first()
-            )
-            if last is not None:
-                elapsed_minutes = (timezone.now() - last.captured_at).total_seconds() / 60
-                if elapsed_minutes < freq:
-                    continue
 
-            create_portfolio_snapshot_now(settings.user)
-            logger.info("Portfolio snapshot created for user %s", settings.user)
+@shared_task
+def snapshot_single_user_task(user_id: int) -> None:
+    """Create a PortfolioSnapshot for a single user."""
+    from django.contrib.auth import get_user_model
+    from apps.assets.services import create_portfolio_snapshot_now
+
+    try:
+        user = get_user_model().objects.get(pk=user_id)
+    except get_user_model().DoesNotExist:
+        return
+
+    create_portfolio_snapshot_now(user)
+    logger.info("Portfolio snapshot created for user %s", user)
 
 
 @shared_task

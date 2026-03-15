@@ -458,3 +458,90 @@ class TestWeightPercentage:
         # TST mv = 10*15 = 150, OTH mv = 2*50 = 100, total = 250
         assert Decimal(pos_tst["weight"]) == Decimal("60.00")
         assert Decimal(pos_oth["weight"]) == Decimal("40.00")
+
+
+# ---------------------------------------------------------------------------
+# Oversell tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestOversellFIFO:
+    """Selling more shares than owned (FIFO) should flag oversell, not crash."""
+
+    def test_oversell_flagged(self, user, settings_fifo, asset, account):
+        _make_tx(user, asset, account, "BUY", datetime.date(2025, 1, 1), 50, 10)
+        _make_tx(user, asset, account, "SELL", datetime.date(2025, 2, 1), 100, 15)
+
+        result = calculate_portfolio_full(user)
+
+        # Portfolio should have 0 positions (all lots consumed)
+        assert len(result["positions"]) == 0
+
+        # Realized sale should exist with oversell flagged
+        assert len(result["realized_sales"]) == 1
+        sale = result["realized_sales"][0]
+        assert Decimal(sale["oversell_quantity"]) == Decimal("50")
+        # Cost basis covers only 50 shares: 50 * 10 = 500
+        assert Decimal(sale["cost_basis"]) == Decimal("500.00")
+        # Proceeds based on full 100 shares: 100 * 15 = 1500
+        assert Decimal(sale["proceeds"]) == Decimal("1500.00")
+
+
+@pytest.mark.django_db
+class TestOversellLIFO:
+    """Same oversell scenario with LIFO."""
+
+    def test_oversell_flagged(self, user, settings_lifo, asset, account):
+        _make_tx(user, asset, account, "BUY", datetime.date(2025, 1, 1), 50, 10)
+        _make_tx(user, asset, account, "SELL", datetime.date(2025, 2, 1), 100, 15)
+
+        result = calculate_portfolio_full(user)
+        assert len(result["positions"]) == 0
+        sale = result["realized_sales"][0]
+        assert Decimal(sale["oversell_quantity"]) == Decimal("50")
+        assert Decimal(sale["cost_basis"]) == Decimal("500.00")
+
+
+@pytest.mark.django_db
+class TestOversellWAC:
+    """Same oversell scenario with WAC."""
+
+    def test_oversell_flagged(self, user, settings_wac, asset, account):
+        _make_tx(user, asset, account, "BUY", datetime.date(2025, 1, 1), 50, 10)
+        _make_tx(user, asset, account, "SELL", datetime.date(2025, 2, 1), 100, 15)
+
+        result = calculate_portfolio_full(user)
+        assert len(result["positions"]) == 0
+        sale = result["realized_sales"][0]
+        assert Decimal(sale["oversell_quantity"]) == Decimal("50")
+        # WAC cost basis covers only 50 shares: 50 * 10 = 500
+        assert Decimal(sale["cost_basis"]) == Decimal("500.00")
+
+
+@pytest.mark.django_db
+class TestOversellPartial:
+    """Buy 50@10, sell 70@15 — cost basis for 50 only, oversell = 20."""
+
+    def test_partial_oversell(self, user, settings_fifo, asset, account):
+        _make_tx(user, asset, account, "BUY", datetime.date(2025, 1, 1), 50, 10)
+        _make_tx(user, asset, account, "SELL", datetime.date(2025, 2, 1), 70, 15)
+
+        result = calculate_portfolio_full(user)
+        sale = result["realized_sales"][0]
+        assert Decimal(sale["oversell_quantity"]) == Decimal("20")
+        assert Decimal(sale["cost_basis"]) == Decimal("500.00")  # 50 * 10
+        assert Decimal(sale["proceeds"]) == Decimal("1050.00")   # 70 * 15
+
+
+@pytest.mark.django_db
+class TestNoOversell:
+    """Normal sell should have oversell_quantity == 0."""
+
+    def test_no_oversell(self, user, settings_fifo, asset, account):
+        _make_tx(user, asset, account, "BUY", datetime.date(2025, 1, 1), 100, 10)
+        _make_tx(user, asset, account, "SELL", datetime.date(2025, 2, 1), 50, 15)
+
+        result = calculate_portfolio_full(user)
+        sale = result["realized_sales"][0]
+        assert Decimal(sale["oversell_quantity"]) == Decimal("0")

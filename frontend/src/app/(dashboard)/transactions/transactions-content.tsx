@@ -19,7 +19,7 @@ import { SwipeCard } from "@/components/app/swipe-card";
 import { DetailDrawer } from "@/components/app/detail-drawer";
 import { ShoppingCart, TrendingDown, Gift, Search, Pencil, Trash2, Download, Info, SlidersHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
-import { TRANSACTION_TYPE_LABELS } from "@/lib/constants";
+import { TRANSACTION_TYPE_KEYS } from "@/lib/constants";
 import { formatMoney, formatQty } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
 import type { Transaction, TransactionFormData, Asset, Account, PaginatedResponse, PortfolioData } from "@/types";
@@ -143,7 +143,7 @@ export function TransactionsContent() {
       header: t("common.type"),
       render: (tx) => (
         <Badge className={TX_TYPE_BADGE_COLORS[tx.type] ?? ""} variant="secondary">
-          {TRANSACTION_TYPE_LABELS[tx.type] || tx.type}
+          {t(TRANSACTION_TYPE_KEYS[tx.type]) || tx.type}
         </Badge>
       ),
     },
@@ -246,7 +246,7 @@ export function TransactionsContent() {
               <div className="flex flex-wrap gap-1.5 sm:hidden">
                 {typeFilter && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-mono">
-                    {TRANSACTION_TYPE_LABELS[typeFilter] || typeFilter}
+                    {t(TRANSACTION_TYPE_KEYS[typeFilter]) || typeFilter}
                     <X className="h-3 w-3 cursor-pointer" onClick={() => setParam("type", "")} />
                   </span>
                 )}
@@ -280,12 +280,12 @@ export function TransactionsContent() {
               <Input type="date" className="w-full sm:w-[140px]" value={dateTo} onChange={(e) => setParam("date_to", e.target.value)} />
               <Select value={typeFilter || "ALL"} onValueChange={(v) => setParam("type", v === "ALL" ? "" : v || "")}>
                 <SelectTrigger className="w-full sm:w-[130px]">
-                  <span data-slot="select-value">{typeFilter ? (TRANSACTION_TYPE_LABELS[typeFilter] || typeFilter) : t("transactions.allTypes")}</span>
+                  <span data-slot="select-value">{typeFilter ? (t(TRANSACTION_TYPE_KEYS[typeFilter]) || typeFilter) : t("transactions.allTypes")}</span>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">{t("transactions.allTypes")}</SelectItem>
-                  {Object.entries(TRANSACTION_TYPE_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  {Object.entries(TRANSACTION_TYPE_KEYS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{t(v)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -327,7 +327,7 @@ export function TransactionsContent() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <Badge className={TX_TYPE_BADGE_COLORS[tx.type] ?? ""} variant="secondary">
-                        {TRANSACTION_TYPE_LABELS[tx.type] || tx.type}
+                        {t(TRANSACTION_TYPE_KEYS[tx.type]) || tx.type}
                       </Badge>
                       <span className="font-medium text-sm truncate">{tx.asset_name}</span>
                       {tx.asset_ticker && <span className="text-xs text-muted-foreground">{tx.asset_ticker}</span>}
@@ -372,7 +372,7 @@ export function TransactionsContent() {
             open
             onOpenChange={(v) => { if (!v) setDetailItem(null); }}
             title={tx.asset_name ?? ""}
-            subtitle={`${tx.asset_ticker ?? ""} · ${TRANSACTION_TYPE_LABELS[tx.type] || tx.type} · ${tx.date}`}
+            subtitle={`${tx.asset_ticker ?? ""} · ${t(TRANSACTION_TYPE_KEYS[tx.type]) || tx.type} · ${tx.date}`}
             rows={[
               { label: t("common.account"), value: tx.account_name ?? "" },
               { label: t("common.quantity"), value: formatQty(tx.quantity) },
@@ -596,11 +596,11 @@ function TransactionDialog({
               <label className="text-sm font-medium">{t("common.type")}</label>
               <Select value={form.type} onValueChange={(v) => v && handleTypeChange(v)}>
                 <SelectTrigger className="w-full">
-                  <span data-slot="select-value">{TRANSACTION_TYPE_LABELS[form.type] || form.type}</span>
+                  <span data-slot="select-value">{t(TRANSACTION_TYPE_KEYS[form.type]) || form.type}</span>
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(TRANSACTION_TYPE_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  {Object.entries(TRANSACTION_TYPE_KEYS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{t(v)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

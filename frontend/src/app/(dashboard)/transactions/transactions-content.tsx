@@ -16,7 +16,8 @@ import {
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
 import { SwipeCard } from "@/components/app/swipe-card";
-import { ShoppingCart, TrendingDown, Gift, Search, Pencil, Trash2, Download, Info } from "lucide-react";
+import { DetailDrawer } from "@/components/app/detail-drawer";
+import { ShoppingCart, TrendingDown, Gift, Search, Pencil, Trash2, Download, Info, SlidersHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
 import { TRANSACTION_TYPE_LABELS } from "@/lib/constants";
 import { formatMoney, formatQty } from "@/lib/utils";
@@ -39,7 +40,9 @@ export function TransactionsContent() {
   const t = useTranslations();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [detailItem, setDetailItem] = useState<Transaction | null>(null);
   const [newType, setNewType] = useState<"BUY" | "SELL" | "GIFT">("BUY");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const page = Number(searchParams.get("page") || "1");
   const search = searchParams.get("search") || "";
@@ -103,6 +106,9 @@ export function TransactionsContent() {
       queryClient.invalidateQueries({ queryKey: ["transactions"], refetchType: "active" });
       queryClient.invalidateQueries({ queryKey: ["portfolio"], refetchType: "active" });
       toast.success(t("common.deleted"));
+    },
+    onError: () => {
+      toast.error(t("common.errorDeleting"));
     },
   });
 
@@ -204,36 +210,100 @@ export function TransactionsContent() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={t("transactions.searchPlaceholder")} className="pl-9" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
-        </div>
-        <Input type="date" className="w-full sm:w-[140px]" value={dateFrom} onChange={(e) => setParam("date_from", e.target.value)} />
-        <Input type="date" className="w-full sm:w-[140px]" value={dateTo} onChange={(e) => setParam("date_to", e.target.value)} />
-        <Select value={typeFilter || "ALL"} onValueChange={(v) => setParam("type", v === "ALL" ? "" : v || "")}>
-          <SelectTrigger className="w-full sm:w-[130px]">
-            <span data-slot="select-value">{typeFilter ? (TRANSACTION_TYPE_LABELS[typeFilter] || typeFilter) : t("transactions.allTypes")}</span>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">{t("transactions.allTypes")}</SelectItem>
-            {Object.entries(TRANSACTION_TYPE_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={accountFilter || "ALL"} onValueChange={(v) => setParam("account", v === "ALL" ? "" : v || "")}>
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <span data-slot="select-value">{accountFilter ? (accountList.find((a) => a.id === accountFilter)?.name || accountFilter) : t("transactions.allAccounts")}</span>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">{t("transactions.allAccounts")}</SelectItem>
-            {accountList.map((a) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {(() => {
+        const activeFilterCount = [typeFilter, dateFrom, dateTo, accountFilter].filter(Boolean).length;
+        const clearAllFilters = () => {
+          setParam("type", "");
+          setParam("date_from", "");
+          setParam("date_to", "");
+          setParam("account", "");
+        };
+        return (
+          <div className="space-y-2">
+            {/* Search + filter toggle (always visible) */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder={t("transactions.searchPlaceholder")} className="pl-9" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="sm:hidden relative shrink-0"
+                onClick={() => setFiltersOpen(!filtersOpen)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </div>
+
+            {/* Active filter chips (mobile, when collapsed) */}
+            {!filtersOpen && activeFilterCount > 0 && (
+              <div className="flex flex-wrap gap-1.5 sm:hidden">
+                {typeFilter && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-mono">
+                    {TRANSACTION_TYPE_LABELS[typeFilter] || typeFilter}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setParam("type", "")} />
+                  </span>
+                )}
+                {dateFrom && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-mono">
+                    {t("transactions.from")}: {dateFrom}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setParam("date_from", "")} />
+                  </span>
+                )}
+                {dateTo && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-mono">
+                    {t("transactions.to")}: {dateTo}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setParam("date_to", "")} />
+                  </span>
+                )}
+                {accountFilter && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-mono">
+                    {accountList.find((a) => a.id === accountFilter)?.name || accountFilter}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setParam("account", "")} />
+                  </span>
+                )}
+                <button className="text-xs text-muted-foreground underline" onClick={clearAllFilters}>
+                  {t("transactions.clearFilters")}
+                </button>
+              </div>
+            )}
+
+            {/* Expanded filter panel (mobile: toggled, desktop: always visible) */}
+            <div className={`flex-col sm:flex-row gap-2 ${filtersOpen ? "flex sm:flex" : "hidden sm:flex"}`}>
+              <Input type="date" className="w-full sm:w-[140px]" value={dateFrom} onChange={(e) => setParam("date_from", e.target.value)} />
+              <Input type="date" className="w-full sm:w-[140px]" value={dateTo} onChange={(e) => setParam("date_to", e.target.value)} />
+              <Select value={typeFilter || "ALL"} onValueChange={(v) => setParam("type", v === "ALL" ? "" : v || "")}>
+                <SelectTrigger className="w-full sm:w-[130px]">
+                  <span data-slot="select-value">{typeFilter ? (TRANSACTION_TYPE_LABELS[typeFilter] || typeFilter) : t("transactions.allTypes")}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{t("transactions.allTypes")}</SelectItem>
+                  {Object.entries(TRANSACTION_TYPE_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={accountFilter || "ALL"} onValueChange={(v) => setParam("account", v === "ALL" ? "" : v || "")}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <span data-slot="select-value">{accountFilter ? (accountList.find((a) => a.id === accountFilter)?.name || accountFilter) : t("transactions.allAccounts")}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">{t("transactions.allAccounts")}</SelectItem>
+                  {accountList.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Mobile cards */}
       <div className="sm:hidden space-y-2">
@@ -248,7 +318,7 @@ export function TransactionsContent() {
             return (
               <SwipeCard
                 key={tx.id}
-                onTap={() => openEdit(tx)}
+                onTap={() => setDetailItem(tx)}
                 onEdit={() => openEdit(tx)}
                 onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(tx.id); }}
                 accentColor={accent}
@@ -293,6 +363,28 @@ export function TransactionsContent() {
       </div>
 
       <TransactionDialog open={dialogOpen} onOpenChange={setDialogOpen} transaction={editing} defaultType={newType} />
+
+      {detailItem && (() => {
+        const tx = detailItem;
+        const total = tx.price ? parseFloat(tx.quantity) * parseFloat(tx.price) : null;
+        return (
+          <DetailDrawer
+            open
+            onOpenChange={(v) => { if (!v) setDetailItem(null); }}
+            title={tx.asset_name ?? ""}
+            subtitle={`${tx.asset_ticker ?? ""} · ${TRANSACTION_TYPE_LABELS[tx.type] || tx.type} · ${tx.date}`}
+            rows={[
+              { label: t("common.account"), value: tx.account_name ?? "" },
+              { label: t("common.quantity"), value: formatQty(tx.quantity) },
+              ...(tx.price ? [{ label: t("transactions.price"), value: formatMoney(tx.price) }] : []),
+              ...(total != null ? [{ label: "Total", value: <span className="font-semibold">{formatMoney(total)}</span> }] : []),
+              ...(tx.commission && parseFloat(tx.commission) > 0 ? [{ label: t("transactions.commission"), value: formatMoney(tx.commission) }] : []),
+              ...(tx.tax && parseFloat(tx.tax) > 0 ? [{ label: t("transactions.tax"), value: formatMoney(tx.tax) }] : []),
+              ...(tx.notes ? [{ label: t("transactions.notes"), value: tx.notes }] : []),
+            ]}
+          />
+        );
+      })()}
     </div>
   );
 }

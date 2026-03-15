@@ -50,9 +50,6 @@ class Dividend(UserOwnedModel):
     gross = models.DecimalField(max_digits=20, decimal_places=2)
     tax = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     net = models.DecimalField(max_digits=20, decimal_places=2)
-    withholding_rate = models.DecimalField(
-        max_digits=6, decimal_places=4, null=True, blank=True
-    )
     import_hash = models.CharField(max_length=64, null=True, blank=True)
 
     class Meta:

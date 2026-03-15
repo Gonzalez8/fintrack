@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from apps.assets.models import Asset, Account, AccountSnapshot, PortfolioSnapshot, PositionSnapshot, Settings
 from apps.assets.serializers import SettingsSerializer
+from apps.reports.models import SavingsGoal
 from apps.transactions.models import Transaction, Dividend, Interest
 
 from .serializers import (
@@ -21,6 +22,7 @@ from .serializers import (
     BackupTransactionSerializer,
     BackupDividendSerializer,
     BackupInterestSerializer,
+    BackupSavingsGoalSerializer,
     BackupSettingsSerializer,
 )
 
@@ -51,6 +53,9 @@ class BackupExportView(APIView):
             ).data,
             "interests": BackupInterestSerializer(
                 Interest.objects.filter(owner=user), many=True
+            ).data,
+            "savings_goals": BackupSavingsGoalSerializer(
+                SavingsGoal.objects.filter(owner=user), many=True
             ).data,
         }
         content = json.dumps(payload, indent=2, default=str)
@@ -89,7 +94,7 @@ class BackupImportView(APIView):
             "assets": 0, "accounts": 0, "account_snapshots": 0,
             "portfolio_snapshots": 0, "position_snapshots": 0,
             "transactions": 0, "dividends": 0, "interests": 0,
-            "settings": False,
+            "savings_goals": 0, "settings": False,
         }
 
         def to_defaults(item, fk_fields=(), exclude=()):
@@ -151,6 +156,7 @@ class BackupImportView(APIView):
                     counts["transactions"] += 1
 
                 for item in payload.get("dividends", []):
+                    item.pop("withholding_rate", None)
                     Dividend.objects.update_or_create(
                         id=item["id"], owner=user,
                         defaults=to_defaults(item, fk_fields=("asset",)),
@@ -169,6 +175,13 @@ class BackupImportView(APIView):
                         defaults=to_defaults(item, fk_fields=("account",)),
                     )
                     counts["interests"] += 1
+
+                for item in payload.get("savings_goals", []):
+                    SavingsGoal.objects.update_or_create(
+                        id=item["id"], owner=user,
+                        defaults=to_defaults(item),
+                    )
+                    counts["savings_goals"] += 1
 
         except Exception as e:
             return Response(

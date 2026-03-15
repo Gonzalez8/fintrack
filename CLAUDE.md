@@ -66,6 +66,7 @@ frontend/         Next.js 15+ App Router
 - **Layout split:** Mobile list uses `<div className="sm:hidden space-y-2">` with `SwipeCard`. Desktop uses `<div className="hidden sm:block">` with DataTable or Card grid with inline actions.
 - **Delete confirmation:** Always use `confirm(t("..."))` before calling the delete mutation.
 - **Accent colors:** Each SwipeCard gets an `accentColor` for the left border (e.g., `border-l-blue-500`, `border-l-amber-500`). Choose a color that represents the entity type.
+- **Tap on mobile card:** Opens a `DetailDrawer` (bottom sheet, read-only) showing all fields. Never opens the edit form — editing is only via swipe action. Component: `components/app/detail-drawer.tsx`.
 - **New item button:** Use a `Button` with `Plus` icon in the page header area.
 
 ## Common Commands

@@ -15,6 +15,7 @@ import {
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
 import { SwipeCard } from "@/components/app/swipe-card";
+import { DetailDrawer, type DetailRow } from "@/components/app/detail-drawer";
 import { Plus, Search, Pencil, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/utils";
@@ -33,6 +34,7 @@ export function DividendsContent() {
   const t = useTranslations();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Dividend | null>(null);
+  const [detailItem, setDetailItem] = useState<Dividend | null>(null);
 
   const page = Number(searchParams.get("page") || "1");
   const search = searchParams.get("search") || "";
@@ -63,6 +65,9 @@ export function DividendsContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dividends"], refetchType: "active" });
       toast.success(t("common.deleted"));
+    },
+    onError: () => {
+      toast.error(t("common.errorDeleting"));
     },
   });
 
@@ -161,7 +166,7 @@ export function DividendsContent() {
         {(data?.results ?? []).map((d) => (
           <SwipeCard
             key={d.id}
-            onTap={() => { setEditing(d); setDialogOpen(true); }}
+            onTap={() => setDetailItem(d)}
             onEdit={() => { setEditing(d); setDialogOpen(true); }}
             onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(d.id); }}
             accentColor="border-l-blue-500"
@@ -226,6 +231,21 @@ export function DividendsContent() {
       </button>
 
       <DividendDialog open={dialogOpen} onOpenChange={setDialogOpen} dividend={editing} />
+
+      <DetailDrawer
+        open={!!detailItem}
+        onOpenChange={(v) => { if (!v) setDetailItem(null); }}
+        title={detailItem?.asset_name ?? ""}
+        subtitle={detailItem ? `${detailItem.asset_ticker ?? ""} · ${detailItem.date}` : undefined}
+        rows={detailItem ? [
+          { label: t("dividends.gross"), value: formatMoney(detailItem.gross) },
+          { label: t("dividends.withholding"), value: formatMoney(detailItem.tax) },
+          { label: t("dividends.net"), value: <span className={parseFloat(detailItem.net) >= 0 ? "text-green-500" : "text-red-500"}>{formatMoney(detailItem.net)}</span> },
+          ...(detailItem.withholding_rate ? [{ label: t("dividends.withholdingRate"), value: `${parseFloat(detailItem.withholding_rate).toFixed(2)}%` }] : []),
+          ...(detailItem.shares ? [{ label: t("dividends.shares"), value: detailItem.shares }] : []),
+          ...(detailItem.asset_issuer_country ? [{ label: t("dividends.country"), value: detailItem.asset_issuer_country }] : []),
+        ] : []}
+      />
     </div>
   );
 }
@@ -316,12 +336,13 @@ function DividendDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const { withholding_rate: _, ...payload } = form;
     try {
       if (dividend) {
-        await api.put(`/dividends/${dividend.id}/`, form);
+        await api.put(`/dividends/${dividend.id}/`, payload);
         toast.success(t("common.success"));
       } else {
-        await api.post("/dividends/", form);
+        await api.post("/dividends/", payload);
         toast.success(t("common.success"));
       }
       queryClient.invalidateQueries({ queryKey: ["dividends"], refetchType: "active" });

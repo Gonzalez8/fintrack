@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Pencil, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,9 @@ export function SavingsGoalsTab() {
       if (selectedGoalId) {
         setSelectedGoalId(null);
       }
+    },
+    onError: () => {
+      toast.error(t("common.errorDeleting"));
     },
   });
 

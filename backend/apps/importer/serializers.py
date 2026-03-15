@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.assets.models import Asset, Account, AccountSnapshot, PortfolioSnapshot, PositionSnapshot, Settings
+from apps.reports.models import SavingsGoal
 from apps.transactions.models import Transaction, Dividend, Interest
 
 
@@ -37,7 +38,7 @@ class BackupDividendSerializer(serializers.ModelSerializer):
         model = Dividend
         fields = [
             "id", "date", "asset", "shares", "gross", "tax", "net",
-            "withholding_rate", "import_hash",
+            "import_hash",
         ]
         extra_kwargs = {"id": {"read_only": False}}
 
@@ -74,6 +75,13 @@ class BackupPositionSnapshotSerializer(serializers.ModelSerializer):
             "quantity", "cost_basis", "market_value",
             "unrealized_pnl", "unrealized_pnl_pct",
         ]
+        extra_kwargs = {"id": {"read_only": False}}
+
+
+class BackupSavingsGoalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SavingsGoal
+        fields = ["id", "name", "target_amount", "base_type", "deadline", "icon"]
         extra_kwargs = {"id": {"read_only": False}}
 
 

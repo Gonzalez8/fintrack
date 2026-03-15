@@ -243,6 +243,9 @@ export function AssetsContent() {
       queryClient.invalidateQueries({ queryKey: ["assets"], refetchType: "active" });
       toast.success(t("common.deleted"));
     },
+    onError: () => {
+      toast.error(t("assets.deleteError"));
+    },
   });
 
   const handleUpdatePrices = async () => {

@@ -15,6 +15,7 @@ import {
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
 import { SwipeCard } from "@/components/app/swipe-card";
+import { DetailDrawer } from "@/components/app/detail-drawer";
 import { Plus, Search, Pencil, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/utils";
@@ -49,6 +50,7 @@ export function InterestsContent() {
   const t = useTranslations();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Interest | null>(null);
+  const [detailItem, setDetailItem] = useState<Interest | null>(null);
 
   const page = Number(searchParams.get("page") || "1");
   const search = searchParams.get("search") || "";
@@ -79,6 +81,9 @@ export function InterestsContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["interests"], refetchType: "active" });
       toast.success(t("common.deleted"));
+    },
+    onError: () => {
+      toast.error(t("common.errorDeleting"));
     },
   });
 
@@ -199,7 +204,7 @@ export function InterestsContent() {
           return (
             <SwipeCard
               key={i.id}
-              onTap={() => { setEditing(i); setDialogOpen(true); }}
+              onTap={() => setDetailItem(i)}
               onEdit={() => { setEditing(i); setDialogOpen(true); }}
               onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(i.id); }}
               accentColor="border-l-emerald-500"
@@ -276,6 +281,31 @@ export function InterestsContent() {
       </button>
 
       <InterestDialog open={dialogOpen} onOpenChange={setDialogOpen} interest={editing} />
+
+      {(() => {
+        const di = detailItem;
+        if (!di) return null;
+        const gross = parseFloat(di.gross) || 0;
+        const balance = parseFloat(di.balance ?? "0") || 0;
+        const tin = calcTIN(gross, balance, di.days);
+        const tae = calcTAE(gross, balance, di.days);
+        const completed = new Date(di.date_end) <= new Date();
+        return (
+          <DetailDrawer
+            open
+            onOpenChange={(v) => { if (!v) setDetailItem(null); }}
+            title={di.account_name ?? ""}
+            subtitle={`${di.date_start} → ${di.date_end} (${di.days}d) · ${completed ? t("interests.completed") : t("interests.active")}`}
+            rows={[
+              { label: t("interests.gross"), value: formatMoney(di.gross) },
+              { label: t("interests.net"), value: <span className={parseFloat(di.net) >= 0 ? "text-green-500" : "text-red-500"}>{formatMoney(di.net)}</span> },
+              ...(di.balance ? [{ label: t("interests.balance"), value: formatMoney(di.balance) }] : []),
+              ...(tin !== null ? [{ label: "TIN", value: `${tin.toFixed(2)}%` }] : []),
+              ...(tae !== null ? [{ label: "TAE", value: `${tae.toFixed(2)}%` }] : []),
+            ]}
+          />
+        );
+      })()}
     </div>
   );
 }

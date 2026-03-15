@@ -14,6 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { MoneyCell } from "@/components/app/money-cell";
+import { SwipeCard } from "@/components/app/swipe-card";
 import { Plus, Pencil, Trash2, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { ACCOUNT_TYPE_LABELS } from "@/lib/constants";
@@ -41,7 +42,11 @@ export function AccountsContent() {
     mutationFn: (id: string) => api.delete(`/accounts/${id}/`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
       toast.success(t("common.deleted"));
+    },
+    onError: () => {
+      toast.error(t("accounts.deleteError"));
     },
   });
 
@@ -65,15 +70,58 @@ export function AccountsContent() {
             <Button variant="outline" onClick={() => setBulkOpen(true)}>
               <Camera className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t("accounts.bulkSnapshot")}</span>
             </Button>
-            <Button onClick={() => { setEditing(null); setDialogOpen(true); }}>
-              <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t("common.new")}</span>
+            <Button className="hidden sm:inline-flex" onClick={() => { setEditing(null); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" /> {t("common.new")}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Account cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Mobile: SwipeCard list */}
+      <div className="sm:hidden space-y-2">
+        {accounts?.map((account) => (
+          <SwipeCard
+            key={account.id}
+            onTap={() => setExpandedId(expandedId === account.id ? null : account.id)}
+            onEdit={() => { setEditing(account); setDialogOpen(true); }}
+            onDelete={() => {
+              if (confirm(t("accounts.deleteConfirm"))) deleteMutation.mutate(account.id);
+            }}
+            accentColor="border-l-cyan-500"
+          >
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <p className="font-medium text-sm">{account.name}</p>
+                <Badge variant="secondary" className="text-[10px]">
+                  {ACCOUNT_TYPE_LABELS[account.type] || account.type}
+                </Badge>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setSnapshotAccount(account); }}
+                className="p-1.5 rounded hover:bg-secondary transition-colors"
+              >
+                <Camera className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <MoneyCell value={account.balance} currency={account.currency} className="text-lg font-bold" />
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[11px] text-muted-foreground">{account.currency}</p>
+              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <span>Snapshots</span>
+                {expandedId === account.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </div>
+            </div>
+            {expandedId === account.id && (
+              <div className="mt-2 pt-2 border-t">
+                <SnapshotHistory accountId={account.id} />
+              </div>
+            )}
+          </SwipeCard>
+        ))}
+      </div>
+
+      {/* Desktop: Card grid */}
+      <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {accounts?.map((account) => (
           <Card key={account.id}>
             <CardContent className="pt-6">
@@ -104,7 +152,7 @@ export function AccountsContent() {
                     size="sm"
                     variant="ghost"
                     onClick={() => {
-                      if (confirm("Eliminar esta cuenta?")) deleteMutation.mutate(account.id);
+                      if (confirm(t("accounts.deleteConfirm"))) deleteMutation.mutate(account.id);
                     }}
                   >
                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -167,7 +215,11 @@ function SnapshotHistory({ accountId }: { accountId: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["account-snapshots", accountId] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
       toast.success(t("common.deleted"));
+    },
+    onError: () => {
+      toast.error(t("common.errorDeleting"));
     },
   });
 
@@ -228,6 +280,7 @@ function IndividualSnapshotDialog({
       });
       queryClient.invalidateQueries({ queryKey: ["account-snapshots", account.id] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
       toast.success(t("common.success"));
       onOpenChange(false);
       setBalance("");
@@ -309,6 +362,7 @@ function AccountDialog({
         toast.success(t("common.success"));
       }
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
       onOpenChange(false);
     } catch {
       toast.error(t("common.errorSaving"));
@@ -379,6 +433,7 @@ function BulkSnapshotDialog({
       if (items.length === 0) { toast.error(t("common.error")); return; }
       await api.post("/accounts/bulk-snapshot/", { date, snapshots: items });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
       toast.success(t("common.success"));
       onOpenChange(false);
     } catch {

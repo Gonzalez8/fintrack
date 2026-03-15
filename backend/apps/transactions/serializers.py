@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from rest_framework import serializers
+
 from .models import Transaction, Dividend, Interest
 
 
@@ -37,6 +40,7 @@ class DividendSerializer(_OwnershipValidationMixin, serializers.ModelSerializer)
     asset_name = serializers.CharField(source="asset.name", read_only=True)
     asset_ticker = serializers.CharField(source="asset.ticker", read_only=True)
     asset_issuer_country = serializers.CharField(source="asset.issuer_country", read_only=True, default=None)
+    withholding_rate = serializers.SerializerMethodField()
 
     class Meta:
         model = Dividend
@@ -45,7 +49,12 @@ class DividendSerializer(_OwnershipValidationMixin, serializers.ModelSerializer)
             "shares", "gross", "tax", "net", "withholding_rate",
             "created_at", "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "withholding_rate", "created_at", "updated_at"]
+
+    def get_withholding_rate(self, obj):
+        if obj.gross and obj.gross > 0:
+            return str((obj.tax / obj.gross * 100).quantize(Decimal("0.01")))
+        return None
 
     def validate_asset(self, value):
         return self._validate_owned_fk(value, "asset")

@@ -1,5 +1,6 @@
 import csv
 from datetime import timedelta
+from decimal import Decimal
 
 from django.http import StreamingHttpResponse
 from django.utils import timezone
@@ -153,9 +154,10 @@ class ExportDividendsCSV(APIView):
             writer = csv.writer(writer_buffer)
             yield writer.writerow(["Date", "Asset", "Shares", "Gross", "Tax", "Net", "Withholding Rate"])
             for d in qs.iterator():
+                rate = (d.tax / d.gross * 100).quantize(Decimal("0.01")) if d.gross and d.gross > 0 else ""
                 yield writer.writerow([
                     d.date, d.asset.name, d.shares or "", d.gross, d.tax, d.net,
-                    d.withholding_rate or "",
+                    rate,
                 ])
 
         response = StreamingHttpResponse(rows(), content_type="text/csv")

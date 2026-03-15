@@ -232,7 +232,7 @@ export function TaxContent() {
           colored
         />
         <KpiCard
-          label={`${t("fiscal.totalNet")} ${year}`}
+          label={t("fiscal.totalNet", { year })}
           value={summary?.total_income ?? "0"}
           colored
           highlight

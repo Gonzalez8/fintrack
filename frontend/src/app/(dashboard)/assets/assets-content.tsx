@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, pollTask } from "@/lib/api-client";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
+import { SwipeCard } from "@/components/app/swipe-card";
 import { Plus, Search, Pencil, Trash2, RefreshCw, ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Clock, MinusCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { Asset, AssetFormData, PaginatedResponse } from "@/types";
@@ -94,11 +95,7 @@ function SyncStatusBadge({ asset }: { asset: Asset }) {
   );
 }
 
-/* ── Swipeable Asset Card (mobile) ──────────────────────────── */
-
-const SWIPE_THRESHOLD = 72;
-const SWIPE_DEAD_ZONE = 12;
-const ACTION_WIDTH = 144;
+/* ── Asset Card (mobile) uses shared SwipeCard ─────────────── */
 
 function AssetCard({
   asset,
@@ -111,15 +108,6 @@ function AssetCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const t = useTranslations();
-  const trackRef = useRef<HTMLDivElement>(null);
-  const startX = useRef(0);
-  const currentX = useRef(0);
-  const swiping = useRef(false);
-  const locked = useRef(false); // true once dead zone exceeded
-  const isOpen = useRef(false);
-  const [actionsVisible, setActionsVisible] = useState(false);
-
   const badgeColor = ASSET_TYPE_BADGE_COLORS[asset.type] ?? "";
   const accentColor = asset.type === "STOCK"
     ? "border-l-blue-500"
@@ -129,152 +117,38 @@ function AssetCard({
         ? "border-l-violet-500"
         : "border-l-orange-500";
 
-  const setTranslate = useCallback((x: number, animate = false) => {
-    const el = trackRef.current;
-    if (!el) return;
-    el.style.transition = animate ? "transform 280ms cubic-bezier(.4,0,.2,1)" : "none";
-    el.style.transform = `translateX(${x}px)`;
-  }, []);
-
-  const resetPosition = useCallback(() => {
-    setTranslate(0, true);
-    isOpen.current = false;
-    // Hide actions after the slide-back animation
-    setTimeout(() => { if (!isOpen.current) setActionsVisible(false); }, 300);
-  }, [setTranslate]);
-
-  const openActions = useCallback(() => {
-    setActionsVisible(true);
-    setTranslate(-ACTION_WIDTH, true);
-    isOpen.current = true;
-  }, [setTranslate]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX;
-    currentX.current = 0;
-    swiping.current = false;
-    locked.current = false;
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    const dx = e.touches[0].clientX - startX.current;
-    currentX.current = dx;
-
-    // Don't move the card until the finger exceeds the dead zone
-    if (!locked.current) {
-      if (Math.abs(dx) < SWIPE_DEAD_ZONE) return;
-      locked.current = true;
-      swiping.current = true;
-      setActionsVisible(true);
-    }
-
-    const offset = isOpen.current ? -ACTION_WIDTH + dx : dx;
-    // Only allow swiping left
-    if (offset > 0) {
-      setTranslate(0);
-      return;
-    }
-    const clamped = Math.max(offset, -ACTION_WIDTH);
-    setTranslate(clamped);
-  }, [setTranslate]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (!swiping.current) return;
-    const traveled = Math.abs(currentX.current);
-    if (isOpen.current) {
-      if (traveled > SWIPE_THRESHOLD && currentX.current > 0) resetPosition();
-      else openActions();
-    } else {
-      if (traveled > SWIPE_THRESHOLD && currentX.current < 0) openActions();
-      else resetPosition();
-    }
-  }, [resetPosition, openActions]);
-
-  const handleClick = useCallback(() => {
-    if (swiping.current) return;
-    if (isOpen.current) {
-      resetPosition();
-      return;
-    }
-    onTap();
-  }, [onTap, resetPosition]);
-
-  // Close on outside scroll
-  useEffect(() => {
-    const close = () => {
-      if (isOpen.current) resetPosition();
-    };
-    window.addEventListener("scroll", close, { passive: true });
-    return () => window.removeEventListener("scroll", close);
-  }, [resetPosition]);
-
   return (
-    <div className="relative overflow-hidden rounded-lg sm:hidden">
-      {/* Swipe-behind actions — hidden until swiping to prevent flash on tap */}
-      <div className={`absolute inset-y-0 right-0 flex ${actionsVisible ? "" : "invisible"}`}>
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit(); resetPosition(); }}
-          className="flex w-[72px] items-center justify-center bg-blue-500 text-white active:bg-blue-600"
-          aria-label={t("common.edit")}
-        >
-          <Pencil className="h-5 w-5" />
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); resetPosition(); }}
-          className="flex w-[72px] items-center justify-center bg-red-500 text-white active:bg-red-600"
-          aria-label={t("common.delete")}
-        >
-          <Trash2 className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Card foreground (slides left) */}
-      <div
-        ref={trackRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={handleClick}
-        className={cn(
-          "relative z-10 cursor-pointer border-l-[3px] bg-card px-3.5 py-3 active:bg-accent/50 transition-colors",
-          "border border-border rounded-lg",
-          accentColor,
-        )}
-      >
-        <div className="flex items-start justify-between gap-3">
-          {/* Left: name + meta */}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold truncate leading-tight">{asset.name}</p>
-            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-              {asset.ticker && (
-                <span className="font-mono text-[11px] font-medium text-muted-foreground">
-                  {asset.ticker}
-                </span>
-              )}
-              <Badge
-                variant="secondary"
-                className={cn("text-[9px] px-1.5 h-4", badgeColor)}
-              >
-                {ASSET_TYPE_LABELS[asset.type] || asset.type}
-              </Badge>
-              <SyncStatusBadge asset={asset} />
-            </div>
-          </div>
-
-          {/* Right: price */}
-          <div className="text-right shrink-0">
-            <MoneyCell
-              value={asset.current_price}
-              currency={asset.currency}
-              className="text-sm font-semibold"
-            />
-            <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
-              {asset.currency}
-            </p>
+    <SwipeCard onTap={onTap} onEdit={onEdit} onDelete={onDelete} accentColor={accentColor}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold truncate leading-tight">{asset.name}</p>
+          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+            {asset.ticker && (
+              <span className="font-mono text-[11px] font-medium text-muted-foreground">
+                {asset.ticker}
+              </span>
+            )}
+            <Badge
+              variant="secondary"
+              className={cn("text-[9px] px-1.5 h-4", badgeColor)}
+            >
+              {ASSET_TYPE_LABELS[asset.type] || asset.type}
+            </Badge>
+            <SyncStatusBadge asset={asset} />
           </div>
         </div>
+        <div className="text-right shrink-0">
+          <MoneyCell
+            value={asset.current_price}
+            currency={asset.currency}
+            className="text-sm font-semibold"
+          />
+          <p className="font-mono text-[10px] text-muted-foreground mt-0.5">
+            {asset.currency}
+          </p>
+        </div>
       </div>
-    </div>
+    </SwipeCard>
   );
 }
 
@@ -496,7 +370,7 @@ export function AssetsContent() {
         <div className="flex gap-2">
           <Select value={typeFilter} onValueChange={(v) => setParam("type", v === "ALL" ? "" : v || "")}>
             <SelectTrigger className="flex-1 sm:w-[150px]">
-              <SelectValue placeholder={t("common.type")} />
+              <span data-slot="select-value">{typeFilter ? (ASSET_TYPE_LABELS[typeFilter] || typeFilter) : t("common.all")}</span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">{t("common.all")}</SelectItem>
@@ -668,7 +542,7 @@ function AssetDialog({
             <div className="space-y-1.5">
               <label className="text-sm font-medium">{t("common.type")}</label>
               <Select value={form.type} onValueChange={(v) => v && setForm((f) => ({ ...f, type: v as AssetFormData["type"] }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><span data-slot="select-value">{ASSET_TYPE_LABELS[form.type] || form.type}</span></SelectTrigger>
                 <SelectContent>
                   {Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>
@@ -683,7 +557,7 @@ function AssetDialog({
             <div className="space-y-1.5">
               <label className="text-sm font-medium">{t("assets.priceMode")}</label>
               <Select value={form.price_mode} onValueChange={(v) => v && setForm((f) => ({ ...f, price_mode: v as "MANUAL" | "AUTO" }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger><span data-slot="select-value">{form.price_mode === "AUTO" ? "Automatico" : "Manual"}</span></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="AUTO">Automatico</SelectItem>
                   <SelectItem value="MANUAL">Manual</SelectItem>

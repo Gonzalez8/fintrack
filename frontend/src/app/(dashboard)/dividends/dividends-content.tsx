@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
+import { SwipeCard } from "@/components/app/swipe-card";
 import { Plus, Search, Pencil, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/utils";
@@ -137,7 +138,9 @@ export function DividendsContent() {
           <Input placeholder={`${t("common.search")}...`} className="pl-9" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
         </div>
         <Select value={yearFilter} onValueChange={(v) => setParam("year", v === "all" || !v ? "" : v)}>
-          <SelectTrigger className="w-full sm:w-[120px]"><SelectValue placeholder={t("common.all")} /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[120px]">
+            <span data-slot="select-value">{yearFilter || t("common.all")}</span>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("common.all")}</SelectItem>
             {YEAR_OPTIONS.map((y) => (
@@ -156,39 +159,43 @@ export function DividendsContent() {
       {/* Mobile cards */}
       <div className="sm:hidden space-y-2">
         {(data?.results ?? []).map((d) => (
-          <div
+          <SwipeCard
             key={d.id}
-            className="border rounded-lg p-3 space-y-1 cursor-pointer active:bg-muted/50 border-l-4 border-l-blue-500"
-            onClick={() => { setEditing(d); setDialogOpen(true); }}
+            onTap={() => { setEditing(d); setDialogOpen(true); }}
+            onEdit={() => { setEditing(d); setDialogOpen(true); }}
+            onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(d.id); }}
+            accentColor="border-l-blue-500"
           >
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium">{d.asset_name}</p>
-                {d.asset_ticker && <p className="text-xs text-muted-foreground">{d.asset_ticker}</p>}
+            <div className="space-y-1">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm font-medium">{d.asset_name}</p>
+                  {d.asset_ticker && <p className="text-xs text-muted-foreground">{d.asset_ticker}</p>}
+                </div>
+                <span className="text-xs text-muted-foreground">{d.date}</span>
               </div>
-              <span className="text-xs text-muted-foreground">{d.date}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t("dividends.gross")}</span>
-              <span className="font-mono tabular-nums">{formatMoney(d.gross)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t("dividends.withholding")}</span>
-              <span className="font-mono tabular-nums">{formatMoney(d.tax)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium">
-              <span>{t("dividends.net")}</span>
-              <span className={`font-mono tabular-nums ${parseFloat(d.net) >= 0 ? "text-green-500" : "text-red-500"}`}>
-                {formatMoney(d.net ?? "0")}
-              </span>
-            </div>
-            {d.withholding_rate && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("dividends.withholdingRate")}</span>
-                <span className="font-mono tabular-nums">{parseFloat(d.withholding_rate).toFixed(1)}%</span>
+                <span className="text-muted-foreground">{t("dividends.gross")}</span>
+                <span className="font-mono tabular-nums">{formatMoney(d.gross)}</span>
               </div>
-            )}
-          </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t("dividends.withholding")}</span>
+                <span className="font-mono tabular-nums">{formatMoney(d.tax)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-medium">
+                <span>{t("dividends.net")}</span>
+                <span className={`font-mono tabular-nums ${parseFloat(d.net) >= 0 ? "text-green-500" : "text-red-500"}`}>
+                  {formatMoney(d.net ?? "0")}
+                </span>
+              </div>
+              {d.withholding_rate && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("dividends.withholdingRate")}</span>
+                  <span className="font-mono tabular-nums">{parseFloat(d.withholding_rate).toFixed(1)}%</span>
+                </div>
+              )}
+            </div>
+          </SwipeCard>
         ))}
         {!isLoading && (data?.results ?? []).length === 0 && (
           <p className="text-center text-muted-foreground py-8">{t("common.noData")}</p>

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
+import { SwipeCard } from "@/components/app/swipe-card";
 import { Plus, Search, Pencil, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/utils";
@@ -169,7 +170,9 @@ export function InterestsContent() {
           <Input placeholder={`${t("common.search")}...`} className="pl-9" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
         </div>
         <Select value={yearFilter} onValueChange={(v) => setParam("year", v === "all" || !v ? "" : v)}>
-          <SelectTrigger className="w-full sm:w-[120px]"><SelectValue placeholder={t("common.all")} /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[120px]">
+            <span data-slot="select-value">{yearFilter || t("common.all")}</span>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("common.all")}</SelectItem>
             {YEAR_OPTIONS.map((y) => (
@@ -194,50 +197,54 @@ export function InterestsContent() {
           const tae = calcTAE(gross, balance, i.days);
           const completed = new Date(i.date_end) <= new Date();
           return (
-            <div
+            <SwipeCard
               key={i.id}
-              className="border border-l-4 border-l-emerald-500 rounded-lg p-3 space-y-1 cursor-pointer active:bg-muted/50"
-              onClick={() => { setEditing(i); setDialogOpen(true); }}
+              onTap={() => { setEditing(i); setDialogOpen(true); }}
+              onEdit={() => { setEditing(i); setDialogOpen(true); }}
+              onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(i.id); }}
+              accentColor="border-l-emerald-500"
             >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium">{i.account_name}</p>
-                  {completed
-                    ? <span className="text-xs text-green-500">Completado</span>
-                    : <span className="text-xs text-yellow-500">Activo</span>
-                  }
+              <div className="space-y-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium">{i.account_name}</p>
+                    {completed
+                      ? <span className="text-xs text-green-500">Completado</span>
+                      : <span className="text-xs text-yellow-500">Activo</span>
+                    }
+                  </div>
+                  <span className="text-xs text-muted-foreground">{i.date_start} → {i.date_end} ({i.days}d)</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{i.date_start} → {i.date_end} ({i.days}d)</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">{t("interests.gross")}</span>
-                <span className="font-mono tabular-nums">{formatMoney(i.gross)}</span>
-              </div>
-              <div className="flex justify-between text-sm font-medium">
-                <span>{t("interests.net")}</span>
-                <span className={`font-mono tabular-nums ${parseFloat(i.net) >= 0 ? "text-green-500" : "text-red-500"}`}>
-                  {formatMoney(i.net)}
-                </span>
-              </div>
-              {i.balance && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("interests.balance")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(i.balance)}</span>
+                  <span className="text-muted-foreground">{t("interests.gross")}</span>
+                  <span className="font-mono tabular-nums">{formatMoney(i.gross)}</span>
                 </div>
-              )}
-              {tin !== null && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">TIN</span>
-                  <span className="font-mono tabular-nums">{tin.toFixed(2)}%</span>
+                <div className="flex justify-between text-sm font-medium">
+                  <span>{t("interests.net")}</span>
+                  <span className={`font-mono tabular-nums ${parseFloat(i.net) >= 0 ? "text-green-500" : "text-red-500"}`}>
+                    {formatMoney(i.net)}
+                  </span>
                 </div>
-              )}
-              {tae !== null && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">TAE</span>
-                  <span className="font-mono tabular-nums">{tae.toFixed(2)}%</span>
-                </div>
-              )}
-            </div>
+                {i.balance && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{t("interests.balance")}</span>
+                    <span className="font-mono tabular-nums">{formatMoney(i.balance)}</span>
+                  </div>
+                )}
+                {tin !== null && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">TIN</span>
+                    <span className="font-mono tabular-nums">{tin.toFixed(2)}%</span>
+                  </div>
+                )}
+                {tae !== null && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">TAE</span>
+                    <span className="font-mono tabular-nums">{tae.toFixed(2)}%</span>
+                  </div>
+                )}
+              </div>
+            </SwipeCard>
           );
         })}
         {!isLoading && (data?.results ?? []).length === 0 && (

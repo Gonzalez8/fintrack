@@ -459,7 +459,7 @@ export default function AssetDetailPage({
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          <span data-slot="select-value">{(form.type && ASSET_TYPE_LABELS[form.type]) || form.type}</span>
                         </SelectTrigger>
                         <SelectContent>
                           {Object.entries(ASSET_TYPE_LABELS).map(([k, v]) => (
@@ -484,7 +484,7 @@ export default function AssetDetailPage({
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue />
+                          <span data-slot="select-value">{form.price_mode === "AUTO" ? "Auto" : "Manual"}</span>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="MANUAL">Manual</SelectItem>

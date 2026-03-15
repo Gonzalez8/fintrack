@@ -331,7 +331,7 @@ function AccountDialog({
           <div className="space-y-1.5">
             <label className="text-sm font-medium">{t("common.type")}</label>
             <Select value={form.type} onValueChange={(v) => v && setForm((f) => ({ ...f, type: v as AccountFormData["type"] }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger><span data-slot="select-value">{ACCOUNT_TYPE_LABELS[form.type] || form.type}</span></SelectTrigger>
               <SelectContent>
                 {Object.entries(ACCOUNT_TYPE_LABELS).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v}</SelectItem>

@@ -204,7 +204,7 @@ export function TaxContent() {
         <h1 className="text-lg font-semibold">{t("fiscal.title")}</h1>
         <Select value={year} onValueChange={(v) => v && setYear(v)}>
           <SelectTrigger className="w-24 font-mono">
-            <SelectValue />
+            <span data-slot="select-value">{year}</span>
           </SelectTrigger>
           <SelectContent>
             {yearOptions.map((y) => (

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
+import { SwipeCard } from "@/components/app/swipe-card";
 import { ShoppingCart, TrendingDown, Gift, Search, Pencil, Trash2, Download, Info } from "lucide-react";
 import { toast } from "sonner";
 import { TRANSACTION_TYPE_LABELS } from "@/lib/constants";
@@ -156,6 +157,15 @@ export function TransactionsContent() {
     { key: "commission", header: t("transactions.commission"), className: "text-right", render: (tx) => <MoneyCell value={tx.commission} /> },
     { key: "tax", header: t("transactions.taxes"), className: "text-right", render: (tx) => <MoneyCell value={tx.tax} /> },
     {
+      key: "total",
+      header: "Total",
+      className: "text-right",
+      render: (tx) => {
+        const tot = tx.price ? parseFloat(tx.quantity) * parseFloat(tx.price) : null;
+        return tot != null ? <span className="font-mono text-sm font-semibold tabular-nums">{formatMoney(tot)}</span> : <span className="text-muted-foreground">—</span>;
+      },
+    },
+    {
       key: "actions",
       header: "",
       className: "text-right",
@@ -202,7 +212,9 @@ export function TransactionsContent() {
         <Input type="date" className="w-full sm:w-[140px]" value={dateFrom} onChange={(e) => setParam("date_from", e.target.value)} />
         <Input type="date" className="w-full sm:w-[140px]" value={dateTo} onChange={(e) => setParam("date_to", e.target.value)} />
         <Select value={typeFilter || "ALL"} onValueChange={(v) => setParam("type", v === "ALL" ? "" : v || "")}>
-          <SelectTrigger className="w-full sm:w-[130px]"><SelectValue placeholder={t("common.type")} /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[130px]">
+            <span data-slot="select-value">{typeFilter ? (TRANSACTION_TYPE_LABELS[typeFilter] || typeFilter) : t("transactions.allTypes")}</span>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t("transactions.allTypes")}</SelectItem>
             {Object.entries(TRANSACTION_TYPE_LABELS).map(([k, v]) => (
@@ -211,7 +223,9 @@ export function TransactionsContent() {
           </SelectContent>
         </Select>
         <Select value={accountFilter || "ALL"} onValueChange={(v) => setParam("account", v === "ALL" ? "" : v || "")}>
-          <SelectTrigger className="w-full sm:w-[160px]"><SelectValue placeholder={t("common.account")} /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[160px]">
+            <span data-slot="select-value">{accountFilter ? (accountList.find((a) => a.id === accountFilter)?.name || accountFilter) : t("transactions.allAccounts")}</span>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">{t("transactions.allAccounts")}</SelectItem>
             {accountList.map((a) => (
@@ -222,7 +236,7 @@ export function TransactionsContent() {
       </div>
 
       {/* Mobile cards */}
-      <div className="sm:hidden rounded-xl border bg-card px-3">
+      <div className="sm:hidden space-y-2">
         {isLoading ? (
           <div className="py-12 text-center text-muted-foreground text-sm">{t("common.loading")}</div>
         ) : (data?.results ?? []).length === 0 ? (
@@ -230,40 +244,35 @@ export function TransactionsContent() {
         ) : (
           (data?.results ?? []).map((tx) => {
             const total = tx.price ? parseFloat(tx.quantity) * parseFloat(tx.price) : null;
+            const accent = tx.type === "BUY" ? "border-l-green-500" : tx.type === "SELL" ? "border-l-red-500" : "border-l-purple-500";
             return (
-              <div
+              <SwipeCard
                 key={tx.id}
-                className="flex items-center justify-between gap-3 py-3 border-b last:border-b-0"
-                onClick={() => openEdit(tx)}
-                role="button"
-                tabIndex={0}
+                onTap={() => openEdit(tx)}
+                onEdit={() => openEdit(tx)}
+                onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(tx.id); }}
+                accentColor={accent}
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <Badge className={TX_TYPE_BADGE_COLORS[tx.type] ?? ""} variant="secondary">
-                      {TRANSACTION_TYPE_LABELS[tx.type] || tx.type}
-                    </Badge>
-                    <span className="font-medium text-sm truncate">{tx.asset_name}</span>
-                    {tx.asset_ticker && <span className="text-xs text-muted-foreground">{tx.asset_ticker}</span>}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge className={TX_TYPE_BADGE_COLORS[tx.type] ?? ""} variant="secondary">
+                        {TRANSACTION_TYPE_LABELS[tx.type] || tx.type}
+                      </Badge>
+                      <span className="font-medium text-sm truncate">{tx.asset_name}</span>
+                      {tx.asset_ticker && <span className="text-xs text-muted-foreground">{tx.asset_ticker}</span>}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {tx.date} · {tx.account_name} · {formatQty(tx.quantity)} × {tx.price ? formatMoney(tx.price) : "—"}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {tx.date} · {tx.account_name} · {formatQty(tx.quantity)} × {tx.price ? formatMoney(tx.price) : "—"}
-                  </p>
-                </div>
-                <div className="text-right shrink-0">
-                  {total != null && (
-                    <p className="font-mono text-sm font-bold tabular-nums">{formatMoney(total)}</p>
-                  )}
-                  <div className="flex gap-1 mt-1">
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); openEdit(tx); }}>
-                      <Pencil className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); if (confirm("Eliminar?")) deleteMutation.mutate(tx.id); }}>
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
+                  <div className="text-right shrink-0">
+                    {total != null && (
+                      <p className="font-mono text-sm font-bold tabular-nums">{formatMoney(total)}</p>
+                    )}
                   </div>
                 </div>
-              </div>
+              </SwipeCard>
             );
           })
         )}
@@ -494,7 +503,9 @@ function TransactionDialog({
             <div>
               <label className="text-sm font-medium">{t("common.type")}</label>
               <Select value={form.type} onValueChange={(v) => v && handleTypeChange(v)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <span data-slot="select-value">{TRANSACTION_TYPE_LABELS[form.type] || form.type}</span>
+                </SelectTrigger>
                 <SelectContent>
                   {Object.entries(TRANSACTION_TYPE_LABELS).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>

@@ -361,8 +361,8 @@ export const demoSavingsGoals: SavingsGoal[] = [
   {
     id: "00000000-0000-0000-0000-000000000001",
     name: "Emergency fund",
-    target_amount: "15000.00",
-    base_type: "PATRIMONY" as const,
+    target_amount: "10000.00",
+    base_type: "CASH" as const,
     deadline: null,
     icon: "umbrella",
     created_at: "2025-01-15T10:00:00Z",

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { authApi, ApiClientError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/i18n/use-translations";
 
 const IS_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const ALLOW_REGISTRATION =
@@ -58,6 +59,7 @@ function PasswordInput({
 
 // ── Login form ──────────────────────────────────────────────────
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
+  const t = useTranslations();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -71,7 +73,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       await authApi.login({ username, password });
       onSuccess();
     } catch {
-      setError("Credenciales invalidas");
+      setError(t("login.invalidCredentials"));
     } finally {
       setLoading(false);
     }
@@ -81,26 +83,26 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <label htmlFor="login-user" className="text-sm font-medium">
-          Usuario
+          {t("login.username")}
         </label>
         <Input
           id="login-user"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="Tu nombre de usuario"
+          placeholder={t("login.usernamePlaceholder")}
           className="h-10"
           autoFocus
         />
       </div>
       <div className="space-y-2">
         <label htmlFor="login-pass" className="text-sm font-medium">
-          Contrasena
+          {t("login.password")}
         </label>
         <PasswordInput
           id="login-pass"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Tu contrasena"
+          placeholder={t("login.passwordPlaceholder")}
         />
       </div>
 
@@ -115,7 +117,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         className="w-full h-10 bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] hover:from-[#1e40af] hover:to-[#2563eb] shadow-[0_2px_12px_rgba(59,130,246,0.3)]"
         disabled={loading}
       >
-        {loading ? "Iniciando sesion..." : "Iniciar sesion"}
+        {loading ? t("login.signingIn") : t("login.signIn")}
       </Button>
     </form>
   );
@@ -123,6 +125,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 
 // ── Register form ───────────────────────────────────────────────
 function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
+  const t = useTranslations();
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -152,10 +155,10 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
           }
           setErrors(flat);
         } catch {
-          setErrors({ non_field_errors: "Error al registrar" });
+          setErrors({ non_field_errors: t("login.registrationError") });
         }
       } else {
-        setErrors({ non_field_errors: "Error al registrar" });
+        setErrors({ non_field_errors: t("login.registrationError") });
       }
     } finally {
       setLoading(false);
@@ -166,13 +169,13 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <label htmlFor="reg-user" className="text-sm font-medium">
-          Usuario
+          {t("login.username")}
         </label>
         <Input
           id="reg-user"
           value={form.username}
           onChange={(e) => setField("username", e.target.value)}
-          placeholder="Elige un nombre de usuario"
+          placeholder={t("login.chooseUsername")}
           className="h-10"
           autoFocus
         />
@@ -185,7 +188,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
           htmlFor="reg-email"
           className="text-sm font-medium text-muted-foreground"
         >
-          Email <span className="text-xs">(opcional)</span>
+          {t("login.emailOptional")}
         </label>
         <Input
           id="reg-email"
@@ -201,13 +204,13 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <div className="space-y-2">
         <label htmlFor="reg-pass" className="text-sm font-medium">
-          Contrasena
+          {t("login.password")}
         </label>
         <PasswordInput
           id="reg-pass"
           value={form.password}
           onChange={(e) => setField("password", e.target.value)}
-          placeholder="Min. 8 caracteres"
+          placeholder={t("login.minChars")}
         />
         {errors.password && (
           <p className="text-xs text-destructive">{errors.password}</p>
@@ -215,13 +218,13 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
       </div>
       <div className="space-y-2">
         <label htmlFor="reg-pass2" className="text-sm font-medium">
-          Confirmar contrasena
+          {t("login.confirmPassword")}
         </label>
         <PasswordInput
           id="reg-pass2"
           value={form.password2}
           onChange={(e) => setField("password2", e.target.value)}
-          placeholder="Repite la contrasena"
+          placeholder={t("login.repeatPassword")}
         />
         {errors.password2 && (
           <p className="text-xs text-destructive">{errors.password2}</p>
@@ -239,7 +242,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         className="w-full h-10 bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] hover:from-[#1e40af] hover:to-[#2563eb] shadow-[0_2px_12px_rgba(59,130,246,0.3)]"
         disabled={loading}
       >
-        {loading ? "Registrando..." : "Crear cuenta"}
+        {loading ? t("login.registering") : t("login.register")}
       </Button>
     </form>
   );
@@ -247,6 +250,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
 
 // ── Page ─────────────────────────────────────────────────────────
 export default function LoginPage() {
+  const t = useTranslations();
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [demoLoading, setDemoLoading] = useState(false);
@@ -278,7 +282,7 @@ export default function LoginPage() {
 
       router.push("/");
     } catch {
-      setDemoError("Error al iniciar demo");
+      setDemoError(t("login.demoError"));
     } finally {
       setDemoLoading(false);
     }
@@ -318,15 +322,14 @@ export default function LoginPage() {
         <div className="relative z-10 flex-1 flex items-center px-8 lg:px-10 xl:px-16">
           <div className="max-w-lg">
             <h1 className="text-3xl xl:text-4xl font-bold tracking-tight text-white leading-[1.2]">
-              Todas tus inversiones,
+              {t("login.heroTitle1")}
               <br />
               <span className="bg-gradient-to-r from-[#60a5fa] to-[#818cf8] bg-clip-text text-transparent">
-                un unico panel.
+                {t("login.heroTitle2")}
               </span>
             </h1>
             <p className="mt-4 text-base text-white/50 leading-relaxed max-w-md">
-              Controla cartera, operaciones, dividendos, intereses y
-              fiscalidad con total privacidad.
+              {t("login.heroSubtitle")}
             </p>
 
             {/* Feature highlights */}
@@ -334,18 +337,18 @@ export default function LoginPage() {
               {[
                 {
                   icon: PieChart,
-                  title: "Cartera completa",
-                  desc: "FIFO, LIFO y WAC con P&L en tiempo real",
+                  title: t("login.featurePortfolio"),
+                  desc: t("login.featurePortfolioDesc"),
                 },
                 {
                   icon: Shield,
-                  title: "100% privado",
-                  desc: "Self-hosted, sin tracking, tus datos son tuyos",
+                  title: t("login.featurePrivacy"),
+                  desc: t("login.featurePrivacyDesc"),
                 },
                 {
                   icon: Zap,
-                  title: "Listo en minutos",
-                  desc: "Docker Compose y a funcionar",
+                  title: t("login.featureQuick"),
+                  desc: t("login.featureQuickDesc"),
                 },
               ].map((item) => (
                 <div key={item.title} className="flex items-start gap-4">
@@ -378,7 +381,7 @@ export default function LoginPage() {
             <div className="h-8 w-px bg-white/[0.06]" />
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[2px] text-white/30">
-                Licencia
+                {t("login.license")}
               </p>
               <p className="mt-1 text-sm text-white/60">Open Source</p>
             </div>
@@ -407,13 +410,13 @@ export default function LoginPage() {
             <div className="mb-8">
               <h2 className="text-2xl font-bold tracking-tight">
                 {mode === "login"
-                  ? "Bienvenido de nuevo"
-                  : "Crea tu cuenta"}
+                  ? t("login.welcomeBack")
+                  : t("login.createAccount")}
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 {mode === "login"
-                  ? "Introduce tus credenciales para acceder"
-                  : "Registrate para empezar a gestionar tus inversiones"}
+                  ? t("login.enterCredentials")
+                  : t("login.registerSubtitle")}
               </p>
             </div>
 
@@ -429,24 +432,24 @@ export default function LoginPage() {
               <p className="mt-6 text-center text-sm text-muted-foreground">
                 {mode === "login" ? (
                   <>
-                    No tienes cuenta?{" "}
+                    {t("login.noAccountQuestion")}{" "}
                     <button
                       type="button"
                       onClick={() => setMode("register")}
                       className="font-medium text-primary hover:text-primary/80 transition-colors"
                     >
-                      Registrate
+                      {t("login.registerLink")}
                     </button>
                   </>
                 ) : (
                   <>
-                    Ya tienes cuenta?{" "}
+                    {t("login.hasAccountQuestion")}{" "}
                     <button
                       type="button"
                       onClick={() => setMode("login")}
                       className="font-medium text-primary hover:text-primary/80 transition-colors"
                     >
-                      Inicia sesion
+                      {t("login.signInLink")}
                     </button>
                   </>
                 )}
@@ -462,7 +465,7 @@ export default function LoginPage() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-background px-2 text-muted-foreground font-mono tracking-wider">
-                      o
+                      {t("login.or")}
                     </span>
                   </div>
                 </div>
@@ -475,10 +478,10 @@ export default function LoginPage() {
                   onClick={handleDemo}
                 >
                   {demoLoading ? (
-                    "Cargando demo..."
+                    t("login.demoLoading")
                   ) : (
                     <>
-                      Probar Demo <ArrowRight className="h-3.5 w-3.5" />
+                      {t("login.tryDemo")} <ArrowRight className="h-3.5 w-3.5" />
                     </>
                   )}
                 </Button>
@@ -496,7 +499,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="px-4 py-4 sm:px-8">
           <p className="text-center text-xs text-muted-foreground">
-            Open Source &middot; Self-Hosted &middot; 100% Privado
+            {t("login.footer")}
           </p>
         </div>
       </div>

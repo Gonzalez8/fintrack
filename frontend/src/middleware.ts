@@ -22,9 +22,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Public pages — no auth needed
+  // Public pages — no auth needed, but detect locale
   if (PUBLIC_PATHS.includes(pathname)) {
-    return NextResponse.next();
+    return withLocale(req, NextResponse.next());
   }
 
   // ── Auth check for dashboard routes ──

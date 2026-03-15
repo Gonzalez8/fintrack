@@ -192,50 +192,50 @@ const assetConfigs: AssetPriceConfig[] = [
   { id: "a1b2c3d4-8888-4000-a000-000000000008", startDate: "2024-03-01", startPrice: 80, endPrice: 134.50, volatility: 0.028, seed: 88888 },
 ];
 
-// Position event timelines (derived from transactions)
+// Position event timelines (derived from transactions, FIFO cost basis)
 const positionConfigs: PositionConfig[] = [
   {
     assetId: "a1b2c3d4-1111-4000-a000-000000000001", // AAPL
-    endQuantity: 25, endCostBasis: 3922.45,
+    endQuantity: 25, endCostBasis: 4070.75,
     events: [
-      { date: "2023-01-20", qtyAfter: 25, costBasisAfter: 3563.25 },
-      { date: "2023-07-20", qtyAfter: 35, costBasisAfter: 5494.45 },
-      { date: "2024-04-15", qtyAfter: 25, costBasisAfter: 3922.45 },
+      { date: "2023-01-20", qtyAfter: 25, costBasisAfter: 3564.25 },
+      { date: "2023-07-20", qtyAfter: 35, costBasisAfter: 5496.45 },
+      { date: "2024-04-15", qtyAfter: 25, costBasisAfter: 4070.75 },
     ],
   },
   {
     assetId: "a1b2c3d4-2222-4000-a000-000000000002", // MSFT
-    endQuantity: 20, endCostBasis: 5901.05,
+    endQuantity: 20, endCostBasis: 5903.05,
     events: [
-      { date: "2023-02-18", qtyAfter: 15, costBasisAfter: 3823.05 },
-      { date: "2025-05-05", qtyAfter: 20, costBasisAfter: 5901.05 },
+      { date: "2023-02-18", qtyAfter: 15, costBasisAfter: 3824.05 },
+      { date: "2025-05-05", qtyAfter: 20, costBasisAfter: 5903.05 },
     ],
   },
   {
     assetId: "a1b2c3d4-3333-4000-a000-000000000003", // VOO
-    endQuantity: 25, endCostBasis: 10760.45,
+    endQuantity: 25, endCostBasis: 10985.95,
     events: [
-      { date: "2023-03-10", qtyAfter: 12, costBasisAfter: 4502.90 },
-      { date: "2024-05-20", qtyAfter: 20, costBasisAfter: 8334.10 },
-      { date: "2025-03-10", qtyAfter: 25, costBasisAfter: 10760.45 },
+      { date: "2023-03-10", qtyAfter: 12, costBasisAfter: 4503.00 },
+      { date: "2024-05-20", qtyAfter: 20, costBasisAfter: 8334.70 },
+      { date: "2025-03-10", qtyAfter: 25, costBasisAfter: 10985.95 },
     ],
   },
   {
     assetId: "a1b2c3d4-4444-4000-a000-000000000004", // IWDA
-    endQuantity: 230, endCostBasis: 18493.60,
+    endQuantity: 230, endCostBasis: 18479.60,
     events: [
       { date: "2023-04-05", qtyAfter: 80, costBasisAfter: 5945.60 },
       { date: "2023-10-05", qtyAfter: 140, costBasisAfter: 10511.60 },
       { date: "2024-09-10", qtyAfter: 190, costBasisAfter: 14831.60 },
-      { date: "2025-06-15", qtyAfter: 230, costBasisAfter: 18493.60 },
+      { date: "2025-06-15", qtyAfter: 230, costBasisAfter: 18479.60 },
     ],
   },
   {
     assetId: "a1b2c3d4-5555-4000-a000-000000000005", // BTC
-    endQuantity: 0.07, endCostBasis: 2483.50,
+    endQuantity: 0.07, endCostBasis: 2488.88,
     events: [
-      { date: "2023-06-15", qtyAfter: 0.05, costBasisAfter: 1392.50 },
-      { date: "2024-08-15", qtyAfter: 0.07, costBasisAfter: 2483.50 },
+      { date: "2023-06-15", qtyAfter: 0.05, costBasisAfter: 1399.46 },
+      { date: "2024-08-15", qtyAfter: 0.07, costBasisAfter: 2488.88 },
     ],
   },
   {
@@ -247,19 +247,19 @@ const positionConfigs: PositionConfig[] = [
   },
   {
     assetId: "a1b2c3d4-7777-4000-a000-000000000007", // CRWD
-    endQuantity: 5, endCostBasis: 1312.00,
+    endQuantity: 5, endCostBasis: 1312.62,
     events: [
-      { date: "2024-01-22", qtyAfter: 8, costBasisAfter: 2099.20 },
-      { date: "2024-07-10", qtyAfter: 5, costBasisAfter: 1312.00 },
+      { date: "2024-01-22", qtyAfter: 8, costBasisAfter: 2100.20 },
+      { date: "2024-07-10", qtyAfter: 5, costBasisAfter: 1312.62 },
     ],
   },
   {
     assetId: "a1b2c3d4-8888-4000-a000-000000000008", // NVDA
-    endQuantity: 45, endCostBasis: 4377.80,
+    endQuantity: 45, endCostBasis: 4555.62,
     events: [
-      { date: "2024-03-05", qtyAfter: 40, costBasisAfter: 3500.80 },
-      { date: "2025-01-15", qtyAfter: 60, costBasisAfter: 5866.80 },
-      { date: "2025-02-20", qtyAfter: 45, costBasisAfter: 4377.80 },
+      { date: "2024-03-05", qtyAfter: 40, costBasisAfter: 3501.80 },
+      { date: "2025-01-15", qtyAfter: 60, costBasisAfter: 5868.80 },
+      { date: "2025-02-20", qtyAfter: 45, costBasisAfter: 4555.62 },
     ],
   },
 ];

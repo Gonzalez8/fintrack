@@ -1,14 +1,14 @@
 import type { PortfolioData } from "@/types";
 
-// Positions reflect net holdings after buys and sells:
-// AAPL: bought 35, sold 10 → 25 shares
-// MSFT: bought 20, sold 0 → 20 shares
-// VOO: bought 25, sold 0 → 25 shares
-// IWDA: bought 230, sold 0 → 230 shares
-// BTC: bought 0.07, sold 0 → 0.07
-// AEEM: bought 500, sold 0 → 500 shares
-// CRWD: bought 8, sold 3 → 5 shares
-// NVDA: bought 60, sold 15 → 45 shares
+// Positions reflect net holdings after buys and sells (FIFO):
+// AAPL: bought 25+10=35, sold 10 → 25 shares (cost 4070.75)
+// MSFT: bought 15+5=20, sold 0 → 20 shares (cost 5903.05)
+// VOO: bought 12+8+5=25, sold 0 → 25 shares (cost 10985.95)
+// IWDA: bought 80+60+50+40=230, sold 0 → 230 shares (cost 18479.60)
+// BTC: bought 0.05+0.02=0.07, sold 0 → 0.07 (cost 2488.88)
+// AEEM: bought 500, sold 0 → 500 shares (cost 2225.00)
+// CRWD: bought 8, sold 3 → 5 shares (cost 1312.62)
+// NVDA: bought 40+20=60, sold 15 → 45 shares (cost 4555.62)
 
 export const demoPortfolio: PortfolioData = {
   positions: [
@@ -19,13 +19,13 @@ export const demoPortfolio: PortfolioData = {
       asset_type: "STOCK",
       currency: "USD",
       quantity: "25.0000",
-      avg_cost: "156.90",
-      cost_basis: "3922.45",
+      avg_cost: "162.83",
+      cost_basis: "4070.75",
       current_price: "227.48",
       market_value: "5687.00",
-      unrealized_pnl: "1764.55",
-      unrealized_pnl_pct: "44.99",
-      weight: "4.69",
+      unrealized_pnl: "1616.25",
+      unrealized_pnl_pct: "39.71",
+      weight: "8.53",
     },
     {
       asset_id: "a1b2c3d4-2222-4000-a000-000000000002",
@@ -34,13 +34,13 @@ export const demoPortfolio: PortfolioData = {
       asset_type: "STOCK",
       currency: "USD",
       quantity: "20.0000",
-      avg_cost: "295.05",
-      cost_basis: "5901.05",
+      avg_cost: "295.15",
+      cost_basis: "5903.05",
       current_price: "438.12",
       market_value: "8762.40",
-      unrealized_pnl: "2861.35",
-      unrealized_pnl_pct: "48.49",
-      weight: "7.23",
+      unrealized_pnl: "2859.35",
+      unrealized_pnl_pct: "48.44",
+      weight: "13.14",
     },
     {
       asset_id: "a1b2c3d4-3333-4000-a000-000000000003",
@@ -49,13 +49,13 @@ export const demoPortfolio: PortfolioData = {
       asset_type: "ETF",
       currency: "USD",
       quantity: "25.0000",
-      avg_cost: "430.42",
-      cost_basis: "10760.45",
+      avg_cost: "439.44",
+      cost_basis: "10985.95",
       current_price: "542.30",
       market_value: "13557.50",
-      unrealized_pnl: "2797.05",
-      unrealized_pnl_pct: "25.99",
-      weight: "11.19",
+      unrealized_pnl: "2571.55",
+      unrealized_pnl_pct: "23.41",
+      weight: "20.33",
     },
     {
       asset_id: "a1b2c3d4-4444-4000-a000-000000000004",
@@ -64,13 +64,13 @@ export const demoPortfolio: PortfolioData = {
       asset_type: "ETF",
       currency: "EUR",
       quantity: "230.0000",
-      avg_cost: "80.41",
-      cost_basis: "18493.60",
+      avg_cost: "80.35",
+      cost_basis: "18479.60",
       current_price: "94.56",
       market_value: "21748.80",
-      unrealized_pnl: "3255.20",
-      unrealized_pnl_pct: "17.60",
-      weight: "17.95",
+      unrealized_pnl: "3269.20",
+      unrealized_pnl_pct: "17.69",
+      weight: "32.61",
     },
     {
       asset_id: "a1b2c3d4-5555-4000-a000-000000000005",
@@ -79,13 +79,13 @@ export const demoPortfolio: PortfolioData = {
       asset_type: "CRYPTO",
       currency: "EUR",
       quantity: "0.0700",
-      avg_cost: "35478.57",
-      cost_basis: "2483.50",
+      avg_cost: "35555.43",
+      cost_basis: "2488.88",
       current_price: "95420.00",
       market_value: "6679.40",
-      unrealized_pnl: "4195.90",
-      unrealized_pnl_pct: "168.95",
-      weight: "5.51",
+      unrealized_pnl: "4190.52",
+      unrealized_pnl_pct: "168.37",
+      weight: "10.02",
     },
     {
       asset_id: "a1b2c3d4-6666-4000-a000-000000000006",
@@ -100,7 +100,7 @@ export const demoPortfolio: PortfolioData = {
       market_value: "2410.00",
       unrealized_pnl: "185.00",
       unrealized_pnl_pct: "8.31",
-      weight: "1.99",
+      weight: "3.61",
     },
     {
       asset_id: "a1b2c3d4-7777-4000-a000-000000000007",
@@ -109,13 +109,13 @@ export const demoPortfolio: PortfolioData = {
       asset_type: "STOCK",
       currency: "USD",
       quantity: "5.0000",
-      avg_cost: "262.40",
-      cost_basis: "1312.00",
+      avg_cost: "262.52",
+      cost_basis: "1312.62",
       current_price: "358.74",
       market_value: "1793.70",
-      unrealized_pnl: "481.70",
-      unrealized_pnl_pct: "36.72",
-      weight: "1.48",
+      unrealized_pnl: "481.08",
+      unrealized_pnl_pct: "36.66",
+      weight: "2.69",
     },
     {
       asset_id: "a1b2c3d4-8888-4000-a000-000000000008",
@@ -124,13 +124,13 @@ export const demoPortfolio: PortfolioData = {
       asset_type: "STOCK",
       currency: "USD",
       quantity: "45.0000",
-      avg_cost: "97.28",
-      cost_basis: "4377.80",
+      avg_cost: "101.24",
+      cost_basis: "4555.62",
       current_price: "134.50",
       market_value: "6052.50",
-      unrealized_pnl: "1674.70",
-      unrealized_pnl_pct: "38.26",
-      weight: "4.99",
+      unrealized_pnl: "1496.88",
+      unrealized_pnl_pct: "32.86",
+      weight: "9.08",
     },
   ],
   realized_sales: [
@@ -140,9 +140,9 @@ export const demoPortfolio: PortfolioData = {
       asset_ticker: "AAPL",
       quantity: "10.0000",
       sell_price: "185.20",
-      cost_basis: "1425.30",
+      cost_basis: "1425.70",
       proceeds: "1851.00",
-      realized_pnl: "425.70",
+      realized_pnl: "425.30",
     },
     {
       date: "2024-07-10",
@@ -150,9 +150,9 @@ export const demoPortfolio: PortfolioData = {
       asset_ticker: "CRWD",
       quantity: "3.0000",
       sell_price: "392.15",
-      cost_basis: "787.20",
+      cost_basis: "787.58",
       proceeds: "1175.45",
-      realized_pnl: "388.25",
+      realized_pnl: "387.87",
     },
     {
       date: "2025-02-20",
@@ -160,18 +160,18 @@ export const demoPortfolio: PortfolioData = {
       asset_ticker: "NVDA",
       quantity: "15.0000",
       sell_price: "131.80",
-      cost_basis: "1312.80",
+      cost_basis: "1313.18",
       proceeds: "1976.00",
-      realized_pnl: "663.20",
+      realized_pnl: "662.82",
     },
   ],
   totals: {
-    total_cost: "49475.85",
+    total_cost: "50021.47",
     total_market_value: "66691.30",
-    total_unrealized_pnl: "17215.45",
-    total_unrealized_pnl_pct: "34.80",
-    total_realized_pnl: "1477.15",
-    total_cash: "106184.13",
-    grand_total: "172875.43",
+    total_unrealized_pnl: "16669.83",
+    total_unrealized_pnl_pct: "33.33",
+    total_realized_pnl: "1475.99",
+    total_cash: "9486.18",
+    grand_total: "76177.48",
   },
 };

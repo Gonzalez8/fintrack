@@ -42,6 +42,7 @@ NS_REPORTS_PATRIMONIO = "rpt:patrimonio"
 NS_REPORTS_RV = "rpt:rv"
 NS_REPORTS_SAVINGS = "rpt:savings"
 NS_REPORTS_YEAR = "rpt:year"
+NS_REPORTS_ANNUAL_SAVINGS = "rpt:annual_savings"
 NS_SETTINGS = "settings"
 
 # Namespaces to invalidate when financial data changes
@@ -51,4 +52,5 @@ FINANCIAL_NAMESPACES = (
     NS_REPORTS_RV,
     NS_REPORTS_SAVINGS,
     NS_REPORTS_YEAR,
+    NS_REPORTS_ANNUAL_SAVINGS,
 )

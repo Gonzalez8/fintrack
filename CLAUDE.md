@@ -60,6 +60,14 @@ frontend/         Next.js 15+ App Router
 - **Rendering:** SSG for marketing, SSR + Streaming for dashboard, Client Components for forms/charts.
 - **Data fetching:** Server Components use `djangoFetch()`. Client mutations use React Query + `/api/proxy/*`.
 
+## Mobile UX Patterns
+
+- **Edit/Delete on list items:** Use `SwipeCard` component (`components/app/swipe-card.tsx`). The user swipes left to reveal edit (blue) and delete (red) action buttons. No inline edit/delete buttons on mobile — the swipe gesture is the only way to access these actions. On desktop, use inline icon buttons (Pencil/Trash2) visible on hover.
+- **Layout split:** Mobile list uses `<div className="sm:hidden space-y-2">` with `SwipeCard`. Desktop uses `<div className="hidden sm:block">` with DataTable or Card grid with inline actions.
+- **Delete confirmation:** Always use `confirm(t("..."))` before calling the delete mutation.
+- **Accent colors:** Each SwipeCard gets an `accentColor` for the left border (e.g., `border-l-blue-500`, `border-l-amber-500`). Choose a color that represents the entity type.
+- **New item button:** Use a `Button` with `Plus` icon in the page header area.
+
 ## Common Commands
 
 ```bash

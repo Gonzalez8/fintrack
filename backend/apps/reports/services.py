@@ -383,3 +383,189 @@ def monthly_savings(user, start_date=None, end_date=None):
         prev_inv_cost = inv_cost_end
 
     return {"months": months_data, "stats": _compute_savings_stats(months_data)}
+
+
+# ── Annual Savings ────────────────────────────────────────────────
+
+
+def annual_savings(user):
+    """Aggregate monthly savings + patrimonio evolution by year."""
+    savings_result = monthly_savings(user)
+    months_data = savings_result["months"]
+    patrimonio_data = patrimonio_evolution(user)
+
+    # Build patrimonio lookup by month
+    patrimonio_by_month = {}
+    for p in patrimonio_data:
+        patrimonio_by_month[p["month"]] = p
+
+    # Group monthly savings by year
+    years: dict[int, dict] = {}
+    for m in months_data:
+        year = int(m["month"][:4])
+        if year not in years:
+            years[year] = {
+                "year": year,
+                "total_real_savings": Decimal("0"),
+                "total_cash_delta": Decimal("0"),
+                "total_investment_cost_delta": Decimal("0"),
+                "cash_end": Decimal("0"),
+                "investment_cost_end": Decimal("0"),
+                "months_count": 0,
+                "_last_month": m["month"],
+            }
+        entry = years[year]
+        if m["real_savings"] is not None:
+            entry["total_real_savings"] += Decimal(m["real_savings"])
+        if m["cash_delta"] is not None:
+            entry["total_cash_delta"] += Decimal(m["cash_delta"])
+        if m["investment_cost_delta"] is not None:
+            entry["total_investment_cost_delta"] += Decimal(m["investment_cost_delta"])
+        entry["cash_end"] = Decimal(m["cash_end"])
+        entry["investment_cost_end"] = Decimal(m["investment_cost_end"])
+        entry["months_count"] += 1
+        entry["_last_month"] = m["month"]
+
+    # Attach patrimony from patrimonio_evolution (year-end value)
+    for year, entry in years.items():
+        p = patrimonio_by_month.get(entry["_last_month"])
+        if p:
+            entry["patrimony"] = Decimal(p["cash"]) + Decimal(p["investments"])
+        else:
+            entry["patrimony"] = entry["cash_end"] + entry["investment_cost_end"]
+
+    # Compute year-over-year growth
+    sorted_years = sorted(years.values(), key=lambda x: x["year"])
+    prev_patrimony = None
+    result = []
+    for entry in sorted_years:
+        if prev_patrimony is not None and prev_patrimony != Decimal("0"):
+            growth = entry["patrimony"] - prev_patrimony
+            growth_pct = (growth / prev_patrimony * Decimal("100")).quantize(Decimal("0.1"))
+        elif prev_patrimony is not None:
+            growth = entry["patrimony"] - prev_patrimony
+            growth_pct = Decimal("0")
+        else:
+            growth = None
+            growth_pct = None
+        prev_patrimony = entry["patrimony"]
+
+        result.append({
+            "year": entry["year"],
+            "total_real_savings": str(entry["total_real_savings"].quantize(Decimal("0.01"))),
+            "total_cash_delta": str(entry["total_cash_delta"].quantize(Decimal("0.01"))),
+            "total_investment_cost_delta": str(entry["total_investment_cost_delta"].quantize(Decimal("0.01"))),
+            "cash_end": str(entry["cash_end"]),
+            "investment_cost_end": str(entry["investment_cost_end"]),
+            "patrimony": str(entry["patrimony"].quantize(Decimal("0.01"))),
+            "patrimony_growth": str(growth.quantize(Decimal("0.01"))) if growth is not None else None,
+            "patrimony_growth_pct": str(growth_pct) if growth_pct is not None else None,
+            "months_count": entry["months_count"],
+        })
+
+    return result
+
+
+# ── Savings Projection ────────────────────────────────────────────
+
+
+def savings_projection(user, goal_id):
+    """Calculate projection scenarios for reaching a savings goal."""
+    import math
+    from dateutil.relativedelta import relativedelta
+    from .models import SavingsGoal
+
+    goal = SavingsGoal.objects.get(pk=goal_id, owner=user)
+
+    # Get monthly savings data for trimmed mean
+    savings_result = monthly_savings(user)
+    months_data = savings_result["months"]
+
+    deltas = sorted(
+        Decimal(m["real_savings"])
+        for m in months_data
+        if m["real_savings"] is not None
+    )
+
+    # Trimmed mean (exclude top/bottom 10%)
+    if len(deltas) >= 10:
+        trim = max(1, len(deltas) // 10)
+        trimmed = deltas[trim:-trim]
+    else:
+        trimmed = deltas
+
+    avg_monthly = (
+        sum(trimmed) / Decimal(str(len(trimmed)))
+        if trimmed
+        else Decimal("0")
+    ).quantize(Decimal("0.01"))
+
+    # Get current patrimony based on base_type
+    patrimonio_data = patrimonio_evolution(user)
+    if patrimonio_data:
+        last = patrimonio_data[-1]
+        if goal.base_type == "CASH":
+            current_patrimony = Decimal(last["cash"])
+        else:
+            current_patrimony = Decimal(last["cash"]) + Decimal(last["investments"])
+    else:
+        current_patrimony = Decimal("0")
+
+    remaining = goal.target_amount - current_patrimony
+    if remaining < 0:
+        remaining = Decimal("0")
+
+    now = timezone.now().date()
+
+    def _scenario(rate):
+        if rate <= 0:
+            return {"monthly_rate": str(rate), "months_to_goal": None, "target_date": None}
+        months = math.ceil(float(remaining / rate)) if remaining > 0 else 0
+        target = now + relativedelta(months=months)
+        return {
+            "monthly_rate": str(rate.quantize(Decimal("0.01"))),
+            "months_to_goal": months,
+            "target_date": target.strftime("%Y-%m"),
+        }
+
+    conservative_rate = (avg_monthly * Decimal("0.7")).quantize(Decimal("0.01"))
+    optimistic_rate = (avg_monthly * Decimal("1.3")).quantize(Decimal("0.01"))
+
+    scenarios = {
+        "conservative": _scenario(conservative_rate),
+        "average": _scenario(avg_monthly),
+        "optimistic": _scenario(optimistic_rate),
+    }
+
+    # On-track check against deadline
+    on_track = None
+    deadline_shortfall = None
+    if goal.deadline:
+        avg_scenario = scenarios["average"]
+        if avg_scenario["target_date"]:
+            on_track = avg_scenario["target_date"] <= goal.deadline.strftime("%Y-%m")
+            if not on_track:
+                months_to_deadline = (
+                    (goal.deadline.year - now.year) * 12
+                    + goal.deadline.month - now.month
+                )
+                if months_to_deadline > 0:
+                    needed_rate = remaining / Decimal(str(months_to_deadline))
+                    deadline_shortfall = str(
+                        (needed_rate - avg_monthly).quantize(Decimal("0.01"))
+                    )
+                else:
+                    deadline_shortfall = str(remaining.quantize(Decimal("0.01")))
+
+    from .serializers import SavingsGoalSerializer
+    goal_data = SavingsGoalSerializer(goal).data
+
+    return {
+        "goal": goal_data,
+        "current_patrimony": str(current_patrimony.quantize(Decimal("0.01"))),
+        "remaining": str(remaining.quantize(Decimal("0.01"))),
+        "avg_monthly_savings": str(avg_monthly),
+        "scenarios": scenarios,
+        "on_track": on_track,
+        "deadline_shortfall": deadline_shortfall,
+    }

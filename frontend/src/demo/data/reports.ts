@@ -5,6 +5,9 @@ import type {
   MonthlySavingsPoint,
   MonthlySavingsStats,
   SnapshotStatus,
+  AnnualSavingsPoint,
+  SavingsGoal,
+  SavingsProjection,
 } from "@/types";
 
 // ── Year Summary ────────────────────────────────────────────────────
@@ -257,6 +260,84 @@ export const demoMonthlySavingsStats: MonthlySavingsStats = {
     real_savings: "1432.50",
     comments: [],
   },
+};
+
+// ── Annual Savings ──────────────────────────────────────────────────
+export const demoAnnualSavings: AnnualSavingsPoint[] = [
+  {
+    year: 2023,
+    total_real_savings: "19991.25",
+    total_cash_delta: "120.00",
+    total_investment_cost_delta: "19871.25",
+    cash_end: "4910.00",
+    investment_cost_end: "19229.30",
+    patrimony: "25139.30",
+    patrimony_growth: null,
+    patrimony_growth_pct: null,
+    months_count: 6,
+  },
+  {
+    year: 2024,
+    total_real_savings: "16839.08",
+    total_cash_delta: "290.00",
+    total_investment_cost_delta: "16549.08",
+    cash_end: "5180.00",
+    investment_cost_end: "40580.58",
+    patrimony: "48760.58",
+    patrimony_growth: "23621.28",
+    patrimony_growth_pct: "94.0",
+    months_count: 8,
+  },
+  {
+    year: 2025,
+    total_real_savings: "9490.95",
+    total_cash_delta: "60.00",
+    total_investment_cost_delta: "9430.95",
+    cash_end: "5240.00",
+    investment_cost_end: "50011.53",
+    patrimony: "58251.53",
+    patrimony_growth: "9490.95",
+    patrimony_growth_pct: "19.5",
+    months_count: 6,
+  },
+];
+
+// ── Savings Goals ───────────────────────────────────────────────────
+export const demoSavingsGoals: SavingsGoal[] = [
+  {
+    id: "00000000-0000-0000-0000-000000000001",
+    name: "Emergency fund",
+    target_amount: "15000.00",
+    base_type: "PATRIMONY" as const,
+    deadline: null,
+    icon: "umbrella",
+    created_at: "2025-01-15T10:00:00Z",
+    updated_at: "2025-01-15T10:00:00Z",
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000002",
+    name: "House down payment",
+    target_amount: "200000.00",
+    base_type: "PATRIMONY" as const,
+    deadline: "2030-12-31",
+    icon: "house",
+    created_at: "2025-06-01T10:00:00Z",
+    updated_at: "2025-06-01T10:00:00Z",
+  },
+];
+
+export const demoSavingsProjection: SavingsProjection = {
+  goal: demoSavingsGoals[1],
+  current_patrimony: "58251.53",
+  remaining: "141748.47",
+  avg_monthly_savings: "1520.40",
+  scenarios: {
+    conservative: { monthly_rate: "1064.28", months_to_goal: 134, target_date: "2037-05" },
+    average: { monthly_rate: "1520.40", months_to_goal: 94, target_date: "2034-01" },
+    optimistic: { monthly_rate: "1976.52", months_to_goal: 72, target_date: "2031-09" },
+  },
+  on_track: false,
+  deadline_shortfall: "932.15",
 };
 
 // ── Snapshot Status ─────────────────────────────────────────────────

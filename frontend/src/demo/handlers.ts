@@ -14,6 +14,9 @@ import {
   demoMonthlySavings,
   demoMonthlySavingsStats,
   demoSnapshotStatus,
+  demoAnnualSavings,
+  demoSavingsGoals,
+  demoSavingsProjection,
   demoSettings,
   getDemoPriceHistory,
   getDemoPositionHistory,
@@ -301,9 +304,40 @@ const proxyHandlers = [
     return HttpResponse.json({ months: demoMonthlySavings, stats: demoMonthlySavingsStats });
   }),
 
+  http.get("/api/proxy/reports/annual-savings/", async () => {
+    await delay(200);
+    return HttpResponse.json(demoAnnualSavings);
+  }),
+
   http.get("/api/proxy/reports/snapshot-status/", async () => {
     await delay(200);
     return HttpResponse.json(demoSnapshotStatus);
+  }),
+
+  // ---- Savings Goals ----
+  http.get("/api/proxy/savings-goals/", async () => {
+    await delay(200);
+    return HttpResponse.json(paginated(demoSavingsGoals));
+  }),
+
+  http.post("/api/proxy/savings-goals/", async () => {
+    await delay(200);
+    return HttpResponse.json(demoSavingsGoals[0], { status: 201 });
+  }),
+
+  http.put("/api/proxy/savings-goals/:id/", async () => {
+    await delay(200);
+    return HttpResponse.json(demoSavingsGoals[0]);
+  }),
+
+  http.delete("/api/proxy/savings-goals/:id/", async () => {
+    await delay(200);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get("/api/proxy/savings-goals/:id/projection/", async () => {
+    await delay(300);
+    return HttpResponse.json(demoSavingsProjection);
   }),
 
   // ---- Settings ----

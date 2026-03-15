@@ -375,6 +375,62 @@ export interface MonthlySavingsStats {
   worst_month: MonthlySavingsPoint | null;
 }
 
+// ── Annual Savings ──────────────────────────────────────────────
+export interface AnnualSavingsPoint {
+  year: number;
+  total_real_savings: string;
+  total_cash_delta: string;
+  total_investment_cost_delta: string;
+  cash_end: string;
+  investment_cost_end: string;
+  patrimony: string;
+  patrimony_growth: string | null;
+  patrimony_growth_pct: string | null;
+  months_count: number;
+}
+
+// ── Patrimonio Evolution ────────────────────────────────────────
+export interface PatrimonioPoint {
+  month: string;
+  cash: string;
+  investments: string;
+  investment_pnl: string;
+  renta_variable: string;
+  renta_fija: string;
+}
+
+// ── Savings Goals ───────────────────────────────────────────────
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  target_amount: string;
+  base_type: "PATRIMONY" | "CASH";
+  deadline: string | null;
+  icon: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectionScenario {
+  monthly_rate: string;
+  months_to_goal: number | null;
+  target_date: string | null;
+}
+
+export interface SavingsProjection {
+  goal: SavingsGoal;
+  current_patrimony: string;
+  remaining: string;
+  avg_monthly_savings: string;
+  scenarios: {
+    conservative: ProjectionScenario;
+    average: ProjectionScenario;
+    optimistic: ProjectionScenario;
+  };
+  on_track: boolean | null;
+  deadline_shortfall: string | null;
+}
+
 // ── Storage ──────────────────────────────────────────────────────
 export interface StorageInfo {
   total_mb: number;

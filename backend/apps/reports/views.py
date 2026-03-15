@@ -3,15 +3,23 @@ from datetime import timedelta
 
 from django.http import StreamingHttpResponse
 from django.utils import timezone
+from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.cache import (
     get_user_cache, set_user_cache,
     NS_REPORTS_YEAR, NS_REPORTS_PATRIMONIO, NS_REPORTS_RV, NS_REPORTS_SAVINGS,
+    NS_REPORTS_ANNUAL_SAVINGS,
 )
+from apps.core.mixins import OwnedByUserMixin
 from apps.transactions.models import Transaction, Dividend, Interest
-from .services import year_summary, patrimonio_evolution, rv_evolution, monthly_savings
+from .models import SavingsGoal
+from .serializers import SavingsGoalSerializer
+from .services import (
+    year_summary, patrimonio_evolution, rv_evolution,
+    monthly_savings, annual_savings, savings_projection,
+)
 
 _REPORT_TTL = 120  # 2 minutes
 
@@ -80,6 +88,28 @@ class SnapshotStatusView(APIView):
             "last_snapshot": last.captured_at.isoformat() if last else None,
             "next_snapshot": next_snapshot,
         })
+
+
+class AnnualSavingsView(APIView):
+    def get(self, request):
+        cached = get_user_cache(request.user.pk, NS_REPORTS_ANNUAL_SAVINGS)
+        if cached is not None:
+            return Response(cached)
+        data = annual_savings(request.user)
+        set_user_cache(request.user.pk, NS_REPORTS_ANNUAL_SAVINGS, data, timeout=_REPORT_TTL)
+        return Response(data)
+
+
+class SavingsGoalViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
+    queryset = SavingsGoal.objects.all()
+    serializer_class = SavingsGoalSerializer
+    invalidates_financial_cache = False
+
+
+class SavingsProjectionView(APIView):
+    def get(self, request, goal_id):
+        data = savings_projection(request.user, goal_id)
+        return Response(data)
 
 
 class Echo:

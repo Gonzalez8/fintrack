@@ -37,6 +37,8 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/reports/rv-evolution": data.demoRVEvolution,
     "/api/reports/monthly-savings": { months: data.demoMonthlySavings, stats: data.demoMonthlySavingsStats },
     "/api/reports/snapshot-status": data.demoSnapshotStatus,
+    "/api/reports/annual-savings": data.demoAnnualSavings,
+    "/api/savings-goals": paginatedResponse(data.demoSavingsGoals),
 
     "/api/settings": data.demoSettings,
     "/api/storage-info": { total_mb: 12.4, tables: [] },
@@ -60,6 +62,13 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
   if (/^\/api\/assets\/[^/]+/.test(cleanPath)) {
     const id = cleanPath.split("/")[3];
     return (data.demoAssets.find((a) => a.id === id) ?? data.demoAssets[0]) as T;
+  }
+  if (/^\/api\/savings-goals\/[^/]+\/projection/.test(cleanPath)) {
+    return data.demoSavingsProjection as T;
+  }
+  if (/^\/api\/savings-goals\/[^/]+/.test(cleanPath)) {
+    const id = cleanPath.split("/")[3];
+    return (data.demoSavingsGoals.find((g) => g.id === id) ?? data.demoSavingsGoals[0]) as T;
   }
   if (/^\/api\/tasks\//.test(cleanPath)) {
     return { task_id: "demo", status: "SUCCESS", result: { updated: 8 } } as T;

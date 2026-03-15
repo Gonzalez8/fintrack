@@ -32,9 +32,10 @@ const FAKE_ACCESS_TOKEN = [
       username: demoUser.username,
       exp: 4102444800,
       iat: Math.floor(Date.now() / 1000),
+      demo: true,
     })
   ),
-  "demo-signature",
+  "demo-sig",
 ]
   .map((s) => s.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_"))
   .join(".");
@@ -47,9 +48,10 @@ const FAKE_REFRESH_TOKEN = [
       user_id: 1,
       exp: 4102444800,
       iat: Math.floor(Date.now() / 1000),
+      demo: true,
     })
   ),
-  "demo-refresh-signature",
+  "demo-ref-sig",
 ]
   .map((s) => s.replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_"))
   .join(".");

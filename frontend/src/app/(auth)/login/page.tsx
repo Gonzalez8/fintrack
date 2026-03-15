@@ -258,12 +258,24 @@ export default function LoginPage() {
     setDemoLoading(true);
     setDemoError("");
     try {
-      const { worker } = await import("@/demo/index");
-      await worker.start({
-        onUnhandledRequest: "bypass",
-        serviceWorker: { url: "/mockServiceWorker.js" },
-      });
+      // 1. Login via Next.js server handler (sets httpOnly cookies properly).
+      //    Must happen BEFORE MSW starts, otherwise the service worker
+      //    intercepts the request and browsers strip Set-Cookie headers
+      //    from service worker responses.
       await authApi.login({ username: "demo", password: "demo" });
+
+      // 2. Start MSW to intercept subsequent client-side /api/proxy/* calls
+      //    (optional optimisation — the server proxy also handles demo sessions)
+      try {
+        const { worker } = await import("@/demo/index");
+        await worker.start({
+          onUnhandledRequest: "bypass",
+          serviceWorker: { url: "/mockServiceWorker.js" },
+        });
+      } catch {
+        // MSW failure is non-fatal: server-side proxy handles demo data
+      }
+
       router.push("/");
     } catch {
       setDemoError("Error al iniciar demo");

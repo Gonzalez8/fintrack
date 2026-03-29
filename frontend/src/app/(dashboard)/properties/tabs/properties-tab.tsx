@@ -57,8 +57,8 @@ export function PropertiesTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProperty, setEditProperty] = useState<Property | null>(null);
 
-  // Detail view state
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  // Detail view state — store only the ID, derive the property from fresh API data
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -78,7 +78,7 @@ export function PropertiesTab() {
     mutationFn: (id: string) => api.delete(`/properties/${id}/`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["properties"] });
-      if (selectedProperty) setSelectedProperty(null);
+      if (selectedId) setSelectedId(null);
     },
     onError: () => {
       toast.error(t("common.errorDeleting"));
@@ -86,6 +86,12 @@ export function PropertiesTab() {
   });
 
   const properties = data?.results ?? [];
+
+  // Derive the selected property from fresh API data so edits are reflected immediately
+  const selectedProperty = useMemo(
+    () => (selectedId ? properties.find((p) => p.id === selectedId) ?? null : null),
+    [selectedId, properties],
+  );
 
   // ── Schedule & amortization for selected property ──
   const schedule = useMemo(() => {
@@ -273,10 +279,10 @@ export function PropertiesTab() {
   };
 
   const handleSelectProperty = (property: Property) => {
-    if (selectedProperty?.id === property.id) {
-      setSelectedProperty(null); // toggle off
+    if (selectedId === property.id) {
+      setSelectedId(null); // toggle off
     } else {
-      setSelectedProperty(property);
+      setSelectedId(property.id);
       setShowBreakdown(false);
     }
   };
@@ -449,7 +455,7 @@ export function PropertiesTab() {
         <div className="space-y-6 pt-2 border-t">
           {/* Back button */}
           <button
-            onClick={() => setSelectedProperty(null)}
+            onClick={() => setSelectedId(null)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -508,7 +514,7 @@ export function PropertiesTab() {
       {selectedProperty && !selectedProperty.has_mortgage && (
         <div className="space-y-4 pt-2 border-t">
           <button
-            onClick={() => setSelectedProperty(null)}
+            onClick={() => setSelectedId(null)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />

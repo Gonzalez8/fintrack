@@ -221,6 +221,7 @@ export function InterestsProjectionTab() {
     // --- 3) Projected yearly bars ---
     const monthlyRate = avgTAE > 0 ? Math.pow(1 + avgTAE, 1 / 12) - 1 : 0;
     const totalMonths = projectionYears * 12;
+    const baseYear = new Date().getFullYear();
     let balance = currentBalance;
     let cumInvested = startInvested;
     let cumInterest = startInterest;
@@ -234,7 +235,7 @@ export function InterestsProjectionTab() {
       if (m % 12 === 0) {
         const yearNum = m / 12;
         points.push({
-          label: `+${yearNum}${yearNum === 1 ? t("interests.projection.yrShort") : t("interests.projection.yrsShort")}`,
+          label: String(baseYear + yearNum),
           invested: round2(cumInvested),
           compoundInterest: round2(cumInterest),
           isProjected: true,

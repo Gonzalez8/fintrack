@@ -372,12 +372,13 @@ export function InterestsProjectionTab() {
                 labelStyle={theme.tooltipLabelStyle}
                 itemStyle={theme.tooltipItemStyle}
                 cursor={theme.tooltipCursor}
-                formatter={(value: number, name: string) => {
+                formatter={(value, name) => {
+                  const v = Number(value);
                   const label =
                     name === "historical"
                       ? t("interests.projection.historical")
                       : t("interests.projection.projected");
-                  return [formatMoney(String(value.toFixed(2))), label];
+                  return [formatMoney(String(v.toFixed(2))), label];
                 }}
               />
               <Legend

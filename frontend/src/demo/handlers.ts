@@ -19,7 +19,6 @@ import {
   demoSavingsProjection,
   demoSettings,
   getDemoPriceHistory,
-  getDemoPositionHistory,
   demoProperties,
   demoAmortizations,
   demoSimulationResult,
@@ -176,11 +175,6 @@ const proxyHandlers = [
   http.get("/api/proxy/assets/:id/price-history/", async ({ params }) => {
     await delay(200);
     return HttpResponse.json(getDemoPriceHistory(params.id as string));
-  }),
-
-  http.get("/api/proxy/assets/:id/position-history/", async ({ params }) => {
-    await delay(200);
-    return HttpResponse.json(getDemoPositionHistory(params.id as string));
   }),
 
   http.post("/api/proxy/assets/:id/set-price/", async () => {

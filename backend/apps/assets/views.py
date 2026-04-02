@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from apps.core.cache import FINANCIAL_NAMESPACES, invalidate_user_cache
 from apps.core.mixins import OwnedByUserMixin
 
-from .models import Account, AccountSnapshot, Asset, PositionSnapshot, Settings
+from .models import Account, AccountSnapshot, Asset, Settings
 from .serializers import (
     AccountSerializer,
     AccountSnapshotSerializer,
@@ -39,22 +39,6 @@ class AssetViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
                 {"detail": "Cannot delete this asset because it has associated transactions or dividends."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-    @action(detail=True, methods=["get"], url_path="position-history")
-    def position_history(self, request, pk=None):
-        snapshots = PositionSnapshot.objects.filter(owner=request.user, asset_id=pk).order_by("captured_at")
-        data = [
-            {
-                "captured_at": s.captured_at.isoformat(),
-                "market_value": str(s.market_value),
-                "cost_basis": str(s.cost_basis),
-                "unrealized_pnl": str(s.unrealized_pnl),
-                "unrealized_pnl_pct": str(s.unrealized_pnl_pct),
-                "quantity": str(s.quantity),
-            }
-            for s in snapshots
-        ]
-        return Response(data)
 
     @action(detail=True, methods=["get"], url_path="price-history")
     def price_history(self, request, pk=None):

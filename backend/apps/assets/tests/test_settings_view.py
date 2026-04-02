@@ -46,7 +46,6 @@ class TestSettingsView:
                 "snapshot_frequency": 1440,
                 "data_retention_days": None,
                 "purge_portfolio_snapshots": True,
-                "purge_position_snapshots": True,
             },
             format="json",
         )

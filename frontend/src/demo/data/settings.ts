@@ -12,5 +12,4 @@ export const demoSettings: Settings = {
   fiscal_cost_method: "FIFO",
   data_retention_days: null,
   purge_portfolio_snapshots: true,
-  purge_position_snapshots: true,
 };

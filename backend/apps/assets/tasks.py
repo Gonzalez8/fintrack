@@ -87,7 +87,7 @@ def purge_old_snapshots_task() -> None:
     from django.db import transaction
     from django.utils import timezone
 
-    from apps.assets.models import PortfolioSnapshot, PositionSnapshot, Settings
+    from apps.assets.models import PortfolioSnapshot, Settings
 
     for settings in Settings.objects.select_related("user").exclude(data_retention_days__isnull=True):
         cutoff = timezone.now() - timedelta(days=settings.data_retention_days)
@@ -98,8 +98,3 @@ def purge_old_snapshots_task() -> None:
                 deleted, _ = PortfolioSnapshot.objects.filter(owner=user, captured_at__lt=cutoff).delete()
                 if deleted:
                     logger.info("Purged %d PortfolioSnapshot(s) for user %s", deleted, user)
-
-            if settings.purge_position_snapshots:
-                deleted, _ = PositionSnapshot.objects.filter(owner=user, captured_at__lt=cutoff).delete()
-                if deleted:
-                    logger.info("Purged %d PositionSnapshot(s) for user %s", deleted, user)

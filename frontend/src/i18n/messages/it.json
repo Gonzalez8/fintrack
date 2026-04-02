@@ -510,8 +510,6 @@
   "settings.olderThan10y": "Più vecchi di 10 anni",
   "settings.purgePortfolioSnapshots": "Portfolio Snapshots",
   "settings.purgePortfolioSnapshotsDesc": "Snapshot aggregati del portafoglio (valore totale, costo, P&L)",
-  "settings.purgePositionSnapshots": "Position Snapshots",
-  "settings.purgePositionSnapshotsDesc": "Dettaglio per asset di ogni snapshot (la tabella più pesante)",
   "settings.purgeTargets": "Tabelle incluse nella pulizia",
   "settings.backup": "Backup",
   "settings.backupDesc": "Esporta tutti i dati (asset, conti, transazioni, dividendi e interessi) in un file JSON. Per ripristinare, importa un file di backup precedentemente esportato.",

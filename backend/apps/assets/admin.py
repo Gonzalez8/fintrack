@@ -5,7 +5,6 @@ from .models import (
     AccountSnapshot,
     Asset,
     PortfolioSnapshot,
-    PositionSnapshot,
     Settings,
 )
 
@@ -36,13 +35,6 @@ class AccountSnapshotAdmin(admin.ModelAdmin):
 @admin.register(PortfolioSnapshot)
 class PortfolioSnapshotAdmin(admin.ModelAdmin):
     list_display = ("owner", "captured_at", "total_market_value", "total_cost", "total_unrealized_pnl")
-    list_filter = ("captured_at",)
-    readonly_fields = ("id",)
-
-
-@admin.register(PositionSnapshot)
-class PositionSnapshotAdmin(admin.ModelAdmin):
-    list_display = ("asset", "owner", "captured_at", "quantity", "market_value", "unrealized_pnl")
     list_filter = ("captured_at",)
     readonly_fields = ("id",)
 

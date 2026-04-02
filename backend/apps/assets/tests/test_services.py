@@ -8,7 +8,7 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.assets.models import Account, Asset, PortfolioSnapshot, PositionSnapshot, Settings
+from apps.assets.models import Account, Asset, PortfolioSnapshot, Settings
 from apps.assets.services import create_portfolio_snapshot_now
 from apps.transactions.models import Transaction
 
@@ -69,7 +69,6 @@ class TestCreatePortfolioSnapshotNow:
         assert PortfolioSnapshot.objects.filter(owner=user).count() == 1
         snap = PortfolioSnapshot.objects.get(owner=user)
         assert snap.total_market_value == Decimal("200.00")  # 10 * 20
-        assert PositionSnapshot.objects.filter(owner=user).count() == 1
 
     def test_dedup_identical_snapshot(self, user, settings_fifo, account, asset):
         Transaction.objects.create(

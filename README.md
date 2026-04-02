@@ -13,6 +13,7 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)](https://www.docker.com/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](docs/CONTRIBUTING.md)
 
 </div>
 
@@ -515,12 +516,24 @@ This runs at 3:00 AM daily, creates a compressed dump (~10-50 MB), and deletes b
 
 ---
 
+## Documentation
+
+- [Development Guide](docs/DEVELOPMENT.md) — Setup, testing, linting, common tasks
+- [Architecture](docs/architecture.md) — C4 diagrams, system design, ADRs
+- [Security Policy](docs/SECURITY.md) — Vulnerability reporting, security measures, backups
+- [Contributing Guide](docs/CONTRIBUTING.md) — Branch naming, commit conventions, PR requirements
+- [Changelog](CHANGELOG.md) — Version history and notable changes
+
 ## Contributing
 
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full guide. Quick summary:
+
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes
-4. Push to the branch and open a Pull Request
+2. Create a feature branch (`git checkout -b feat/amazing-feature`)
+3. Write tests for your changes
+4. Ensure all CI checks pass (`lint`, `typecheck`, `tests`)
+5. Commit using [Conventional Commits](https://www.conventionalcommits.org/)
+6. Push and open a Pull Request
 
 ### Conventions
 

@@ -1,0 +1,15 @@
+# Default owners for the entire repository
+* @Gonzalez8
+
+# Backend
+/backend/ @Gonzalez8
+
+# Frontend
+/frontend/ @Gonzalez8
+
+# CI/CD and infrastructure
+/.github/ @Gonzalez8
+/docker-compose*.yml @Gonzalez8
+
+# Documentation
+/docs/ @Gonzalez8

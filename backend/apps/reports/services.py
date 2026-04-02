@@ -95,12 +95,11 @@ def rv_evolution(user):
 
 
 def patrimonio_evolution(user):
-    from apps.assets.models import AccountSnapshot, Asset, PortfolioSnapshot, PositionSnapshot
+    from apps.assets.models import AccountSnapshot, PortfolioSnapshot
     from apps.portfolio.services import calculate_portfolio
     from apps.transactions.models import Transaction
 
     EQUITY_TYPES = {"STOCK", "ETF", "CRYPTO"}
-    asset_type_map = dict(Asset.objects.filter(owner=user).values_list("id", "type"))
 
     account_balances = {}
     monthly_cash = {}
@@ -140,18 +139,8 @@ def patrimonio_evolution(user):
             running_cost -= qty * price - commission
         tx_cost_by_month[month_key] = running_cost
 
-    selected_batch_ids = {snap["batch_id"] for snap in monthly_portfolio.values()}
     batch_rv = defaultdict(Decimal)
     batch_rf = defaultdict(Decimal)
-
-    for pos in PositionSnapshot.objects.filter(owner=user, batch_id__in=selected_batch_ids).values(
-        "batch_id", "asset_id", "market_value"
-    ):
-        asset_type = asset_type_map.get(pos["asset_id"], "")
-        if asset_type in EQUITY_TYPES:
-            batch_rv[pos["batch_id"]] += pos["market_value"]
-        else:
-            batch_rf[pos["batch_id"]] += pos["market_value"]
 
     live_total = Decimal("0")
     live_pnl = Decimal("0")

@@ -59,10 +59,6 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     const id = cleanPath.split("/")[3];
     return data.getDemoPriceHistory(id) as T;
   }
-  if (/^\/api\/assets\/[^/]+\/position-history/.test(cleanPath)) {
-    const id = cleanPath.split("/")[3];
-    return data.getDemoPositionHistory(id) as T;
-  }
   if (/^\/api\/assets\/[^/]+/.test(cleanPath)) {
     const id = cleanPath.split("/")[3];
     return (data.demoAssets.find((a) => a.id === id) ?? data.demoAssets[0]) as T;

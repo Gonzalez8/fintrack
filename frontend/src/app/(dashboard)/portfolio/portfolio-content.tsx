@@ -14,8 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell, PctCell } from "@/components/app/money-cell";
-import { AssetEvolutionChart } from "@/components/app/asset-evolution-chart";
 import { RefreshCw } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const PriceChart = dynamic(
+  () => import("@/components/app/price-chart").then((m) => ({ default: m.PriceChart })),
+  { ssr: false },
+);
 import { formatMoney, moneyColor } from "@/lib/utils";
 import { ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import type { PortfolioData, Position } from "@/types";
@@ -366,7 +371,7 @@ export function PortfolioContent() {
             </DialogTitle>
           </DialogHeader>
           {selectedPosition && (
-            <AssetEvolutionChart position={selectedPosition} />
+            <PriceChart assetId={selectedPosition.asset_id} ticker={selectedPosition.asset_ticker ?? null} />
           )}
         </DialogContent>
       </Dialog>

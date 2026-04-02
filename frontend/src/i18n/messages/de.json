@@ -510,8 +510,6 @@
   "settings.olderThan10y": "Aelter als 10 Jahre",
   "settings.purgePortfolioSnapshots": "Portfolio Snapshots",
   "settings.purgePortfolioSnapshotsDesc": "Aggregierte Portfolio-Snapshots (Gesamtwert, Kosten, G&V)",
-  "settings.purgePositionSnapshots": "Position Snapshots",
-  "settings.purgePositionSnapshotsDesc": "Detail pro Vermoegenswert je Snapshot (schwerste Tabelle)",
   "settings.purgeTargets": "Von der Bereinigung betroffene Tabellen",
   "settings.backup": "Datensicherung",
   "settings.backupDesc": "Exportiere alle Daten (Vermoegenswerte, Konten, Transaktionen, Dividenden und Zinsen) in eine JSON-Datei. Zum Wiederherstellen importiere eine zuvor exportierte Backup-Datei.",

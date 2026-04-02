@@ -139,39 +139,6 @@ class PortfolioSnapshot(models.Model):
         return f"Portfolio @ {self.captured_at}: {self.total_market_value}"
 
 
-class PositionSnapshot(models.Model):
-    owner = models.ForeignKey(
-        django_settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="assets_positionsnapshot_set",
-    )
-    batch_id = models.UUIDField(db_index=True)
-    captured_at = models.DateTimeField(db_index=True)
-    asset = models.ForeignKey(Asset, on_delete=models.CASCADE, related_name="position_snapshots")
-    quantity = models.DecimalField(max_digits=20, decimal_places=6)
-    cost_basis = models.DecimalField(max_digits=20, decimal_places=2)
-    market_value = models.DecimalField(max_digits=20, decimal_places=2)
-    unrealized_pnl = models.DecimalField(max_digits=20, decimal_places=2)
-    unrealized_pnl_pct = models.DecimalField(max_digits=10, decimal_places=2)
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True, null=True)
-
-    class Meta:
-        ordering = ["-captured_at"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["batch_id", "asset"],
-                name="unique_positionsnapshot_batch_asset",
-            )
-        ]
-        indexes = [
-            models.Index(fields=["owner", "asset_id", "captured_at"], name="idx_possnapshot_owner_asset"),
-        ]
-
-    def __str__(self):
-        return f"{self.asset.name} @ {self.captured_at}: {self.market_value}"
-
-
 class Settings(models.Model):
     class CostBasisMethod(models.TextChoices):
         FIFO = "FIFO", "First In, First Out"
@@ -213,7 +180,6 @@ class Settings(models.Model):
         help_text="Delete data older than this many days. Null = never delete.",
     )
     purge_portfolio_snapshots = models.BooleanField(default=True)
-    purge_position_snapshots = models.BooleanField(default=True)
 
     class Meta:
         verbose_name_plural = "settings"

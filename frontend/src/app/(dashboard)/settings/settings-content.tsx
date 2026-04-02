@@ -186,9 +186,6 @@ export function SettingsContent() {
   const currentRetention = retentionDays !== undefined ? retentionDays : (settings?.data_retention_days ?? null);
   const [purgePortfolio, setPurgePortfolio] = useState<boolean | undefined>(undefined);
   const currentPurgePortfolio = purgePortfolio !== undefined ? purgePortfolio : (settings?.purge_portfolio_snapshots ?? true);
-  const [purgePosition, setPurgePosition] = useState<boolean | undefined>(undefined);
-  const currentPurgePosition = purgePosition !== undefined ? purgePosition : (settings?.purge_position_snapshots ?? true);
-
   // Backup
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importResult, setImportResult] = useState<Record<string, number | boolean> | null>(null);
@@ -504,13 +501,11 @@ export function SettingsContent() {
                 onClick={() => {
                   const payload: Partial<Settings> = { data_retention_days: currentRetention };
                   if (purgePortfolio !== undefined) payload.purge_portfolio_snapshots = purgePortfolio;
-                  if (purgePosition !== undefined) payload.purge_position_snapshots = purgePosition;
                   settingsMut.mutate(payload);
                   setRetentionDays(undefined);
                   setPurgePortfolio(undefined);
-                  setPurgePosition(undefined);
                 }}
-                disabled={(retentionDays === undefined && purgePortfolio === undefined && purgePosition === undefined) || settingsMut.isPending}
+                disabled={(retentionDays === undefined && purgePortfolio === undefined) || settingsMut.isPending}
               >
                 {t("common.save")}
               </Button>
@@ -529,18 +524,6 @@ export function SettingsContent() {
                   <span className="text-xs">
                     <span className="font-medium">{t("settings.purgePortfolioSnapshots")}</span>
                     <span className="text-muted-foreground"> — {t("settings.purgePortfolioSnapshotsDesc")}</span>
-                  </span>
-                </label>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
-                    checked={currentPurgePosition}
-                    onChange={(e) => setPurgePosition(e.target.checked)}
-                  />
-                  <span className="text-xs">
-                    <span className="font-medium">{t("settings.purgePositionSnapshots")}</span>
-                    <span className="text-muted-foreground"> — {t("settings.purgePositionSnapshotsDesc")}</span>
                   </span>
                 </label>
               </div>

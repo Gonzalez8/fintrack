@@ -8,7 +8,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, PositionSnapshot, Settings
+from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, Settings
 from apps.assets.serializers import SettingsSerializer
 from apps.reports.models import SavingsGoal
 from apps.transactions.models import Dividend, Interest, Transaction
@@ -20,7 +20,6 @@ from .serializers import (
     BackupDividendSerializer,
     BackupInterestSerializer,
     BackupPortfolioSnapshotSerializer,
-    BackupPositionSnapshotSerializer,
     BackupSavingsGoalSerializer,
     BackupSettingsSerializer,
     BackupTransactionSerializer,
@@ -41,9 +40,6 @@ class BackupExportView(APIView):
             ).data,
             "portfolio_snapshots": BackupPortfolioSnapshotSerializer(
                 PortfolioSnapshot.objects.filter(owner=user), many=True
-            ).data,
-            "position_snapshots": BackupPositionSnapshotSerializer(
-                PositionSnapshot.objects.filter(owner=user).select_related("asset"), many=True
             ).data,
             "transactions": BackupTransactionSerializer(Transaction.objects.filter(owner=user), many=True).data,
             "dividends": BackupDividendSerializer(Dividend.objects.filter(owner=user), many=True).data,
@@ -87,7 +83,6 @@ class BackupImportView(APIView):
             "accounts": 0,
             "account_snapshots": 0,
             "portfolio_snapshots": 0,
-            "position_snapshots": 0,
             "transactions": 0,
             "dividends": 0,
             "interests": 0,
@@ -144,15 +139,6 @@ class BackupImportView(APIView):
                         defaults=to_defaults(item, exclude=("batch_id",)),
                     )
                     counts["portfolio_snapshots"] += 1
-
-                for item in payload.get("position_snapshots", []):
-                    PositionSnapshot.objects.update_or_create(
-                        batch_id=item["batch_id"],
-                        asset_id=item["asset"],
-                        owner=user,
-                        defaults=to_defaults(item, fk_fields=("asset",), exclude=("batch_id",)),
-                    )
-                    counts["position_snapshots"] += 1
 
                 for item in payload.get("transactions", []):
                     Transaction.objects.update_or_create(

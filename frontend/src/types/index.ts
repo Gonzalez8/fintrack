@@ -251,7 +251,6 @@ export interface Settings {
   snapshot_frequency: number;
   data_retention_days: number | null;
   purge_portfolio_snapshots: boolean;
-  purge_position_snapshots: boolean;
 }
 
 // ── Reports ──────────────────────────────────────────────────────
@@ -332,15 +331,6 @@ export interface OHLCBar {
   high: number;
   low: number;
   close: number;
-}
-
-export interface AssetPositionPoint {
-  captured_at: string;
-  market_value: string;
-  cost_basis: string;
-  unrealized_pnl: string;
-  unrealized_pnl_pct: string;
-  quantity: string;
 }
 
 // ── Price Update ─────────────────────────────────────────────────

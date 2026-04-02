@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, PositionSnapshot, Settings
+from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, Settings
 from apps.reports.models import SavingsGoal
 from apps.transactions.models import Dividend, Interest, Transaction
 
@@ -97,23 +97,6 @@ class BackupPortfolioSnapshotSerializer(serializers.ModelSerializer):
         extra_kwargs = {"id": {"read_only": False}}
 
 
-class BackupPositionSnapshotSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PositionSnapshot
-        fields = [
-            "id",
-            "batch_id",
-            "captured_at",
-            "asset",
-            "quantity",
-            "cost_basis",
-            "market_value",
-            "unrealized_pnl",
-            "unrealized_pnl_pct",
-        ]
-        extra_kwargs = {"id": {"read_only": False}}
-
-
 class BackupSavingsGoalSerializer(serializers.ModelSerializer):
     class Meta:
         model = SavingsGoal
@@ -136,5 +119,4 @@ class BackupSettingsSerializer(serializers.ModelSerializer):
             "snapshot_frequency",
             "data_retention_days",
             "purge_portfolio_snapshots",
-            "purge_position_snapshots",
         ]

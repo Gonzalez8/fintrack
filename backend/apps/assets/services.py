@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Asset, PortfolioSnapshot, PositionSnapshot
+from .models import Asset, PortfolioSnapshot
 
 
 def _fetch_batch(tickers, period="5d"):
@@ -48,7 +48,7 @@ def _fetch_batch(tickers, period="5d"):
 
 
 def create_portfolio_snapshot_now(user) -> None:
-    """Create a PortfolioSnapshot + PositionSnapshots for `user`.
+    """Create a PortfolioSnapshot for `user`.
 
     Skips creation if portfolio totals are identical to the last snapshot.
     """
@@ -85,23 +85,6 @@ def create_portfolio_snapshot_now(user) -> None:
             total_cost=new_cost,
             total_unrealized_pnl=new_pnl,
         )
-
-        position_snapshots = [
-            PositionSnapshot(
-                owner=user,
-                batch_id=batch_id,
-                captured_at=now,
-                asset_id=pos["asset_id"],
-                quantity=Decimal(pos["quantity"]),
-                cost_basis=Decimal(pos["cost_basis"]),
-                market_value=Decimal(pos["market_value"]),
-                unrealized_pnl=Decimal(pos["unrealized_pnl"]),
-                unrealized_pnl_pct=Decimal(pos["unrealized_pnl_pct"]),
-            )
-            for pos in data["positions"]
-        ]
-        if position_snapshots:
-            PositionSnapshot.objects.bulk_create(position_snapshots)
 
 
 def update_prices(user):

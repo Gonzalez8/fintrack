@@ -337,7 +337,6 @@ class TestSettings:
                 "default_price_source": "YAHOO",
                 "snapshot_frequency": 1440,
                 "purge_portfolio_snapshots": True,
-                "purge_position_snapshots": True,
             },
             format="json",
         )

@@ -11,7 +11,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from apps.assets.models import Asset, PortfolioSnapshot, PositionSnapshot, Settings
+from apps.assets.models import PortfolioSnapshot, Settings
 from apps.assets.tasks import purge_old_snapshots_task, snapshot_all_users_task
 
 User = get_user_model()
@@ -66,16 +66,7 @@ class TestPurgeOldSnapshotsTask:
         s = Settings.load(user)
         s.data_retention_days = 30
         s.purge_portfolio_snapshots = True
-        s.purge_position_snapshots = True
         s.save()
-
-        asset = Asset.objects.create(
-            owner=user,
-            name="A",
-            ticker="A",
-            type="STOCK",
-            currency="EUR",
-        )
 
         old_batch = uuid.uuid4()
         new_batch = uuid.uuid4()
@@ -89,18 +80,6 @@ class TestPurgeOldSnapshotsTask:
             total_cost=Decimal("80"),
             total_unrealized_pnl=Decimal("20"),
         )
-        PositionSnapshot.objects.create(
-            owner=user,
-            batch_id=old_batch,
-            captured_at=timezone.now() - datetime.timedelta(days=60),
-            asset=asset,
-            quantity=Decimal("10"),
-            cost_basis=Decimal("80"),
-            market_value=Decimal("100"),
-            unrealized_pnl=Decimal("20"),
-            unrealized_pnl_pct=Decimal("25"),
-        )
-
         # New snapshot (5 days ago)
         PortfolioSnapshot.objects.create(
             owner=user,
@@ -114,7 +93,6 @@ class TestPurgeOldSnapshotsTask:
         purge_old_snapshots_task()
 
         assert PortfolioSnapshot.objects.filter(owner=user).count() == 1
-        assert PositionSnapshot.objects.filter(owner=user).count() == 0  # old one deleted
         remaining = PortfolioSnapshot.objects.get(owner=user)
         assert remaining.batch_id == new_batch
 
@@ -122,7 +100,6 @@ class TestPurgeOldSnapshotsTask:
         s = Settings.load(user)
         s.data_retention_days = 30
         s.purge_portfolio_snapshots = False
-        s.purge_position_snapshots = False
         s.save()
 
         PortfolioSnapshot.objects.create(

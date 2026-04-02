@@ -82,5 +82,4 @@ class SettingsSerializer(serializers.ModelSerializer):
             "snapshot_frequency",
             "data_retention_days",
             "purge_portfolio_snapshots",
-            "purge_position_snapshots",
         ]

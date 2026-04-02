@@ -72,6 +72,7 @@ jobs:
       DB_PORT: 5432
       DJANGO_SECRET_KEY: ci-secret-key-not-for-production
       REDIS_URL: redis://localhost:6379/0
+      DEBUG: "False"
 
     steps:
       - uses: actions/checkout@v6

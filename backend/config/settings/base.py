@@ -215,7 +215,7 @@ CELERY_BEAT_SCHEDULE = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Fintrack 2.0 API",
     "DESCRIPTION": "Personal investment tracking API",
-    "VERSION": "2.0.0",
+    "VERSION": "2.2.0",
 }
 
 # ---------------------------------------------------------------------------

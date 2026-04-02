@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+coverage
+.git
+.gitignore
+.env
+.env.*
+*.md
+.vscode/
+.idea/
+src/**/*.test.*
+src/**/*.spec.*
+vitest.config.*

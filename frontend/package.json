@@ -39,7 +39,7 @@
     "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "jsdom": "^29.0.0",
+    "jsdom": "^29.0.1",
     "msw": "^2.12.10",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",

@@ -59,7 +59,7 @@ export function AnnualSavingsChart({ data }: Props) {
               contentStyle={theme.tooltipStyle}
               labelStyle={theme.tooltipLabelStyle}
               itemStyle={theme.tooltipItemStyle}
-              cursor={theme.tooltipCursor}
+              cursor={theme.barCursor}
               formatter={(value, name) => {
                 const v = Number(value);
                 const label =

@@ -125,7 +125,7 @@ export function PaymentBreakdownChart({ schedule, originalSchedule, currentMonth
               tickFormatter={(v: number) => `${v.toFixed(0)}€`}
               width={48}
             />
-            <Tooltip content={renderTooltip} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
+            <Tooltip content={renderTooltip} cursor={ct.barCursor} />
             <Legend
               wrapperStyle={{
                 ...ct.legendStyle,

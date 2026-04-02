@@ -42,6 +42,7 @@ export interface ChartTokens {
   tooltipLabelStyle: CSSProperties;
   tooltipItemStyle: CSSProperties;
   tooltipCursor: CSSProperties;
+  barCursor: CSSProperties;
   axisTick: { fontSize: number; fill: string; fontFamily: string };
   legendStyle: CSSProperties;
 }
@@ -79,6 +80,9 @@ const DARK_TOKENS: ChartTokens = {
     stroke: "#1e2d45",
     strokeWidth: 1,
     strokeDasharray: "4 4",
+  },
+  barCursor: {
+    fill: "rgba(255,255,255,0.04)",
   },
   axisTick: { fontSize: 10, fill: "#94a3b8", fontFamily: CHART_FONT },
   legendStyle: {
@@ -124,6 +128,9 @@ const LIGHT_TOKENS: ChartTokens = {
     stroke: "#e5e7eb",
     strokeWidth: 1,
     strokeDasharray: "4 4",
+  },
+  barCursor: {
+    fill: "rgba(0,0,0,0.04)",
   },
   axisTick: { fontSize: 10, fill: "#6b7280", fontFamily: CHART_FONT },
   legendStyle: {

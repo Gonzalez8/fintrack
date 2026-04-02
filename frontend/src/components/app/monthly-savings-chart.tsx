@@ -216,7 +216,7 @@ export function MonthlySavingsChart({
                 />
                 <Tooltip
                   content={renderTooltip}
-                  cursor={{ fill: "rgba(255,255,255,0.04)" }}
+                  cursor={ct.barCursor}
                 />
                 <Bar
                   dataKey="real_savings"

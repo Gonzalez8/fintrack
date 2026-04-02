@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -22,6 +23,7 @@ import { formatMoney } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
 import type { Interest, InterestFormData, Account, PaginatedResponse } from "@/types";
 import { useDebounce } from "@/hooks/use-debounce";
+import { InterestsProjectionTab } from "./interests-projection-tab";
 
 const PAGE_SIZE = 25;
 const currentYear = new Date().getFullYear();
@@ -168,117 +170,132 @@ export function InterestsContent() {
     <div className="space-y-4">
       <h1 className="text-lg font-semibold">{t("interests.title")}</h1>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={`${t("common.search")}...`} className="pl-9" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
-        </div>
-        <Select value={yearFilter} onValueChange={(v) => setParam("year", v === "all" || !v ? "" : v)}>
-          <SelectTrigger className="w-full sm:w-[120px]">
-            <span data-slot="select-value">{yearFilter || t("common.all")}</span>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("common.all")}</SelectItem>
-            {YEAR_OPTIONS.map((y) => (
-              <SelectItem key={y} value={y}>{y}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="icon" onClick={handleExportCsv} title="CSV">
-          <Download className="h-4 w-4" />
-        </Button>
-        <Button className="hidden sm:flex" onClick={() => { setEditing(null); setDialogOpen(true); }} onMouseEnter={prefetchDialogData}>
-          <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t("common.new")}</span>
-        </Button>
-      </div>
+      <Tabs defaultValue={0}>
+        <TabsList>
+          <TabsTrigger value={0}>{t("interests.tabList")}</TabsTrigger>
+          <TabsTrigger value={1}>{t("interests.tabProjection")}</TabsTrigger>
+        </TabsList>
 
-      {/* Mobile cards */}
-      <div className="sm:hidden space-y-2">
-        {(data?.results ?? []).map((i) => {
-          const gross = parseFloat(i.gross) || 0;
-          const balance = parseFloat(i.balance ?? "0") || 0;
-          const tin = calcTIN(gross, balance, i.days);
-          const tae = calcTAE(gross, balance, i.days);
-          const completed = new Date(i.date_end) <= new Date();
-          return (
-            <SwipeCard
-              key={i.id}
-              onTap={() => setDetailItem(i)}
-              onEdit={() => { setEditing(i); setDialogOpen(true); }}
-              onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(i.id); }}
-              accentColor="border-l-emerald-500"
-            >
-              <div className="space-y-1">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium">{i.account_name}</p>
-                    {completed
-                      ? <span className="text-xs text-green-500">Completado</span>
-                      : <span className="text-xs text-yellow-500">Activo</span>
-                    }
-                  </div>
-                  <span className="text-xs text-muted-foreground">{i.date_start} → {i.date_end} ({i.days}d)</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("interests.gross")}</span>
-                  <span className="font-mono tabular-nums">{formatMoney(i.gross)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-medium">
-                  <span>{t("interests.net")}</span>
-                  <span className={`font-mono tabular-nums ${parseFloat(i.net) >= 0 ? "text-green-500" : "text-red-500"}`}>
-                    {formatMoney(i.net)}
-                  </span>
-                </div>
-                {i.balance && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t("interests.balance")}</span>
-                    <span className="font-mono tabular-nums">{formatMoney(i.balance)}</span>
-                  </div>
-                )}
-                {tin !== null && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">TIN</span>
-                    <span className="font-mono tabular-nums">{tin.toFixed(2)}%</span>
-                  </div>
-                )}
-                {tae !== null && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">TAE</span>
-                    <span className="font-mono tabular-nums">{tae.toFixed(2)}%</span>
-                  </div>
-                )}
-              </div>
-            </SwipeCard>
-          );
-        })}
-        {!isLoading && (data?.results ?? []).length === 0 && (
-          <p className="text-center text-muted-foreground py-8">{t("common.noData")}</p>
-        )}
-      </div>
+        {/* ── Tab: List ── */}
+        <TabsContent value={0} className="pt-4 space-y-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder={`${t("common.search")}...`} className="pl-9" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+            </div>
+            <Select value={yearFilter} onValueChange={(v) => setParam("year", v === "all" || !v ? "" : v)}>
+              <SelectTrigger className="w-full sm:w-[120px]">
+                <span data-slot="select-value">{yearFilter || t("common.all")}</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("common.all")}</SelectItem>
+                {YEAR_OPTIONS.map((y) => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="icon" onClick={handleExportCsv} title="CSV">
+              <Download className="h-4 w-4" />
+            </Button>
+            <Button className="hidden sm:flex" onClick={() => { setEditing(null); setDialogOpen(true); }} onMouseEnter={prefetchDialogData}>
+              <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t("common.new")}</span>
+            </Button>
+          </div>
 
-      {/* Desktop table */}
-      <div className="hidden sm:block">
-        <DataTable
-          columns={columns}
-          data={data?.results ?? []}
-          keyFn={(i) => i.id}
-          page={page}
-          pageSize={PAGE_SIZE}
-          total={data?.count}
-          onPageChange={(p) => setParam("page", String(p))}
-          emptyMessage={isLoading ? `${t("common.loading")}...` : t("common.noData")}
-        />
-      </div>
+          {/* Mobile cards */}
+          <div className="sm:hidden space-y-2">
+            {(data?.results ?? []).map((i) => {
+              const gross = parseFloat(i.gross) || 0;
+              const balance = parseFloat(i.balance ?? "0") || 0;
+              const tin = calcTIN(gross, balance, i.days);
+              const tae = calcTAE(gross, balance, i.days);
+              const completed = new Date(i.date_end) <= new Date();
+              return (
+                <SwipeCard
+                  key={i.id}
+                  onTap={() => setDetailItem(i)}
+                  onEdit={() => { setEditing(i); setDialogOpen(true); }}
+                  onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(i.id); }}
+                  accentColor="border-l-emerald-500"
+                >
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-medium">{i.account_name}</p>
+                        {completed
+                          ? <span className="text-xs text-green-500">Completado</span>
+                          : <span className="text-xs text-yellow-500">Activo</span>
+                        }
+                      </div>
+                      <span className="text-xs text-muted-foreground">{i.date_start} → {i.date_end} ({i.days}d)</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{t("interests.gross")}</span>
+                      <span className="font-mono tabular-nums">{formatMoney(i.gross)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>{t("interests.net")}</span>
+                      <span className={`font-mono tabular-nums ${parseFloat(i.net) >= 0 ? "text-green-500" : "text-red-500"}`}>
+                        {formatMoney(i.net)}
+                      </span>
+                    </div>
+                    {i.balance && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{t("interests.balance")}</span>
+                        <span className="font-mono tabular-nums">{formatMoney(i.balance)}</span>
+                      </div>
+                    )}
+                    {tin !== null && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">TIN</span>
+                        <span className="font-mono tabular-nums">{tin.toFixed(2)}%</span>
+                      </div>
+                    )}
+                    {tae !== null && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">TAE</span>
+                        <span className="font-mono tabular-nums">{tae.toFixed(2)}%</span>
+                      </div>
+                    )}
+                  </div>
+                </SwipeCard>
+              );
+            })}
+            {!isLoading && (data?.results ?? []).length === 0 && (
+              <p className="text-center text-muted-foreground py-8">{t("common.noData")}</p>
+            )}
+          </div>
 
-      {/* FAB mobile */}
-      <button
-        className="fixed bottom-24 right-5 z-40 sm:hidden flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
-        onClick={() => { setEditing(null); setDialogOpen(true); }}
-        aria-label={t("common.new")}
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+          {/* Desktop table */}
+          <div className="hidden sm:block">
+            <DataTable
+              columns={columns}
+              data={data?.results ?? []}
+              keyFn={(i) => i.id}
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={data?.count}
+              onPageChange={(p) => setParam("page", String(p))}
+              emptyMessage={isLoading ? `${t("common.loading")}...` : t("common.noData")}
+            />
+          </div>
+
+          {/* FAB mobile */}
+          <button
+            className="fixed bottom-24 right-5 z-40 sm:hidden flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
+            onClick={() => { setEditing(null); setDialogOpen(true); }}
+            aria-label={t("common.new")}
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+        </TabsContent>
+
+        {/* ── Tab: Projection ── */}
+        <TabsContent value={1} className="pt-4">
+          <InterestsProjectionTab />
+        </TabsContent>
+      </Tabs>
 
       <InterestDialog open={dialogOpen} onOpenChange={setDialogOpen} interest={editing} />
 

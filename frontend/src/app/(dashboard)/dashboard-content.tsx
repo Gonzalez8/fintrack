@@ -313,7 +313,7 @@ export function DashboardContent() {
                       contentStyle={ct.tooltipStyle}
                       labelStyle={ct.tooltipLabelStyle}
                       itemStyle={ct.tooltipItemStyle}
-                      cursor={ct.tooltipCursor}
+                      cursor={ct.barCursor}
                     />
                     <Legend wrapperStyle={ct.legendStyle} />
                     <Bar

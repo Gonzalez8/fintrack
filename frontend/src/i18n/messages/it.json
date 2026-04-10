@@ -746,5 +746,11 @@
   "fiscal.netInterestsShort": "Int. netto",
   "fiscal.divWithholding": "Rit. dividendi",
   "properties.finished": "Completato",
-  "properties.mortgageFinished": "Mutuo estinto"
+  "properties.mortgageFinished": "Mutuo estinto",
+
+  "seo.title": "Fintrack — Monitoraggio investimenti",
+  "seo.description": "Monitora il tuo portafoglio, transazioni, dividendi, interessi e tasse da un'unica dashboard. Auto-ospitato, open source, 100% privato.",
+  "seo.ogTitle": "Fintrack — Monitoraggio investimenti",
+  "seo.ogDescription": "Monitora il tuo portafoglio, transazioni, dividendi, interessi e tasse da un'unica dashboard.",
+  "seo.keywords": "investimenti, portafoglio, dividendi, tasse, self-hosted, open source, privacy, finanze personali"
 }

@@ -2,41 +2,34 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { COOKIE_LANG, DEFAULT_LOCALE } from "@/lib/constants";
+import { getDictionary } from "@/i18n/config";
+import { COOKIE_LANG, DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@/lib/constants";
+import { generateMetadata as generateSeoMetadata, generateJsonLd } from "@/lib/seo";
+import type { Locale } from "@/lib/constants";
 import "./globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://fintrack-quintela.vercel.app";
+export async function generateMetadata(): Promise<Metadata> {
+  const cookieStore = await cookies();
+  const langCookie = cookieStore.get(COOKIE_LANG)?.value ?? DEFAULT_LOCALE;
+  const locale = (SUPPORTED_LOCALES as readonly string[]).includes(langCookie)
+    ? (langCookie as Locale)
+    : DEFAULT_LOCALE;
 
-export const metadata: Metadata = {
-  title: "Fintrack — Seguimiento de inversiones",
-  description:
-    "Controla tu cartera, operaciones, dividendos, intereses y fiscalidad desde un unico panel. Self-hosted, open source, 100% privado.",
-  metadataBase: new URL(SITE_URL),
-  openGraph: {
-    title: "Fintrack — Seguimiento de inversiones",
-    description:
-      "Controla tu cartera, operaciones, dividendos, intereses y fiscalidad desde un unico panel.",
-    url: SITE_URL,
-    siteName: "Fintrack",
-    locale: "es_ES",
-    type: "website",
-    // Image auto-detected from opengraph-image.tsx
-  },
-  twitter: {
-    card: "summary_large_image",
-    // Image auto-detected from twitter-image.tsx
-  },
-};
+  const dictionary = await getDictionary(locale);
+  return generateSeoMetadata(dictionary, locale);
+}
 
 export default async function RootLayout({
   children,
@@ -44,8 +37,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = (await cookies()).get(COOKIE_LANG)?.value || DEFAULT_LOCALE;
+  const jsonLd = generateJsonLd();
+
   return (
     <html lang={locale} suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >

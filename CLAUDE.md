@@ -170,6 +170,8 @@ After pushing commits to `main`, the agent MUST proactively evaluate whether a n
 git tag vX.Y.Z
 git push origin main
 git push origin vX.Y.Z
+# 5. Create GitHub Release (use CHANGELOG content as notes):
+gh release create vX.Y.Z --title "vX.Y.Z — Short description" --latest --notes "..."
 ```
 
 The tag push triggers `.github/workflows/docker-publish.yml` which builds and pushes Docker images to GHCR with tags: `latest`, `X.Y.Z`, `X.Y`.
@@ -177,6 +179,7 @@ The tag push triggers `.github/workflows/docker-publish.yml` which builds and pu
 ### Rules
 - **NEVER** push a tag without updating CHANGELOG.md and package.json version first
 - **NEVER** create a tag on a dirty working tree — commit everything first
+- **ALWAYS** create a GitHub Release (`gh release create`) for every tag — tags without releases are incomplete
 - **ALWAYS** ask the user before creating a tag/release (e.g., "There are 3 fix commits since v2.3.1 — shall I create v2.3.2?")
 - Tags trigger Docker image builds — only tag stable, tested code
 - Current version: check with `git describe --tags --abbrev=0`

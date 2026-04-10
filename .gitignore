@@ -61,7 +61,6 @@ celerybeat-schedule
 celerybeat-schedule.*
 
 # Claude Code / MCP
-.claude/
 .mcp.json
 
 # Misc

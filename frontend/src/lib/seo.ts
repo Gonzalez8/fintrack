@@ -3,7 +3,7 @@ import type { Locale } from "./constants";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://fintrack-quintela.vercel.app";
 
-interface SeoMessages {
+export interface SeoMessages {
   "seo.title": string;
   "seo.description": string;
   "seo.ogTitle": string;

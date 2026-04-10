@@ -4,7 +4,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { getDictionary } from "@/i18n/config";
 import { COOKIE_LANG, DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@/lib/constants";
-import { generateMetadata as generateSeoMetadata, generateJsonLd } from "@/lib/seo";
+import { generateMetadata as generateSeoMetadata, type SeoMessages } from "@/lib/seo";
 import type { Locale } from "@/lib/constants";
 import "./globals.css";
 
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     : DEFAULT_LOCALE;
 
   const dictionary = await getDictionary(locale);
-  return generateSeoMetadata(dictionary, locale);
+  return generateSeoMetadata(dictionary as unknown as SeoMessages, locale);
 }
 
 export default async function RootLayout({
@@ -37,16 +37,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = (await cookies()).get(COOKIE_LANG)?.value || DEFAULT_LOCALE;
-  const jsonLd = generateJsonLd();
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >

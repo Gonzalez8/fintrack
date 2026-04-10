@@ -746,5 +746,11 @@
   "fiscal.netInterestsShort": "Zins. netto",
   "fiscal.divWithholding": "Div. Quellenst.",
   "properties.finished": "Abgeschlossen",
-  "properties.mortgageFinished": "Hypothek abbezahlt"
+  "properties.mortgageFinished": "Hypothek abbezahlt",
+
+  "seo.title": "Fintrack — Investitionsverfolgung",
+  "seo.description": "Verfolgen Sie Ihr Portfolio, Transaktionen, Dividenden, Zinsen und Steuern über ein einziges Dashboard. Self-hosted, Open Source, 100% privat.",
+  "seo.ogTitle": "Fintrack — Investitionsverfolgung",
+  "seo.ogDescription": "Verfolgen Sie Ihr Portfolio, Transaktionen, Dividenden, Zinsen und Steuern über ein einziges Dashboard.",
+  "seo.keywords": "Investitionen, Portfolio, Dividenden, Steuern, Self-Hosted, Open Source, Datenschutz, persönliche Finanzen"
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { djangoFetch, ApiError } from "@/lib/api-server";
@@ -10,6 +11,14 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES, COOKIE_ACCESS, isDemoToken } from "@
 import { DemoBanner } from "@/components/app/demo-banner";
 import type { Locale } from "@/lib/constants";
 import type { User } from "@/types";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
 
 export default async function DashboardLayout({
   children,

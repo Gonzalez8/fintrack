@@ -746,5 +746,11 @@
   "fiscal.netInterestsShort": "Int. neto",
   "fiscal.divWithholding": "Ret. dividendos",
   "properties.finished": "Finalizada",
-  "properties.mortgageFinished": "Hipoteca finalizada"
+  "properties.mortgageFinished": "Hipoteca finalizada",
+
+  "seo.title": "Fintrack — Seguimiento de inversiones",
+  "seo.description": "Controla tu cartera, operaciones, dividendos, intereses y fiscalidad desde un único panel. Self-hosted, open source, 100% privado.",
+  "seo.ogTitle": "Fintrack — Seguimiento de inversiones",
+  "seo.ogDescription": "Controla tu cartera, operaciones, dividendos, intereses y fiscalidad desde un único panel.",
+  "seo.keywords": "inversiones, cartera, dividendos, fiscalidad, self-hosted, open source, privacidad, finanzas personales"
 }

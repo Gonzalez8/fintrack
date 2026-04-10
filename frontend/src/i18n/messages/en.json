@@ -746,5 +746,11 @@
   "fiscal.netInterestsShort": "Net int.",
   "fiscal.divWithholding": "Div. withholding",
   "properties.finished": "Finished",
-  "properties.mortgageFinished": "Mortgage paid off"
+  "properties.mortgageFinished": "Mortgage paid off",
+
+  "seo.title": "Fintrack — Investment Tracking",
+  "seo.description": "Track your portfolio, transactions, dividends, interests and taxes from a single dashboard. Self-hosted, open source, 100% private.",
+  "seo.ogTitle": "Fintrack — Investment Tracking",
+  "seo.ogDescription": "Track your portfolio, transactions, dividends, interests and taxes from a single dashboard.",
+  "seo.keywords": "investments, portfolio, dividends, taxes, self-hosted, open source, privacy, personal finance"
 }

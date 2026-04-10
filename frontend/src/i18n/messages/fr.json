@@ -746,5 +746,11 @@
   "fiscal.netInterestsShort": "Int. net",
   "fiscal.divWithholding": "Ret. dividendes",
   "properties.finished": "Terminée",
-  "properties.mortgageFinished": "Hypothèque remboursée"
+  "properties.mortgageFinished": "Hypothèque remboursée",
+
+  "seo.title": "Fintrack — Suivi des investissements",
+  "seo.description": "Suivez votre portefeuille, transactions, dividendes, intérêts et impôts depuis un tableau de bord unique. Auto-hébergé, open source, 100% privé.",
+  "seo.ogTitle": "Fintrack — Suivi des investissements",
+  "seo.ogDescription": "Suivez votre portefeuille, transactions, dividendes, intérêts et impôts depuis un tableau de bord unique.",
+  "seo.keywords": "investissements, portefeuille, dividendes, impôts, auto-hébergé, open source, confidentialité, finances personnelles"
 }

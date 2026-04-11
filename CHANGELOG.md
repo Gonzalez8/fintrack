@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2026-04-11
+
+### Security
+
+- Validate property FK ownership in AmortizationSerializer to prevent cross-tenant amortization creation (#40)
+- Return 404 instead of 500 for missing SavingsGoal, preventing information disclosure and enforcing ownership (#40)
+
+### Fixed
+
+- Use separate Set-Cookie headers for demo tokens instead of comma-joined string (#40)
+- Fix render side-effect in PrivacyProvider for React concurrent mode safety (#40)
+- Fix diff_years/diff_months calculation in mortgage simulation service (#40)
+- Fix stale closure in amortization edit mutation by passing month as argument (#40)
+- Add refresh mutex to BFF proxy to prevent concurrent token refresh race condition (#40)
+- Fix infinite loop risk in mortgage math when monthsLeft <= 0 (#40)
+- Replace hardcoded Spanish month names with Intl.DateTimeFormat in projection card (#40)
+- Add i18n key `savings.perMonth` to all 5 locales (#40)
+- Add pagination guard (MAX_PAGES=50) and staleTime to interests projection tab (#40)
+- Add error handling to pollTask for network failures (#40)
+- Add retry logic (max_retries=3) to snapshot_single_user_task Celery task (#40)
+- Call _invalidate() in AccountSnapshotViewSet.perform_create (#40)
+- Remove duplicate PatrimonioPoint interface (#40)
+
+### Performance
+
+- Fix deriveAnnualRate O(n²) → O(n) with indexed loop (#40)
+
+### Changed
+
+- Remove dead batch_rv/batch_rf code in patrimonio evolution service (#40)
+
 ## [2.3.1] - 2026-04-10
 
 ### Fixed

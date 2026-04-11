@@ -130,13 +130,58 @@ frontend/         Next.js 16 App Router
 - **Auto-calculation on form:** User inputs loan amount + term (years) + rate type (fixed/variable) + rate. Monthly payment, months paid, outstanding balance computed automatically from purchase date
 - **Debt calculation:** `computeCurrentBalance()` for properties without loaded events, schedule-based calculation for selected property with amortizations applied
 
-## Versioning, Releases & Git Workflow
+## Development Workflow
+
+**Every change** follows this mandatory pipeline. No exceptions, no direct commits to `main`.
+
+```
+Task received
+  → /fintrack-dev (classify, branch, implement, open PR)
+    → /commit (conventional commits on the branch)
+      → /pr-review (automated code review)
+        → Merge to main (squash merge, delete branch)
+          → /fintrack-release (evaluate release)
+```
+
+### Branch Naming Convention
+
+Format: `{type}/{short-kebab-description}` — max 50 chars, lowercase.
+
+| Type | When to use |
+|------|-------------|
+| `feat/` | New user-facing functionality |
+| `fix/` | Bug fix |
+| `chore/` | Tooling, deps, CI, config |
+| `refactor/` | Code restructure, no behavior change |
+| `docs/` | Documentation only |
+| `test/` | Tests |
+| `perf/` | Performance improvement |
+
+**Never use:** `feature/`, `claude/`, `hotfix/`, `bugfix/`
+
+### Skills Pipeline
+
+| Skill | Purpose | When to use |
+|-------|---------|-------------|
+| `/fintrack-dev` | Create branch, guide implementation, open PR | Starting any task |
+| `/commit` | Conventional commit with emoji format | Each logical unit of work |
+| `/pr-review` | Automated code review with Fintrack rules | After opening a PR |
+| `/fintrack-release` | Version bump, CHANGELOG, tag, GitHub Release | After merging to main |
+
+### Versioning & Releases
 
 This project uses **Semantic Versioning** and **Conventional Commits**.
 
 - **Commit messages:** `type(scope): description` — types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `perf`
-- **Release governance:** Use the `fintrack-release` skill (`/fintrack-release`) for all release decisions, version bumps, tagging, and CHANGELOG updates. The skill contains the full policy, anti-spam rules, checklists, and step-by-step execution guide.
+- **Release governance:** Use `/fintrack-release` for all release decisions. The skill contains the full policy, anti-spam rules, checklists, and step-by-step execution guide.
 - **Key rule:** Never create tags without user confirmation. Tags trigger Docker image builds on GHCR.
+
+### Critical Rules
+
+1. **Never commit directly to `main`.** Always use a feature branch + PR.
+2. **Never create tags without user confirmation.** Tags trigger Docker builds.
+3. **i18n keys in ALL 5 locales.** Missing translations break the UI.
+4. **PR review before merge.** Use `/pr-review` or manual review.
 
 ## Common Commands
 

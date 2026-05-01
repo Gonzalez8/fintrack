@@ -263,9 +263,7 @@ def test_interests_null_tax_is_inferred(user, account_tr):
     assert out["interests"]["withholding"] == "4.00"
 
 
-def test_capital_gains_uses_realized_pnl_directly_no_double_discount(
-    user, account, asset_es, settings=None
-):
+def test_capital_gains_uses_realized_pnl_directly_no_double_discount(user, account, asset_es, settings=None):
     # Buy 10 @ 10 with 1.00 commission → cost basis = 100 + 1 = 101
     Transaction.objects.create(
         owner=user,

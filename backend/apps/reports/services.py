@@ -603,11 +603,7 @@ def tax_declaration(user, year):
     }
 
     # ----- DIVIDENDOS --------------------------------------------------------
-    dividends_qs = (
-        Dividend.objects.filter(owner=user, date__year=year)
-        .select_related("asset")
-        .order_by("date")
-    )
+    dividends_qs = Dividend.objects.filter(owner=user, date__year=year).select_related("asset").order_by("date")
 
     div_gross = div_tax_es = div_tax_total = div_comm = div_net = Decimal("0")
     by_country_entity: dict[tuple, dict] = {}
@@ -665,9 +661,7 @@ def tax_declaration(user, year):
             seen_missing_country = True
 
         if not is_es and country:
-            fbc = foreign_by_country.setdefault(
-                country, {"gross": Decimal("0"), "withholding": Decimal("0")}
-            )
+            fbc = foreign_by_country.setdefault(country, {"gross": Decimal("0"), "withholding": Decimal("0")})
             fbc["gross"] += d.gross
             fbc["withholding"] += d.tax
 
@@ -728,7 +722,7 @@ def tax_declaration(user, year):
 
         gross = agg["gross"]
         withholding = agg["withholding"]
-        limit = (gross * rate)
+        limit = gross * rate
         deductible = min(withholding, limit)
 
         foreign_gross_total += gross
@@ -824,9 +818,7 @@ def tax_declaration(user, year):
         )
 
     capital_gains_block = {
-        "casilla": (
-            "Ganancias y pérdidas patrimoniales · Transmisiones de acciones admitidas a negociación"
-        ),
+        "casilla": ("Ganancias y pérdidas patrimoniales · Transmisiones de acciones admitidas a negociación"),
         "transmission_total": str(_q(transmission_total)),
         "acquisition_total": str(_q(acquisition_total)),
         "total_gains": str(_q(total_gains)),

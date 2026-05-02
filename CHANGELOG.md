@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.1] - 2026-05-02
+
+### Fixed
+
+- Exclude `/api/health/` from DRF rate limiting. The liveness endpoint inherited the global `AnonRateThrottle` (200/hour) and started returning 429 after ~33 minutes of polling, marking the container as unhealthy and blocking Portainer stack updates (#59)
+
+### Dependencies
+
+- Bump `shadcn` from 4.2.0 to 4.3.1 (#49)
+- Bump `react-dom` from 19.2.4 to 19.2.5 (#48)
+- Bump `msw` from 2.13.0 to 2.14.2 (dev) (#50)
+- Bump `jsdom` from 29.0.1 to 29.0.2 (dev) (#46)
+- Tighten lower bounds for `psycopg`, `django-cors-headers`, `gunicorn`, `drf-spectacular`, `ruff` (#51, #52, #53, #54, #55)
+
 ## [2.4.0] - 2026-05-02
 
 ### Added

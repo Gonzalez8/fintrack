@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -9,8 +9,10 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=500"]
 
+  # Keep ruff aligned with backend/requirements.txt and CI to avoid hook
+  # vs. CI drift (e.g., preview-mode rule changes between minor versions).
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.15.12
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -25,5 +27,5 @@ repos:
         files: ^frontend/src/.*\.[jt]sx?$
         additional_dependencies:
           - eslint@9
-          - eslint-config-next@16.1.6
+          - eslint-config-next@16.2.3
           - typescript@5

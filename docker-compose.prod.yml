@@ -1,6 +1,12 @@
 services:
+  # postgres and redis are pulled from the AWS ECR Public mirror (S3-backed)
+  # instead of docker.io directly because Docker Hub's Cloudflare R2 storage
+  # is intermittently unreachable from many self-hosting networks, leading to
+  # `context deadline exceeded` on `docker compose pull`. The ECR Public
+  # `docker/library/*` repositories are official mirrors of Docker Hub
+  # `library/*` and serve identical images.
   db:
-    image: postgres:16-alpine
+    image: public.ecr.aws/docker/library/postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-fintrack}
@@ -15,7 +21,7 @@ services:
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: public.ecr.aws/docker/library/redis:7-alpine
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]

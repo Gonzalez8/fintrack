@@ -82,4 +82,5 @@ class SettingsSerializer(serializers.ModelSerializer):
             "snapshot_frequency",
             "data_retention_days",
             "purge_portfolio_snapshots",
+            "tax_treaty_limits",
         ]

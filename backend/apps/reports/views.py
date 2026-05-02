@@ -28,6 +28,7 @@ from .services import (
     patrimonio_evolution,
     rv_evolution,
     savings_projection,
+    tax_declaration,
     year_summary,
 )
 
@@ -101,6 +102,18 @@ class SnapshotStatusView(APIView):
                 "next_snapshot": next_snapshot,
             }
         )
+
+
+class TaxDeclarationView(APIView):
+    def get(self, request):
+        year_param = request.query_params.get("year")
+        if not year_param:
+            return Response({"detail": "year query parameter is required"}, status=400)
+        try:
+            year = int(year_param)
+        except (TypeError, ValueError):
+            return Response({"detail": "year must be an integer"}, status=400)
+        return Response(tax_declaration(request.user, year))
 
 
 class AnnualSavingsView(APIView):

@@ -180,6 +180,16 @@ class Settings(models.Model):
         help_text="Delete data older than this many days. Null = never delete.",
     )
     purge_portfolio_snapshots = models.BooleanField(default=True)
+    tax_treaty_limits = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "Mapping of ISO country code to bilateral tax treaty rate (as string Decimal). "
+            'Example: {"US": "0.15", "CH": "0.15"}. '
+            "Used to cap the foreign withholding tax deductible per country in the "
+            "double-taxation block. Missing countries fall back to 0.15 (15%)."
+        ),
+    )
 
     class Meta:
         verbose_name_plural = "settings"

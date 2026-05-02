@@ -8,6 +8,7 @@ urlpatterns = [
     path("reports/rv-evolution/", views.RVEvolutionView.as_view(), name="rv-evolution"),
     path("reports/monthly-savings/", views.MonthlySavingsView.as_view(), name="monthly-savings"),
     path("reports/annual-savings/", views.AnnualSavingsView.as_view(), name="annual-savings"),
+    path("reports/tax-declaration/", views.TaxDeclarationView.as_view(), name="tax-declaration"),
     path("reports/snapshot-status/", views.SnapshotStatusView.as_view(), name="snapshot-status"),
     path(
         "savings-goals/", views.SavingsGoalViewSet.as_view({"get": "list", "post": "create"}), name="savings-goal-list"

@@ -45,7 +45,18 @@ class Dividend(UserOwnedModel):
     asset = models.ForeignKey("assets.Asset", on_delete=models.PROTECT, related_name="dividends")
     shares = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
     gross = models.DecimalField(max_digits=20, decimal_places=2)
-    tax = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    tax = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        default=0,
+        help_text="Impuestos retenidos en origen sobre el dividendo (withholding tax).",
+    )
+    commission = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        default=0,
+        help_text="Gastos de administración / custodia asociados al dividendo.",
+    )
     net = models.DecimalField(max_digits=20, decimal_places=2)
     import_hash = models.CharField(max_length=64, null=True, blank=True)
 
@@ -64,6 +75,23 @@ class Interest(UserOwnedModel):
     date_end = models.DateField()
     account = models.ForeignKey("assets.Account", on_delete=models.PROTECT, related_name="interests")
     gross = models.DecimalField(max_digits=20, decimal_places=2)
+    tax = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=(
+            "Impuestos retenidos en origen sobre el interés (withholding tax). "
+            "NULL = no informado (se infiere desde gross - net - commission). "
+            "0 = confirmado sin retención."
+        ),
+    )
+    commission = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        default=0,
+        help_text="Comisiones o gastos asociados al pago de intereses.",
+    )
     net = models.DecimalField(max_digits=20, decimal_places=2)
     balance = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
     import_hash = models.CharField(max_length=64, null=True, blank=True)

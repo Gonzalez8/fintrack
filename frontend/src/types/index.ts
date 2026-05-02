@@ -152,6 +152,7 @@ export interface Dividend {
   shares: string | null;
   gross: string;
   tax: string;
+  commission: string;
   net: string;
   withholding_rate: string | null;
   import_hash: string | null;
@@ -165,6 +166,7 @@ export interface DividendFormData {
   shares?: string;
   gross: string;
   tax?: string;
+  commission?: string;
   net: string;
   withholding_rate?: string;
 }
@@ -178,6 +180,8 @@ export interface Interest {
   account: string;
   account_name?: string;
   gross: string;
+  tax: string | null;
+  commission: string;
   net: string;
   balance: string | null;
   created_at: string;
@@ -189,6 +193,8 @@ export interface InterestFormData {
   date_end: string;
   account: string;
   gross: string;
+  tax?: string | null;
+  commission?: string;
   net: string;
   balance?: string;
 }
@@ -540,3 +546,18 @@ export interface StorageInfo {
   total_mb: number;
   tables: Array<{ table: string; size_mb: number }>;
 }
+
+// ── Tax declaration (Modo Renta) ─────────────────────────────────
+export type {
+  TaxDeclaration,
+  TaxInterestsBlock,
+  TaxInterestEntity,
+  TaxDividendsBlock,
+  TaxDividendRow,
+  TaxDoubleTaxationBlock,
+  TaxDoubleTaxationCountry,
+  TaxCapitalGainsBlock,
+  TaxCapitalGainRow,
+  TaxSummary,
+  TaxNotice,
+} from "./tax";

@@ -129,6 +129,15 @@ export function InterestsContent() {
     },
     { key: "account", header: t("common.account"), render: (i) => <span className="text-sm font-medium">{i.account_name}</span> },
     { key: "gross", header: t("interests.gross"), className: "text-right", render: (i) => <MoneyCell value={i.gross} /> },
+    {
+      key: "tax",
+      header: t("interests.withholding"),
+      className: "text-right",
+      render: (i) =>
+        i.tax === null || i.tax === undefined
+          ? <span className="text-muted-foreground" title={t("interests.taxNotInformed")}>—</span>
+          : <MoneyCell value={i.tax} />,
+    },
     { key: "net", header: t("interests.net"), className: "text-right", render: (i) => <MoneyCell value={i.net} colored /> },
     { key: "balance", header: t("interests.balance"), className: "text-right", render: (i) => <MoneyCell value={i.balance} /> },
     {
@@ -234,6 +243,12 @@ export function InterestsContent() {
                       <span className="text-muted-foreground">{t("interests.gross")}</span>
                       <span className="font-mono tabular-nums">{formatMoney(i.gross)}</span>
                     </div>
+                    {i.tax !== null && i.tax !== undefined && parseFloat(i.tax) > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{t("interests.withholding")}</span>
+                        <span className="font-mono tabular-nums">{formatMoney(i.tax)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm font-medium">
                       <span>{t("interests.net")}</span>
                       <span className={`font-mono tabular-nums ${parseFloat(i.net) >= 0 ? "text-green-500" : "text-red-500"}`}>
@@ -315,6 +330,15 @@ export function InterestsContent() {
             subtitle={`${di.date_start} → ${di.date_end} (${di.days}d) · ${completed ? t("interests.completed") : t("interests.active")}`}
             rows={[
               { label: t("interests.gross"), value: formatMoney(di.gross) },
+              {
+                label: t("interests.withholding"),
+                value: di.tax === null || di.tax === undefined
+                  ? <span className="text-muted-foreground italic">{t("interests.taxNotInformed")}</span>
+                  : formatMoney(di.tax),
+              },
+              ...(parseFloat(di.commission ?? "0") > 0
+                ? [{ label: t("interests.commission"), value: formatMoney(di.commission) }]
+                : []),
               { label: t("interests.net"), value: <span className={parseFloat(di.net) >= 0 ? "text-green-500" : "text-red-500"}>{formatMoney(di.net)}</span> },
               ...(di.balance ? [{ label: t("interests.balance"), value: formatMoney(di.balance) }] : []),
               ...(tin !== null ? [{ label: "TIN", value: `${tin.toFixed(2)}%` }] : []),
@@ -344,9 +368,12 @@ function InterestDialog({
     date_end: today,
     account: "",
     gross: "",
+    tax: null,
+    commission: "0",
     net: "",
   });
   const [loading, setLoading] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const { data: accounts } = useQuery({
     queryKey: ["accounts"],
@@ -363,22 +390,76 @@ function InterestDialog({
         date_end: interest.date_end,
         account: interest.account,
         gross: interest.gross,
+        tax: interest.tax ?? null,
+        commission: interest.commission || "0",
         net: interest.net,
         balance: interest.balance || undefined,
       });
+      setAdvancedOpen(
+        (interest.tax !== null && interest.tax !== undefined && parseFloat(interest.tax) > 0) ||
+          parseFloat(interest.commission || "0") > 0
+      );
     } else {
-      setForm({ date_start: today, date_end: today, account: "", gross: "", net: "" });
+      setForm({
+        date_start: today,
+        date_end: today,
+        account: "",
+        gross: "",
+        tax: null,
+        commission: "0",
+        net: "",
+      });
+      setAdvancedOpen(false);
     }
   }, [open, interest, today]);
 
-  // Spain withholding tax rate (19%) — TODO: move to user settings
-  const TAX_RATE = 0.19;
+  // Spain default IRPF rate — used as a sane default ONLY when the user does not
+  // inform tax explicitly.
+  const DEFAULT_RATE = 0.19;
 
   const handleGrossChange = (value: string) => {
     setForm((f) => {
       const gross = parseFloat(value) || 0;
-      const net = (gross * (1 - TAX_RATE)).toFixed(2);
-      return { ...f, gross: value, net };
+      const taxStr = f.tax;
+      const commission = parseFloat(f.commission ?? "0") || 0;
+      // If user has informed tax explicitly, recompute net = gross - tax - commission.
+      // Otherwise, use the 19% IRPF default to keep the previous "fast-fill" UX.
+      let net: number;
+      if (taxStr !== null && taxStr !== "" && taxStr !== undefined) {
+        const tax = parseFloat(taxStr) || 0;
+        net = gross - tax - commission;
+      } else {
+        net = gross * (1 - DEFAULT_RATE) - commission;
+      }
+      return { ...f, gross: value, net: net.toFixed(2) };
+    });
+  };
+
+  const handleTaxChange = (value: string) => {
+    setForm((f) => {
+      const gross = parseFloat(f.gross) || 0;
+      const commission = parseFloat(f.commission ?? "0") || 0;
+      // Empty input → tax = null (not informed). Numeric (incl. 0) → respected.
+      const taxField = value === "" ? null : value;
+      const taxNum = taxField === null ? 0 : parseFloat(taxField) || 0;
+      const net = (gross - taxNum - commission).toFixed(2);
+      return { ...f, tax: taxField, net };
+    });
+  };
+
+  const handleCommissionChange = (value: string) => {
+    setForm((f) => {
+      const gross = parseFloat(f.gross) || 0;
+      const taxStr = f.tax;
+      const commission = parseFloat(value) || 0;
+      let net: number;
+      if (taxStr !== null && taxStr !== "" && taxStr !== undefined) {
+        const tax = parseFloat(taxStr) || 0;
+        net = gross - tax - commission;
+      } else {
+        net = gross * (1 - DEFAULT_RATE) - commission;
+      }
+      return { ...f, commission: value || "0", net: net.toFixed(2) };
     });
   };
 
@@ -461,16 +542,93 @@ function InterestDialog({
             <Input type="number" step="0.01" value={form.gross} onChange={(e) => handleGrossChange(e.target.value)} required />
           </div>
 
+          {/* Advanced fields: tax + commission */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => setAdvancedOpen((v) => !v)}
+            >
+              {advancedOpen ? "▾" : "▸"} {t("interests.advancedFields")}
+            </button>
+            {advancedOpen && (
+              <div className="grid grid-cols-2 gap-3 rounded-md border border-dashed border-border/60 p-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t("interests.withholding")}</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder={t("interests.taxPlaceholder")}
+                    value={form.tax ?? ""}
+                    onChange={(e) => handleTaxChange(e.target.value)}
+                  />
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    {t("interests.taxHelp")}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">{t("interests.commission")}</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.commission ?? "0"}
+                    onChange={(e) => handleCommissionChange(e.target.value)}
+                  />
+                  <p className="text-[11px] text-muted-foreground leading-tight">
+                    {t("interests.commissionHelp")}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Net (manually editable; auto-derived from gross/tax/commission) */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">{t("interests.net")}</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={form.net}
+              onChange={(e) => setForm((f) => ({ ...f, net: e.target.value }))}
+              required
+            />
+          </div>
+
           {/* Balance */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">{t("interests.balance")}</label>
             <Input type="number" step="0.01" value={form.balance || ""} onChange={(e) => setForm((f) => ({ ...f, balance: e.target.value || undefined }))} />
           </div>
 
+          {/* Net mismatch warning */}
+          {(() => {
+            const taxNum = form.tax === null || form.tax === "" || form.tax === undefined
+              ? null
+              : parseFloat(form.tax as string) || 0;
+            const commissionNum = parseFloat(form.commission ?? "0") || 0;
+            // Only validate when tax is informed (otherwise mismatch is expected — net is editable).
+            if (taxNum === null) return null;
+            const expected = gross - taxNum - commissionNum;
+            const diff = Math.abs(expected - net);
+            if (gross > 0 && diff > 0.02) {
+              return (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+                  ⚠ {t("interests.mismatchWarning", {
+                    expected: expected.toFixed(2),
+                    diff: diff.toFixed(2),
+                  })}
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Preview */}
           {gross > 0 && (
             <div className="text-sm text-muted-foreground">
-              <p>Neto: {formatMoney(String(net))} ({(TAX_RATE * 100).toFixed(0)}% retención)</p>
+              {form.tax === null || form.tax === "" || form.tax === undefined ? (
+                <p className="text-[11px] italic">{t("interests.netDefaultHint", { rate: (DEFAULT_RATE * 100).toFixed(0) })}</p>
+              ) : null}
               {days > 0 && <p>Días: {days}</p>}
               {previewTIN !== null && <p>TIN: {previewTIN.toFixed(2)}%</p>}
               {previewTAE !== null && <p>TAE: {previewTAE.toFixed(2)}%</p>}

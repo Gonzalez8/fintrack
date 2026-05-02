@@ -240,6 +240,9 @@ export function DividendsContent() {
         rows={detailItem ? [
           { label: t("dividends.gross"), value: formatMoney(detailItem.gross) },
           { label: t("dividends.withholding"), value: formatMoney(detailItem.tax) },
+          ...(parseFloat(detailItem.commission ?? "0") > 0
+            ? [{ label: t("dividends.commission"), value: formatMoney(detailItem.commission) }]
+            : []),
           { label: t("dividends.net"), value: <span className={parseFloat(detailItem.net) >= 0 ? "text-green-500" : "text-red-500"}>{formatMoney(detailItem.net)}</span> },
           ...(detailItem.withholding_rate ? [{ label: t("dividends.withholdingRate"), value: `${parseFloat(detailItem.withholding_rate).toFixed(2)}%` }] : []),
           ...(detailItem.shares ? [{ label: t("dividends.shares"), value: detailItem.shares }] : []),
@@ -266,9 +269,11 @@ function DividendDialog({
     asset: "",
     gross: "",
     tax: "0",
+    commission: "0",
     net: "",
   });
   const [loading, setLoading] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const { data: assets } = useQuery({
     queryKey: ["assets-list"],
@@ -292,17 +297,27 @@ function DividendDialog({
         shares: dividend.shares || undefined,
         gross: dividend.gross,
         tax: dividend.tax,
+        commission: dividend.commission || "0",
         net: dividend.net,
         withholding_rate: dividend.withholding_rate || undefined,
       });
+      setAdvancedOpen(parseFloat(dividend.commission || "0") > 0);
     } else {
-      setForm({ date: new Date().toISOString().split("T")[0], asset: "", gross: "", tax: "0", net: "" });
+      setForm({
+        date: new Date().toISOString().split("T")[0],
+        asset: "",
+        gross: "",
+        tax: "0",
+        commission: "0",
+        net: "",
+      });
+      setAdvancedOpen(false);
     }
   }, [open, dividend]);
 
-  // Auto-calculate: gross = net + tax, rate = tax / gross
-  const recalcGross = (net: number, tax: number) => {
-    const gross = net + tax;
+  // Auto-calculate: gross = net + tax + commission, rate = tax / gross
+  const recalcGross = (net: number, tax: number, commission: number) => {
+    const gross = net + tax + commission;
     const rate = gross > 0 ? ((tax / gross) * 100).toFixed(2) : undefined;
     return { gross: gross.toFixed(2), withholding_rate: rate };
   };
@@ -311,7 +326,8 @@ function DividendDialog({
     setForm((f) => {
       const net = parseFloat(value) || 0;
       const tax = parseFloat(f.tax ?? "0") || 0;
-      const { gross, withholding_rate } = recalcGross(net, tax);
+      const commission = parseFloat(f.commission ?? "0") || 0;
+      const { gross, withholding_rate } = recalcGross(net, tax, commission);
       return { ...f, net: value, gross, withholding_rate };
     });
   };
@@ -320,8 +336,19 @@ function DividendDialog({
     setForm((f) => {
       const net = parseFloat(f.net) || 0;
       const tax = parseFloat(value) || 0;
-      const { gross, withholding_rate } = recalcGross(net, tax);
+      const commission = parseFloat(f.commission ?? "0") || 0;
+      const { gross, withholding_rate } = recalcGross(net, tax, commission);
       return { ...f, tax: value, gross, withholding_rate };
+    });
+  };
+
+  const handleCommissionChange = (value: string) => {
+    setForm((f) => {
+      const net = parseFloat(f.net) || 0;
+      const tax = parseFloat(f.tax ?? "0") || 0;
+      const commission = parseFloat(value) || 0;
+      const { gross, withholding_rate } = recalcGross(net, tax, commission);
+      return { ...f, commission: value || "0", gross, withholding_rate };
     });
   };
 
@@ -416,8 +443,33 @@ function DividendDialog({
 
           {/* Impuestos retenidos */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Impuestos retenidos</label>
+            <label className="text-sm font-medium">{t("dividends.withholding")}</label>
             <Input type="number" step="0.01" value={form.tax} onChange={(e) => handleTaxChange(e.target.value)} />
+          </div>
+
+          {/* Advanced fields: commission */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+              onClick={() => setAdvancedOpen((v) => !v)}
+            >
+              {advancedOpen ? "▾" : "▸"} {t("dividends.advancedFields")}
+            </button>
+            {advancedOpen && (
+              <div className="space-y-1.5 rounded-md border border-dashed border-border/60 p-3">
+                <label className="text-sm font-medium">{t("dividends.commission")}</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.commission ?? "0"}
+                  onChange={(e) => handleCommissionChange(e.target.value)}
+                />
+                <p className="text-[11px] text-muted-foreground leading-tight">
+                  {t("dividends.commissionHelp")}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Preview */}

@@ -378,6 +378,7 @@ class HealthView(APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []
+    throttle_classes = []
 
     def get(self, request):
         from django.db import connection

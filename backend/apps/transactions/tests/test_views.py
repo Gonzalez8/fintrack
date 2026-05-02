@@ -579,6 +579,72 @@ class TestInterestCRUD:
         res = client2.get(f"/api/interests/{interest.id}/")
         assert res.status_code == 404
 
+    def test_tax_effective_inferred_when_null(self, client, user, account):
+        """tax IS NULL → tax_effective inferred as gross - net - commission."""
+        interest = Interest.objects.create(
+            owner=user,
+            date_start=datetime.date(2025, 1, 1),
+            date_end=datetime.date(2025, 3, 31),
+            account=account,
+            gross=Decimal("50.00"),
+            net=Decimal("40.00"),
+            commission=Decimal("0.00"),
+            tax=None,
+        )
+        res = client.get(f"/api/interests/{interest.id}/")
+        assert res.status_code == 200
+        assert res.data["tax"] is None
+        assert res.data["tax_effective"] == "10.00"
+        assert res.data["tax_is_inferred"] is True
+
+    def test_tax_effective_respects_literal_zero(self, client, user, account):
+        """tax = 0 (confirmed no withholding) → tax_effective = 0, not inferred."""
+        interest = Interest.objects.create(
+            owner=user,
+            date_start=datetime.date(2025, 1, 1),
+            date_end=datetime.date(2025, 3, 31),
+            account=account,
+            gross=Decimal("50.00"),
+            net=Decimal("40.00"),
+            tax=Decimal("0.00"),
+        )
+        res = client.get(f"/api/interests/{interest.id}/")
+        assert res.status_code == 200
+        assert res.data["tax_effective"] == "0.00"
+        assert res.data["tax_is_inferred"] is False
+
+    def test_tax_effective_respects_literal_value(self, client, user, account):
+        """tax IS NOT NULL → tax_effective equals tax exactly."""
+        interest = Interest.objects.create(
+            owner=user,
+            date_start=datetime.date(2025, 1, 1),
+            date_end=datetime.date(2025, 3, 31),
+            account=account,
+            gross=Decimal("50.00"),
+            net=Decimal("40.00"),
+            tax=Decimal("7.50"),
+        )
+        res = client.get(f"/api/interests/{interest.id}/")
+        assert res.status_code == 200
+        assert res.data["tax_effective"] == "7.50"
+        assert res.data["tax_is_inferred"] is False
+
+    def test_tax_effective_inferred_clamped_to_zero(self, client, user, account):
+        """If gross == net (no withholding visible) and tax is NULL, inferred = 0."""
+        interest = Interest.objects.create(
+            owner=user,
+            date_start=datetime.date(2025, 1, 1),
+            date_end=datetime.date(2025, 3, 31),
+            account=account,
+            gross=Decimal("50.00"),
+            net=Decimal("50.00"),
+            tax=None,
+        )
+        res = client.get(f"/api/interests/{interest.id}/")
+        assert res.status_code == 200
+        assert res.data["tax_effective"] == "0.00"
+        assert res.data["tax_is_inferred"] is True
+
 
 # ===========================================================================
 # Interest Filters

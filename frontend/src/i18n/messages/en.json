@@ -430,6 +430,7 @@
   "interests.commission": "Fees / expenses",
   "interests.advancedFields": "Advanced fields (withholding & fees)",
   "interests.taxNotInformed": "Withholding not informed (inferred)",
+  "interests.taxInferred": "Inferred withholding (gross − net − fees)",
   "interests.taxPlaceholder": "Auto · leave empty",
   "interests.taxHelp": "Amount withheld at source. Empty = not informed, will be inferred. Set 0 if you confirm there is no withholding.",
   "interests.commissionHelp": "Only if your broker charges them. They reduce the net received.",

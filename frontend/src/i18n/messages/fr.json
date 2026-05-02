@@ -430,6 +430,7 @@
   "interests.commission": "Frais / commissions",
   "interests.advancedFields": "Champs avancés (retenue et frais)",
   "interests.taxNotInformed": "Retenue non renseignée (déduite)",
+  "interests.taxInferred": "Retenue déduite (brut − net − frais)",
   "interests.taxPlaceholder": "Auto · laisser vide",
   "interests.taxHelp": "Montant retenu à la source. Vide = non renseigné, sera déduit. Mettre 0 si tu confirmes qu'il n'y a pas de retenue.",
   "interests.commissionHelp": "Seulement si ton courtier les facture. Ils réduisent le net perçu.",

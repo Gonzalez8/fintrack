@@ -181,6 +181,8 @@ export interface Interest {
   account_name?: string;
   gross: string;
   tax: string | null;
+  tax_effective: string;
+  tax_is_inferred: boolean;
   commission: string;
   net: string;
   balance: string | null;

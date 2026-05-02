@@ -133,10 +133,17 @@ export function InterestsContent() {
       key: "tax",
       header: t("interests.withholding"),
       className: "text-right",
-      render: (i) =>
-        i.tax === null || i.tax === undefined
-          ? <span className="text-muted-foreground" title={t("interests.taxNotInformed")}>—</span>
-          : <MoneyCell value={i.tax} />,
+      render: (i) => {
+        const effective = parseFloat(i.tax_effective ?? "0");
+        if (effective === 0 && i.tax_is_inferred) {
+          return <span className="text-muted-foreground" title={t("interests.taxNotInformed")}>—</span>;
+        }
+        return (
+          <span title={i.tax_is_inferred ? t("interests.taxInferred") : undefined} className={i.tax_is_inferred ? "italic" : undefined}>
+            <MoneyCell value={i.tax_effective} />
+          </span>
+        );
+      },
     },
     { key: "net", header: t("interests.net"), className: "text-right", render: (i) => <MoneyCell value={i.net} colored /> },
     { key: "balance", header: t("interests.balance"), className: "text-right", render: (i) => <MoneyCell value={i.balance} /> },
@@ -243,10 +250,15 @@ export function InterestsContent() {
                       <span className="text-muted-foreground">{t("interests.gross")}</span>
                       <span className="font-mono tabular-nums">{formatMoney(i.gross)}</span>
                     </div>
-                    {i.tax !== null && i.tax !== undefined && parseFloat(i.tax) > 0 && (
+                    {parseFloat(i.tax_effective ?? "0") > 0 && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{t("interests.withholding")}</span>
-                        <span className="font-mono tabular-nums">{formatMoney(i.tax)}</span>
+                        <span
+                          className={`font-mono tabular-nums ${i.tax_is_inferred ? "italic" : ""}`}
+                          title={i.tax_is_inferred ? t("interests.taxInferred") : undefined}
+                        >
+                          {formatMoney(i.tax_effective)}
+                        </span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm font-medium">
@@ -332,9 +344,16 @@ export function InterestsContent() {
               { label: t("interests.gross"), value: formatMoney(di.gross) },
               {
                 label: t("interests.withholding"),
-                value: di.tax === null || di.tax === undefined
+                value: parseFloat(di.tax_effective ?? "0") === 0 && di.tax_is_inferred
                   ? <span className="text-muted-foreground italic">{t("interests.taxNotInformed")}</span>
-                  : formatMoney(di.tax),
+                  : (
+                    <span
+                      className={di.tax_is_inferred ? "italic text-muted-foreground" : undefined}
+                      title={di.tax_is_inferred ? t("interests.taxInferred") : undefined}
+                    >
+                      {formatMoney(di.tax_effective)}
+                    </span>
+                  ),
               },
               ...(parseFloat(di.commission ?? "0") > 0
                 ? [{ label: t("interests.commission"), value: formatMoney(di.commission) }]

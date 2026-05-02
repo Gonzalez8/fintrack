@@ -430,6 +430,7 @@
   "interests.commission": "Commissioni / spese",
   "interests.advancedFields": "Campi avanzati (ritenuta e spese)",
   "interests.taxNotInformed": "Ritenuta non indicata (dedotta)",
+  "interests.taxInferred": "Ritenuta dedotta (lordo − netto − spese)",
   "interests.taxPlaceholder": "Auto · lascia vuoto",
   "interests.taxHelp": "Importo trattenuto all'origine. Vuoto = non indicato, sarà dedotto. Metti 0 se confermi che non c'è ritenuta.",
   "interests.commissionHelp": "Solo se il tuo broker le applica. Riducono il netto incassato.",

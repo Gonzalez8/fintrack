@@ -430,6 +430,7 @@
   "interests.commission": "Gebühren / Auslagen",
   "interests.advancedFields": "Erweiterte Felder (Quellensteuer & Gebühren)",
   "interests.taxNotInformed": "Quellensteuer nicht angegeben (wird abgeleitet)",
+  "interests.taxInferred": "Abgeleitete Quellensteuer (Brutto − Netto − Gebühren)",
   "interests.taxPlaceholder": "Auto · leer lassen",
   "interests.taxHelp": "An der Quelle einbehaltener Betrag. Leer = nicht angegeben, wird abgeleitet. Setze 0, wenn du bestätigst, dass keine Quellensteuer einbehalten wurde.",
   "interests.commissionHelp": "Nur wenn dein Broker sie berechnet. Sie reduzieren den Nettobetrag.",

@@ -86,6 +86,8 @@ class DividendSerializer(_OwnershipValidationMixin, serializers.ModelSerializer)
 class InterestSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
     account_name = serializers.CharField(source="account.name", read_only=True)
     days = serializers.IntegerField(read_only=True)
+    tax_effective = serializers.SerializerMethodField()
+    tax_is_inferred = serializers.SerializerMethodField()
 
     class Meta:
         model = Interest
@@ -98,13 +100,33 @@ class InterestSerializer(_OwnershipValidationMixin, serializers.ModelSerializer)
             "account_name",
             "gross",
             "tax",
+            "tax_effective",
+            "tax_is_inferred",
             "commission",
             "net",
             "balance",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "days", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "days",
+            "tax_effective",
+            "tax_is_inferred",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_tax_effective(self, obj):
+        if obj.tax is not None:
+            return str(obj.tax)
+        inferred = (obj.gross or Decimal("0")) - (obj.net or Decimal("0")) - (obj.commission or Decimal("0"))
+        if inferred < Decimal("0"):
+            inferred = Decimal("0")
+        return str(inferred.quantize(Decimal("0.01")))
+
+    def get_tax_is_inferred(self, obj):
+        return obj.tax is None
 
     def validate_account(self, value):
         return self._validate_owned_fk(value, "account")

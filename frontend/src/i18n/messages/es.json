@@ -430,6 +430,7 @@
   "interests.commission": "Comisión / gastos",
   "interests.advancedFields": "Campos avanzados (retención y gastos)",
   "interests.taxNotInformed": "Retención no informada (se infiere)",
+  "interests.taxInferred": "Retención inferida (bruto − neto − comisión)",
   "interests.taxPlaceholder": "Auto · dejar vacío",
   "interests.taxHelp": "Importe retenido en origen. Vacío = no informado, se inferirá. Pon 0 si confirmas que no hay retención.",
   "interests.commissionHelp": "Solo si tu broker te las cobra. Reducen el neto cobrado.",

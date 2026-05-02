@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] - 2026-05-02
+
+### Fixed
+
+- Show inferred withholding in the interests list. Legacy/imported rows store `tax = NULL` ("not informed") and the Modo Renta tab already inferred the value from `gross − net − fees`, but the interests table showed `—` instead. The list now renders the inferred amount in italic with a tooltip, while explicit values keep their normal styling. `—` is reserved for rows where the inferred amount is 0 (#60)
+
+### Added
+
+- Two new read-only fields on the interest API response: `tax_effective` (literal `tax` when set, else inferred and clamped to 0) and `tax_is_inferred` (boolean flag for clients to style differently). Existing fields are unchanged — backwards compatible (#60)
+
 ## [2.4.1] - 2026-05-02
 
 ### Fixed

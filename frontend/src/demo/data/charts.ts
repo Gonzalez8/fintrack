@@ -103,4 +103,3 @@ export function getDemoPriceHistory(assetId: string): OHLCBar[] {
   }
   return _priceHistoryCache.get(assetId) ?? [];
 }
-

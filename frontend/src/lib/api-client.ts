@@ -16,6 +16,48 @@ export class ApiClientError extends Error {
   }
 }
 
+/**
+ * Extract a human-readable message from an API error.
+ *
+ * Handles the common DRF error shapes:
+ *   - `{"detail": "msg"}`           → "msg"
+ *   - `{"non_field_errors": ["m"]}` → "m"
+ *   - `{"field": ["m"]}`            → "field: m"
+ *   - `{"detail": ["m"]}`           → "m"
+ *   - plain string body             → that string
+ *
+ * Falls back to ``fallback`` when the body cannot be parsed or contains
+ * nothing recognisable. Use in form ``catch`` blocks so toasts show a
+ * clean message instead of the raw JSON.
+ */
+export function extractApiErrorMessage(err: unknown, fallback: string): string {
+  if (!(err instanceof ApiClientError)) {
+    return err instanceof Error ? err.message : fallback;
+  }
+  try {
+    const data: unknown = JSON.parse(err.body);
+    if (typeof data === "string") return data;
+    if (!data || typeof data !== "object") return fallback;
+    const obj = data as Record<string, unknown>;
+    const pickFirst = (v: unknown): string | null => {
+      if (typeof v === "string") return v;
+      if (Array.isArray(v) && v.length > 0 && typeof v[0] === "string") return v[0];
+      return null;
+    };
+    const detail = pickFirst(obj.detail);
+    if (detail) return detail;
+    const nonField = pickFirst(obj.non_field_errors);
+    if (nonField) return nonField;
+    for (const [field, msgs] of Object.entries(obj)) {
+      const msg = pickFirst(msgs);
+      if (msg) return field === "non_field_errors" ? msg : `${field}: ${msg}`;
+    }
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 async function request<T = unknown>(
   path: string,
   options: RequestInit = {},

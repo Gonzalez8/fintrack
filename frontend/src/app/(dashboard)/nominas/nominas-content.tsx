@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, FileUp, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
-import { api, ApiClientError } from "@/lib/api-client";
+import { api, ApiClientError, extractApiErrorMessage } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -438,8 +438,7 @@ function PayrollDialog({
       toast.success(t("common.success"));
       onOpenChange(false);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t("common.errorSaving");
-      toast.error(message);
+      toast.error(extractApiErrorMessage(err, t("common.errorSaving")));
     } finally {
       setLoading(false);
     }
@@ -682,8 +681,7 @@ function EmployerDialog({
       onCreated(created);
       onOpenChange(false);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t("common.errorSaving");
-      toast.error(message);
+      toast.error(extractApiErrorMessage(err, t("common.errorSaving")));
     } finally {
       setLoading(false);
     }
@@ -778,9 +776,7 @@ function PdfUploadSection({
       if (err instanceof ApiClientError && err.status === 422) {
         toast.warning(t("payroll.pdfNotRecognized"));
       } else {
-        const message =
-          err instanceof Error ? err.message : t("common.error");
-        toast.error(message);
+        toast.error(extractApiErrorMessage(err, t("common.error")));
       }
     } finally {
       setUploading(false);

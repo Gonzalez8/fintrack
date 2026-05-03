@@ -22,6 +22,17 @@ class EmployerSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
+    def validate_name(self, value):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return value
+        qs = Employer.objects.filter(owner=request.user, name=value)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("An employer with this name already exists.")
+        return value
+
 
 class PayrollSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
     employer_name = serializers.CharField(source="employer.name", read_only=True)
@@ -84,4 +95,20 @@ class PayrollSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
         period_end = data.get("period_end") or (self.instance and self.instance.period_end)
         if period_start and period_end and period_end < period_start:
             raise serializers.ValidationError({"period_end": "period_end must be on or after period_start."})
+
+        # Surface the (owner, employer, period_start, period_end) UniqueConstraint as a
+        # 400 ValidationError instead of letting the DB raise IntegrityError → 500.
+        request = self.context.get("request")
+        employer = data.get("employer") or (self.instance and self.instance.employer)
+        if request and request.user.is_authenticated and employer and period_start and period_end:
+            qs = Payroll.objects.filter(
+                owner=request.user,
+                employer=employer,
+                period_start=period_start,
+                period_end=period_end,
+            )
+            if self.instance is not None:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError("A payroll for this employer and period already exists.")
         return data

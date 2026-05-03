@@ -133,6 +133,13 @@ graph TB
             report_views[YearSummary<br/>PatrimonioEvolution<br/>RVEvolution<br/>MonthlySavings<br/>AnnualSavings]
             goals[SavingsGoalViewSet<br/>Projection]
             csv_exports[CSV Exports<br/>Transactions, Dividends, Interests]
+            tax_view[TaxDeclarationView<br/>dispatches by tax_country]
+            subgraph "tax_adapters/"
+                tax_registry[Registry<br/>register · get_adapter · supported_tax_countries]
+                tax_base[TaxAdapter Protocol]
+                tax_common[common.py<br/>q · interest_withholding · asset_country]
+                tax_es[es.py<br/>SpanishTaxAdapter — Modo Renta]
+            end
         end
 
         subgraph "apps/importer/"
@@ -147,6 +154,10 @@ graph TB
     portfolio_engine --> tx_models
     portfolio_engine --> asset_models
     report_views --> portfolio_engine
+    tax_view --> tax_registry
+    tax_registry --> tax_es
+    tax_es --> tax_common
+    tax_es --> tax_base
     snapshot_tasks --> portfolio_engine
     price_service --> asset_models
 ```
@@ -260,6 +271,8 @@ erDiagram
         int rounding_qty
         int snapshot_frequency "minutes"
         int data_retention_days "null=forever"
+        string tax_country "ISO 3166-1 alpha-2, default ES"
+        json tax_treaty_limits "country -> bilateral cap"
     }
 
     Asset {
@@ -666,6 +679,7 @@ Architecture Decision Records documenting key design choices:
 | [ADR-004](adr/004-multi-tenancy-owner-fk.md) | Multi-Tenancy via Owner Foreign Key | Accepted |
 | [ADR-005](adr/005-demo-mode-msw.md) | Demo Mode with MSW and Static Data | Accepted |
 | [ADR-006](adr/006-per-user-redis-cache.md) | Per-User Redis Cache Namespaces | Accepted |
+| [ADR-007](adr/007-tax-adapter-pattern.md) | Per-Country Tax Adapter Pattern | Accepted |
 
 ---
 

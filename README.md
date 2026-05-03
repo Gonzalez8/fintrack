@@ -73,13 +73,23 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 - **Savings goals** — Target-based goals with 3-scenario projections (conservative, average, optimistic)
 - **CSV exports** — Transactions, dividends, and interests
 
-### Tax Reporting (Modo Renta)
-- **Renta Web mapping** — Maps your data directly to the Spanish tax return boxes (Modelo 100): interests, dividends, foreign double-taxation deduction, and capital gains
-- **Per-country double-taxation deduction** — Computed country by country with the bilateral treaty cap (default 15%, configurable per country via `Settings.tax_treaty_limits`)
-- **Row-by-row declarable share sales** — One copyable line per realized sale with tab-separated payload (Entity / Transmission / Acquisition) ready to paste field-by-field
-- **Smart Spanish vs. foreign withholding split** — Spanish withholdings flow into the IRPF box; foreign withholdings feed the double-taxation deduction
-- **Final summary card** — One-click "Copy all" with a structured payload for the whole tax return
-- **Validation warnings** — Detects sales without cost basis, dividends without tax country, and `gross ≠ net + withholding + fees` mismatches
+### Tax Reporting
+
+Fintrack ships **two layers** of tax reporting:
+
+#### Country-agnostic (always available)
+- **Year summary** — Dividends, interests and realized P&L by year
+- **Withholdings by country** — Foreign vs. local breakdown for any residency
+- **CSV export** — Per-year transactions, dividends and interests
+
+#### Country-specific tax-declaration assistant
+- **Fiscal residence in Settings** — Pick your country (`Settings.tax_country`, ISO 3166-1 alpha-2). Default `ES`. The declaration tab only appears when an adapter exists for your country.
+- **Spain (Modo Renta)** — Maps your data directly to the AEAT Renta Web boxes (Modelo 100):
+  - Interests, dividends (Spanish vs. foreign split), foreign double-taxation deduction (per-country, with the bilateral treaty cap — default 15%, configurable via `Settings.tax_treaty_limits`), capital gains
+  - Row-by-row declarable share sales with one-click "Copy row" (Entity / Transmission / Acquisition tab-separated)
+  - Final summary card with "Copy all" payload for the whole return
+  - Validation warnings — sales without cost basis, dividends without tax country, `gross ≠ net + withholding + fees` mismatches
+- **Other countries** — Pluggable. Adding a country only touches its own adapter module. See [ADR-007: Per-Country Tax Adapter Pattern](docs/adr/007-tax-adapter-pattern.md) for the recipe and design rationale.
 
 ### Data Management
 - **Snapshot scheduling** — Configurable auto-snapshot frequency (15min to 24h)

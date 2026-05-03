@@ -20,7 +20,8 @@ backend/          Django 5.1 + DRF (API pura)
     assets/       Asset, Account, Settings, Snapshots + Yahoo Finance
     transactions/ Transaction (BUY/SELL/GIFT), Dividend, Interest
     portfolio/    FIFO/LIFO/WAC engine
-    reports/      Tax, net worth, savings, evolution, savings goals
+    reports/      Net worth, savings, evolution, savings goals
+      tax_adapters/  Per-country tax-declaration adapters (registry + base + es.py)
     realestate/   Property, Amortization, mortgage simulation
     importer/     JSON backup/restore
   config/
@@ -42,6 +43,12 @@ frontend/         Next.js 16 App Router
       mortgage-math.ts  Client-side amortization schedule engine
       privacy.tsx       Privacy mode context + global flag
       chart-theme.ts    Recharts dark/light theme tokens
+    app/(dashboard)/tax/
+      tax-content.tsx           Year picker + per-country adapter dispatch
+      financial-analysis-tab.tsx  Country-agnostic financial summary
+      adapters/
+        index.ts                TAX_ADAPTERS map + getTaxAdapter()
+        es-renta-tab.tsx        Spanish Renta Web adapter
     components/
       ui/           shadcn/ui (Base UI + Tailwind v4)
       app/          Domain components
@@ -78,7 +85,8 @@ frontend/         Next.js 16 App Router
 - **Mortgage finished state:** Banner when mortgage is paid off, debt goes to 0
 
 ### Reports & Analysis
-- **Tax report:** Year-by-year fiscal summary, realized gains, dividends by country, interests by account. Mobile-first cards + desktop tables
+- **Tax report (financial analysis):** Year-by-year fiscal summary, realized gains, dividends by country, interests by account. Mobile-first cards + desktop tables. Country-agnostic, always visible.
+- **Tax declaration (per-country):** A country-specific assistant that maps Fintrack data to the local tax-declaration form. Currently Spain only (Modo Renta → Renta Web / Modelo 100). The user picks their fiscal residence in Settings (`tax_country`); the tab is only shown when an adapter exists for that country. New countries plug in via the adapter pattern documented in [ADR-007](docs/adr/007-tax-adapter-pattern.md).
 - **Net worth evolution:** Stacked area chart (cash + investments) with range filters
 - **Savings:** Monthly/annual savings analysis with goals and projections
 - **CSV export:** Transactions, dividends, interests
@@ -121,6 +129,28 @@ frontend/         Next.js 16 App Router
 - **New item button:** Desktop: `Button` with `Plus` icon in the page header (`hidden sm:flex`). Mobile: FAB (floating action button) fixed at `bottom-24 right-5` (`sm:hidden`).
 - **Summary cards:** Use `grid-cols-1 sm:grid-cols-3` — stack vertically on mobile with label left / value right, grid on desktop.
 - **Tables:** Mobile uses card-style rows (`sm:hidden`), desktop uses `<table>` or `DataTable` (`hidden sm:block`). Never force horizontal scroll on mobile.
+
+## Tax Adapter Architecture
+
+Per-country tax-declaration logic lives behind a registry. Adding a new country touches only its own files; the dispatcher and the rest of the app are untouched. Full design rationale in [ADR-007](docs/adr/007-tax-adapter-pattern.md).
+
+- **`Settings.tax_country`** (`CharField(2)`, ISO 3166-1 alpha-2, default `"ES"`): the user's fiscal residence. Drives which adapter is used.
+- **Backend registry** ([backend/apps/reports/tax_adapters/__init__.py](backend/apps/reports/tax_adapters/__init__.py)): `register(code, adapter)`, `get_adapter(code)`, `supported_tax_countries()`. Adapter modules self-register at import time.
+- **Backend contract** ([base.py](backend/apps/reports/tax_adapters/base.py)): `TaxAdapter` Protocol — `country_code: str` + `declare(user, year) -> dict`.
+- **Backend shared helpers** ([common.py](backend/apps/reports/tax_adapters/common.py)): `q()`, `interest_withholding()`, `asset_country()`, `MONEY_Q`, `NET_MISMATCH_TOLERANCE`. Country-agnostic.
+- **Frontend registry** ([frontend/src/app/(dashboard)/tax/adapters/index.ts](frontend/src/app/(dashboard)/tax/adapters/index.ts)): `TAX_ADAPTERS` map of `code → ComponentType`. `SUPPORTED_TAX_COUNTRIES` is derived from `Object.keys(TAX_ADAPTERS)`.
+- **Endpoint gating**: `TaxDeclarationView` returns `404` if `get_adapter(user.settings.tax_country)` is `None`. Defense in depth, independent of the frontend.
+- **Localization rule**: country-specific tax-form labels (casillas, deduction names) stay **inside the adapter** in the source language of that country's form. Only UI chrome is translated through `i18n/messages/*.json`.
+
+### Adding a new country (e.g. Germany)
+
+1. Backend: create [backend/apps/reports/tax_adapters/de.py](backend/apps/reports/tax_adapters/de.py) implementing `TaxAdapter`. End the module with `register("DE", GermanTaxAdapter())`.
+2. Backend: add `from . import de` to [backend/apps/reports/tax_adapters/__init__.py](backend/apps/reports/tax_adapters/__init__.py).
+3. Backend: tests in [backend/apps/reports/tests/tax_adapters/test_de.py](backend/apps/reports/tests/tax_adapters/test_de.py).
+4. Frontend: create [frontend/src/app/(dashboard)/tax/adapters/de-steuer-tab.tsx](frontend/src/app/(dashboard)/tax/adapters/de-steuer-tab.tsx).
+5. Frontend: add `DE: DeSteuerTab` to `TAX_ADAPTERS` in [frontend/src/app/(dashboard)/tax/adapters/index.ts](frontend/src/app/(dashboard)/tax/adapters/index.ts).
+
+No edits to `services.py`, `views.py`, `tax-content.tsx`, `settings-content.tsx` or any existing country adapter.
 
 ## Real Estate Architecture
 

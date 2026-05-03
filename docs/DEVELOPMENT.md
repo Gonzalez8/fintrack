@@ -34,7 +34,8 @@ backend/          Django 5.1 + DRF REST API
     assets/       Asset, Account, Settings, Snapshots + Yahoo Finance
     transactions/ Transaction (BUY/SELL/GIFT), Dividend, Interest
     portfolio/    FIFO/LIFO/WAC cost basis engine
-    reports/      Tax, net worth, savings, evolution, savings goals
+    reports/      Net worth, savings, evolution, savings goals
+      tax_adapters/  Per-country tax-declaration adapters (registry + base + es.py) — see ADR-007
     realestate/   Property, Amortization, mortgage simulation
     importer/     JSON backup/restore
   config/

@@ -28,7 +28,7 @@ interface Props {
   year: string;
 }
 
-export function RentaModeTab({ year }: Props) {
+export function EsRentaTab({ year }: Props) {
   const t = useTranslations();
   const { data, isLoading, isError } = useTaxDeclaration(year);
 

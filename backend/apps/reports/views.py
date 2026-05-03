@@ -28,9 +28,9 @@ from .services import (
     patrimonio_evolution,
     rv_evolution,
     savings_projection,
-    tax_declaration,
     year_summary,
 )
+from .tax_adapters import get_adapter
 
 _REPORT_TTL = 120  # 2 minutes
 
@@ -107,7 +107,6 @@ class SnapshotStatusView(APIView):
 class TaxDeclarationView(APIView):
     def get(self, request):
         from apps.assets.models import Settings as UserSettings
-        from apps.reports.services import SUPPORTED_TAX_COUNTRIES
 
         year_param = request.query_params.get("year")
         if not year_param:
@@ -118,12 +117,13 @@ class TaxDeclarationView(APIView):
             return Response({"detail": "year must be an integer"}, status=400)
 
         user_settings = UserSettings.load(request.user)
-        if (user_settings.tax_country or "").upper() not in SUPPORTED_TAX_COUNTRIES:
+        adapter = get_adapter(user_settings.tax_country)
+        if adapter is None:
             return Response(
                 {"detail": f"Tax declaration not implemented for country '{user_settings.tax_country}'."},
                 status=404,
             )
-        return Response(tax_declaration(request.user, year))
+        return Response(adapter.declare(request.user, year))
 
 
 class AnnualSavingsView(APIView):

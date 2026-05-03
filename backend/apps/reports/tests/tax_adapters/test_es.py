@@ -1,4 +1,4 @@
-"""Tests for tax_declaration service (Modo Renta backend)."""
+"""Tests for the Spanish (ES) tax-declaration adapter — Modo Renta backend."""
 
 import datetime
 from decimal import Decimal
@@ -7,8 +7,14 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from apps.assets.models import Account, Asset, Settings
-from apps.reports.services import tax_declaration
+from apps.reports.tax_adapters import get_adapter
 from apps.transactions.models import Dividend, Interest, Transaction
+
+
+def tax_declaration(user, year):
+    """Test shim for backwards compatibility with the previous import path."""
+    return get_adapter("ES").declare(user, year)
+
 
 User = get_user_model()
 

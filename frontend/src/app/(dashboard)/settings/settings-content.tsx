@@ -19,11 +19,8 @@ import { toast } from "sonner";
 import { Info } from "lucide-react";
 import { useTranslations } from "@/i18n/use-translations";
 import type { Settings, SnapshotStatus, StorageInfo } from "@/types";
-import {
-  TAX_COUNTRY_OPTIONS,
-  isSupportedTaxCountry,
-  localizedCountryName,
-} from "@/lib/tax-countries";
+import { TAX_COUNTRY_OPTIONS, localizedCountryName } from "@/lib/tax-countries";
+import { isSupportedTaxCountry } from "@/app/(dashboard)/tax/adapters";
 
 const TABLE_TOOLTIP_KEYS: Record<string, string> = {
   assets_asset: "settings.tableTooltipAssetsAsset",

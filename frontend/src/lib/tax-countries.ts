@@ -1,15 +1,17 @@
 /**
- * Tax-country helpers.
+ * Country-related helpers for the fiscal-residence dropdown.
  *
- * - SUPPORTED_TAX_COUNTRIES mirrors the backend constant in
- *   `apps/reports/services.py`. Add an ISO 3166-1 alpha-2 code here only when
- *   a tax-declaration adapter is implemented for that country.
- * - TAX_COUNTRY_OPTIONS is the curated list shown in the Settings dropdown.
- *   Localized country names come from `Intl.DisplayNames` at render time.
+ * Pure utilities — no React, no adapter knowledge. The list of *supported*
+ * countries (ones that have a tax-declaration adapter) lives next to the
+ * adapter registry at
+ * ``app/(dashboard)/tax/adapters/index.ts``.
  */
 
-export const SUPPORTED_TAX_COUNTRIES: readonly string[] = ["ES"];
-
+/**
+ * Curated list of countries shown in the Settings dropdown. Localized names
+ * come from ``Intl.DisplayNames`` at render time, so we don't have to ship
+ * one i18n key per country per locale.
+ */
 export const TAX_COUNTRY_OPTIONS: readonly string[] = [
   "ES",
   "AD",
@@ -38,11 +40,6 @@ export const TAX_COUNTRY_OPTIONS: readonly string[] = [
   "SE",
   "US",
 ];
-
-export function isSupportedTaxCountry(code: string | null | undefined): boolean {
-  if (!code) return false;
-  return SUPPORTED_TAX_COUNTRIES.includes(code.toUpperCase());
-}
 
 /**
  * Resolve a localized country name. Falls back to the ISO code if the locale

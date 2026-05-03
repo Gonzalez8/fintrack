@@ -12,11 +12,10 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useTranslations } from "@/i18n/use-translations";
 import { api } from "@/lib/api-client";
-import { isSupportedTaxCountry } from "@/lib/tax-countries";
 import type { Settings } from "@/types";
 
+import { getTaxAdapter } from "./adapters";
 import { FinancialAnalysisTab } from "./financial-analysis-tab";
-import { RentaModeTab } from "./renta-mode-tab";
 
 export function TaxContent() {
   const t = useTranslations();
@@ -29,8 +28,8 @@ export function TaxContent() {
     queryFn: () => api.get<Settings>("/settings/"),
     staleTime: 5 * 60 * 1000,
   });
-  const showRenta = isSupportedTaxCountry(settings?.tax_country);
   const taxCountry = (settings?.tax_country ?? "ES").toUpperCase();
+  const Adapter = getTaxAdapter(taxCountry);
 
   return (
     <div className="space-y-6">
@@ -53,21 +52,23 @@ export function TaxContent() {
       <Tabs defaultValue={0}>
         <TabsList>
           <TabsTrigger value={0}>{t("fiscal.tab.financial")}</TabsTrigger>
-          {showRenta && (
-            <TabsTrigger value={1}>{t("fiscal.tab.renta")} · ES</TabsTrigger>
+          {Adapter && (
+            <TabsTrigger value={1}>
+              {t("fiscal.tab.renta")} · {taxCountry}
+            </TabsTrigger>
           )}
         </TabsList>
         <TabsContent value={0} className="pt-4">
           <FinancialAnalysisTab year={year} />
         </TabsContent>
-        {showRenta && (
+        {Adapter && (
           <TabsContent value={1} className="pt-4">
-            <RentaModeTab year={year} />
+            <Adapter year={year} />
           </TabsContent>
         )}
       </Tabs>
 
-      {!showRenta && settings && (
+      {!Adapter && settings && (
         <p className="text-xs text-muted-foreground">
           {t("fiscal.adapterUnavailable", { country: taxCountry })}
         </p>

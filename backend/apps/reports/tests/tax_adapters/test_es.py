@@ -342,3 +342,221 @@ def test_summary_replicates_block_totals(user, asset_es, asset_us):
     assert s["dividends_withholding_es"] == out["dividends"]["withholding_es"]
     assert s["double_taxation_foreign_gross"] == out["double_taxation"]["foreign_gross_total"]
     assert s["double_taxation_deductible"] == out["double_taxation"]["deductible_total"]
+
+
+# ---------------------------------------------------------------------------
+# Rendimientos del trabajo (employment_income)
+# ---------------------------------------------------------------------------
+
+
+def _payroll(user, employer, period_end, gross, ss, irpf, net, period_start=None):
+    from apps.payroll.models import Payroll
+
+    if period_start is None:
+        period_start = period_end.replace(day=1)
+    return Payroll.objects.create(
+        owner=user,
+        employer=employer,
+        period_start=period_start,
+        period_end=period_end,
+        gross=gross,
+        ss_employee=ss,
+        irpf_withholding=irpf,
+        net=net,
+    )
+
+
+@pytest.fixture
+def employer_acme(user):
+    from apps.payroll.models import Employer
+
+    return Employer.objects.create(owner=user, name="Acme S.L.", cif="B12345678")
+
+
+@pytest.fixture
+def employer_globex(user):
+    from apps.payroll.models import Employer
+
+    return Employer.objects.create(owner=user, name="Globex Corp")
+
+
+def test_employment_block_aggregates_year(user, employer_acme):
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 1, 31),
+        gross=Decimal("5000"),
+        ss=Decimal("300"),
+        irpf=Decimal("1400"),
+        net=Decimal("3300"),
+    )
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 2, 28),
+        gross=Decimal("5000"),
+        ss=Decimal("300"),
+        irpf=Decimal("1400"),
+        net=Decimal("3300"),
+    )
+
+    out = tax_declaration(user, YEAR)
+    emp = out["employment_income"]
+
+    assert emp["casilla"].startswith("Rendimientos del trabajo")
+    assert emp["gross"] == "10000.00"
+    assert emp["ss_deductible"] == "600.00"
+    assert emp["withholding"] == "2800.00"
+    assert emp["net_informative"] == "6600.00"
+    assert len(emp["by_employer"]) == 1
+    assert emp["by_employer"][0]["name"] == "Acme S.L."
+    assert emp["by_employer"][0]["cif"] == "B12345678"
+
+
+def test_employment_block_groups_by_employer(user, employer_acme, employer_globex):
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 1, 31),
+        gross=Decimal("5000"),
+        ss=Decimal("300"),
+        irpf=Decimal("1400"),
+        net=Decimal("3300"),
+    )
+    _payroll(
+        user,
+        employer_globex,
+        datetime.date(YEAR, 6, 30),
+        gross=Decimal("3000"),
+        ss=Decimal("180"),
+        irpf=Decimal("600"),
+        net=Decimal("2220"),
+    )
+
+    out = tax_declaration(user, YEAR)
+    emp = out["employment_income"]
+
+    by_name = {e["name"]: e for e in emp["by_employer"]}
+    assert by_name["Acme S.L."]["gross"] == "5000.00"
+    assert by_name["Globex Corp"]["gross"] == "3000.00"
+    assert by_name["Globex Corp"]["cif"] == ""  # employer_globex has no CIF
+    assert emp["gross"] == "8000.00"
+
+
+def test_employment_year_filter(user, employer_acme):
+    # Previous year payroll must NOT leak into this year's report
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR - 1, 12, 31),
+        gross=Decimal("9999"),
+        ss=Decimal("0"),
+        irpf=Decimal("0"),
+        net=Decimal("9999"),
+    )
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 1, 31),
+        gross=Decimal("5000"),
+        ss=Decimal("300"),
+        irpf=Decimal("1400"),
+        net=Decimal("3300"),
+    )
+
+    out = tax_declaration(user, YEAR)
+    assert out["employment_income"]["gross"] == "5000.00"
+
+
+def test_employment_block_empty_year(user):
+    """No payrolls → block exists with zero totals and empty breakdown."""
+    out = tax_declaration(user, YEAR)
+    emp = out["employment_income"]
+    assert emp["gross"] == "0.00"
+    assert emp["ss_deductible"] == "0.00"
+    assert emp["withholding"] == "0.00"
+    assert emp["by_employer"] == []
+
+
+def test_employment_summary_replicates_totals(user, employer_acme):
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 1, 31),
+        gross=Decimal("5000"),
+        ss=Decimal("300"),
+        irpf=Decimal("1400"),
+        net=Decimal("3300"),
+    )
+
+    out = tax_declaration(user, YEAR)
+    s = out["summary"]
+    emp = out["employment_income"]
+
+    assert s["employment_gross"] == emp["gross"]
+    assert s["employment_ss_deductible"] == emp["ss_deductible"]
+    assert s["employment_withholding"] == emp["withholding"]
+
+
+def test_employment_net_mismatch_emits_warning(user, employer_acme):
+    """A payslip with gross-ss-irpf != net produces an info warning, never an error."""
+    # gross 5000 - ss 300 - irpf 1400 = 3300, but net = 3200 (anticipo)
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 1, 31),
+        gross=Decimal("5000"),
+        ss=Decimal("300"),
+        irpf=Decimal("1400"),
+        net=Decimal("3200"),
+    )
+
+    out = tax_declaration(user, YEAR)
+    kinds = [w["kind"] for w in out["warnings"]]
+    assert "payroll_net_mismatch" in kinds
+    msg = next(w for w in out["warnings"] if w["kind"] == "payroll_net_mismatch")["message"]
+    assert "anticipos" in msg or "embargos" in msg
+
+
+def test_employment_missing_months_warning(user, employer_acme):
+    """Gaps between the first and last payroll of the year emit a warning."""
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 1, 31),
+        gross=Decimal("5000"),
+        ss=Decimal("300"),
+        irpf=Decimal("1400"),
+        net=Decimal("3300"),
+    )
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 4, 30),
+        gross=Decimal("5000"),
+        ss=Decimal("300"),
+        irpf=Decimal("1400"),
+        net=Decimal("3300"),
+    )
+
+    out = tax_declaration(user, YEAR)
+    kinds = [w["kind"] for w in out["warnings"]]
+    assert "payroll_missing_months" in kinds
+
+
+def test_employment_no_missing_months_when_complete(user, employer_acme):
+    for m in range(1, 13):
+        last_day = 28 if m == 2 else 30 if m in (4, 6, 9, 11) else 31
+        _payroll(
+            user,
+            employer_acme,
+            datetime.date(YEAR, m, last_day),
+            gross=Decimal("5000"),
+            ss=Decimal("300"),
+            irpf=Decimal("1400"),
+            net=Decimal("3300"),
+        )
+
+    out = tax_declaration(user, YEAR)
+    kinds = [w["kind"] for w in out["warnings"]]
+    assert "payroll_missing_months" not in kinds

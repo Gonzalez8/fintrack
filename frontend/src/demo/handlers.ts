@@ -22,6 +22,8 @@ import {
   demoProperties,
   demoAmortizations,
   demoSimulationResult,
+  demoEmployers,
+  demoPayrolls,
 } from "./data";
 
 // Fake JWT that won't be rejected by middleware — three base64url segments,
@@ -274,6 +276,67 @@ const proxyHandlers = [
   http.delete("/api/proxy/interests/:id/", async () => {
     await delay(200);
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  // ---- Employers ----
+  http.get("/api/proxy/employers/", async () => {
+    await delay(150);
+    return HttpResponse.json(paginated(demoEmployers));
+  }),
+  http.post("/api/proxy/employers/", async ({ request }) => {
+    await delay(150);
+    const body = (await request.json()) as Record<string, string>;
+    return HttpResponse.json(
+      {
+        id: "f1000000-0099-4000-f000-000000000099",
+        name: body.name ?? "",
+        cif: body.cif ?? "",
+        ss_account: body.ss_account ?? "",
+        address: body.address ?? "",
+        notes: body.notes ?? "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { status: 201 },
+    );
+  }),
+  http.put("/api/proxy/employers/:id/", async () => {
+    await delay(150);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete("/api/proxy/employers/:id/", async () => {
+    await delay(150);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  // ---- Payrolls ----
+  http.get("/api/proxy/payrolls/", async () => {
+    await delay(200);
+    return HttpResponse.json(paginated(demoPayrolls));
+  }),
+  http.post("/api/proxy/payrolls/", async () => {
+    await delay(200);
+    return HttpResponse.json(demoPayrolls[0], { status: 201 });
+  }),
+  http.put("/api/proxy/payrolls/:id/", async () => {
+    await delay(200);
+    return HttpResponse.json({ ok: true });
+  }),
+  http.delete("/api/proxy/payrolls/:id/", async () => {
+    await delay(200);
+    return new HttpResponse(null, { status: 204 });
+  }),
+  // PDF parser is not available in demo mode — always return 422 so the
+  // frontend gracefully falls back to manual entry.
+  http.post("/api/proxy/payrolls/parse-pdf/", async () => {
+    await delay(150);
+    return HttpResponse.json(
+      {
+        detail:
+          "PDF parser no disponible en modo demo. Rellena los campos manualmente.",
+      },
+      { status: 422 },
+    );
   }),
 
   // ---- Portfolio ----

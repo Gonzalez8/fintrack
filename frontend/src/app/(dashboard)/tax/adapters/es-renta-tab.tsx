@@ -50,6 +50,7 @@ export function EsRentaTab({ year }: Props) {
   return (
     <div className="space-y-8">
       <Header t={t} year={year} />
+      <EmploymentBlock t={t} block={data.employment_income} />
       <InterestsBlock t={t} block={data.interests} />
       <DividendsBlock t={t} block={data.dividends} />
       <DoubleTaxationBlock t={t} block={data.double_taxation} />
@@ -153,6 +154,123 @@ function BlockHeader({ casilla, title }: { casilla: string; title: string }) {
 }
 
 // ── Block: Interests ────────────────────────────────────────────────
+
+// ── Block: Employment income (Rendimientos del trabajo) ────────────
+
+function EmploymentBlock({
+  t,
+  block,
+}: {
+  t: T;
+  block: TaxDeclaration["employment_income"];
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <BlockHeader
+            casilla={block.casilla}
+            title={t("fiscal.renta.employment.title")}
+          />
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-2 md:grid-cols-3">
+          <CopyableField
+            t={t}
+            label={t("fiscal.renta.employment.gross")}
+            value={block.gross}
+          />
+          <CopyableField
+            t={t}
+            label={t("fiscal.renta.employment.ssDeductible")}
+            value={block.ss_deductible}
+          />
+          <CopyableField
+            t={t}
+            label={t("fiscal.renta.employment.withholding")}
+            value={block.withholding}
+          />
+        </div>
+        <InfoField
+          label={t("fiscal.renta.employment.netInformative")}
+          value={block.net_informative}
+        />
+
+        {block.by_employer.length > 0 && (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("fiscal.renta.employment.byEmployer")}</TableHead>
+                  <TableHead className="text-right">
+                    {t("fiscal.renta.employment.gross")}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t("fiscal.renta.employment.ssDeductible")}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t("fiscal.renta.employment.withholding")}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t("fiscal.renta.employment.netInformative")}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {block.by_employer.map((row) => (
+                  <TableRow key={`${row.name}-${row.cif}`}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span>{row.name}</span>
+                        {row.cif && (
+                          <span className="text-xs text-muted-foreground">
+                            {row.cif}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatMoney(row.gross)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatMoney(row.ss_deductible)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatMoney(row.withholding)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatMoney(row.net)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow className="font-semibold">
+                  <TableCell>{t("fiscal.total")}</TableCell>
+                  <TableCell className="text-right">
+                    {formatMoney(block.gross)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatMoney(block.ss_deductible)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatMoney(block.withholding)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatMoney(block.net_informative)}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Block: Interests ───────────────────────────────────────────────
 
 function InterestsBlock({
   t,
@@ -708,6 +826,11 @@ function SummaryBlock({ t, data }: { t: T; data: TaxDeclaration }) {
   function buildClipboardPayload(): string {
     const parts: string[] = [];
     parts.push(`RENTA WEB — ${data.year}`, "");
+    parts.push("RENDIMIENTOS DEL TRABAJO");
+    parts.push(`  ${t("fiscal.renta.employment.gross")}: ${formatForRenta(summary.employment_gross)}`);
+    parts.push(`  ${t("fiscal.renta.employment.ssDeductible")}: ${formatForRenta(summary.employment_ss_deductible)}`);
+    parts.push(`  ${t("fiscal.renta.employment.withholding")}: ${formatForRenta(summary.employment_withholding)}`);
+    parts.push("");
     parts.push("INTERESES");
     parts.push(`  ${t("fiscal.renta.interests.gross")}: ${formatForRenta(summary.interests_gross)}`);
     parts.push(`  ${t("fiscal.renta.interests.withholding")}: ${formatForRenta(summary.interests_withholding)}`);

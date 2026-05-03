@@ -627,6 +627,8 @@ export interface PayrollPdfSuggestion {
 // ── Tax declaration (Modo Renta) ─────────────────────────────────
 export type {
   TaxDeclaration,
+  TaxEmploymentBlock,
+  TaxEmploymentByEmployer,
   TaxInterestsBlock,
   TaxInterestEntity,
   TaxDividendsBlock,

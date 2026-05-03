@@ -475,6 +475,7 @@
 
   "fiscal.tab.financial": "Finanzanalyse",
   "fiscal.tab.renta": "Steuererklärung",
+  "fiscal.adapterUnavailable": "Der Steuererklärungs-Assistent ist für deinen steuerlichen Wohnsitz ({country}) noch nicht verfügbar. Aktuell wird nur Spanien unterstützt. Du kannst deinen steuerlichen Wohnsitz in den Einstellungen ändern.",
   "fiscal.renta.header.title": "Werte zum Einfügen in die spanische Steuererklärung · Jahr {year}",
   "fiscal.renta.header.subtitle": "Jeder hervorgehobene Betrag ist bereit, in das entsprechende Feld eingefügt zu werden. Informative Beträge dienen nur zur Referenz und werden nicht in die Steuererklärung eingetragen.",
   "fiscal.renta.header.legend.copy": "Zum Kopieren in die Steuererklärung",
@@ -547,6 +548,8 @@
   "settings.marketPrice": "Marktpreis",
   "settings.moneyDecimals": "Dezimalstellen Geld",
   "settings.quantityDecimals": "Dezimalstellen Menge",
+  "settings.taxCountry": "Steuerlicher Wohnsitz",
+  "settings.taxCountryHelp": "Dein Land des steuerlichen Wohnsitzes. Der Steuererklärungs-Assistent (Modo Renta) ist derzeit nur für Spanien verfügbar; mit ✓ markierte Länder haben einen Adapter.",
   "settings.priceUpdateFreq": "Preise aktualisieren alle",
   "settings.manual": "Manuell",
   "settings.min5": "5 Minuten",

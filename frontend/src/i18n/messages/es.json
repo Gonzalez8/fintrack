@@ -475,6 +475,7 @@
 
   "fiscal.tab.financial": "Análisis financiero",
   "fiscal.tab.renta": "Modo Renta",
+  "fiscal.adapterUnavailable": "El asistente de declaración (Modo Renta) aún no está disponible para tu residencia fiscal ({country}). Por ahora solo se ofrece para España. Puedes cambiar tu residencia fiscal en Ajustes.",
   "fiscal.renta.header.title": "Valores listos para copiar a Renta Web · Ejercicio {year}",
   "fiscal.renta.header.subtitle": "Cada importe destacado está listo para pegar en su casilla. Los importes informativos sirven solo de referencia y no se introducen en Renta Web.",
   "fiscal.renta.header.legend.copy": "Para copiar a Hacienda",
@@ -547,6 +548,8 @@
   "settings.marketPrice": "Precio mercado",
   "settings.moneyDecimals": "Decimales dinero",
   "settings.quantityDecimals": "Decimales cantidad",
+  "settings.taxCountry": "Residencia fiscal",
+  "settings.taxCountryHelp": "Tu país de residencia fiscal. El asistente de declaración (Modo Renta) solo está disponible para España por ahora; los marcados con ✓ tienen adaptador.",
   "settings.priceUpdateFreq": "Actualizar precios cada",
   "settings.manual": "Manual",
   "settings.min5": "5 minutos",

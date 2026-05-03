@@ -494,6 +494,10 @@ def savings_projection(user, goal_id):
 # casillas. Output is grouped in blocks ready to copy into the IRPF form.
 # ---------------------------------------------------------------------------
 
+# Countries with a tax-declaration adapter implemented. Add the ISO 3166-1
+# alpha-2 code here when a new country adapter is built.
+SUPPORTED_TAX_COUNTRIES = frozenset({"ES"})
+
 DEFAULT_TREATY_RATE = Decimal("0.15")
 NET_MISMATCH_TOLERANCE = Decimal("0.02")
 MONEY_Q = Decimal("0.01")

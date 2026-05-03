@@ -475,6 +475,7 @@
 
   "fiscal.tab.financial": "Financial analysis",
   "fiscal.tab.renta": "Tax-return mode",
+  "fiscal.adapterUnavailable": "The tax-return assistant is not yet available for your fiscal residence ({country}). It is currently only offered for Spain. You can change your fiscal residence in Settings.",
   "fiscal.renta.header.title": "Values ready to paste into the Spanish tax return · Year {year}",
   "fiscal.renta.header.subtitle": "Each highlighted amount is ready to paste into its corresponding box. Informative amounts are reference only and are not entered in the tax return.",
   "fiscal.renta.header.legend.copy": "To copy into the tax return",
@@ -547,6 +548,8 @@
   "settings.marketPrice": "Market price",
   "settings.moneyDecimals": "Money decimals",
   "settings.quantityDecimals": "Quantity decimals",
+  "settings.taxCountry": "Fiscal residence",
+  "settings.taxCountryHelp": "Your country of fiscal residence. The tax-return assistant (Modo Renta) is only available for Spain for now; entries marked with ✓ have an adapter.",
   "settings.priceUpdateFreq": "Update prices every",
   "settings.manual": "Manual",
   "settings.min5": "5 minutes",

@@ -19,6 +19,11 @@ import { toast } from "sonner";
 import { Info } from "lucide-react";
 import { useTranslations } from "@/i18n/use-translations";
 import type { Settings, SnapshotStatus, StorageInfo } from "@/types";
+import {
+  TAX_COUNTRY_OPTIONS,
+  isSupportedTaxCountry,
+  localizedCountryName,
+} from "@/lib/tax-countries";
 
 const TABLE_TOOLTIP_KEYS: Record<string, string> = {
   assets_asset: "settings.tableTooltipAssetsAsset",
@@ -331,6 +336,43 @@ export function SettingsContent() {
               </Field>
               <Field label={t("settings.quantityDecimals")}>
                 <Input type="number" value={current.rounding_qty ?? 6} onChange={(e) => setForm((f) => ({ ...f, rounding_qty: parseInt(e.target.value) }))} />
+              </Field>
+              <Field label={t("settings.taxCountry")}>
+                <Select
+                  value={current.tax_country ?? "ES"}
+                  onValueChange={(v) => v && setForm((f) => ({ ...f, tax_country: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectLabel
+                      label={
+                        current.tax_country
+                          ? `${current.tax_country} · ${localizedCountryName(
+                              current.tax_country,
+                              typeof document !== "undefined" ? document.documentElement.lang || "es" : "es",
+                            )}`
+                          : ""
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TAX_COUNTRY_OPTIONS.map((code) => {
+                      const name = localizedCountryName(
+                        code,
+                        typeof document !== "undefined" ? document.documentElement.lang || "es" : "es",
+                      );
+                      const supported = isSupportedTaxCountry(code);
+                      return (
+                        <SelectItem key={code} value={code}>
+                          {code} · {name}
+                          {supported ? " ✓" : ""}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {t("settings.taxCountryHelp")}
+                </p>
               </Field>
             </div>
           </CardContent>

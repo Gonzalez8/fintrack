@@ -475,6 +475,7 @@
 
   "fiscal.tab.financial": "Analisi finanziaria",
   "fiscal.tab.renta": "Modalità dichiarazione",
+  "fiscal.adapterUnavailable": "L'assistente alla dichiarazione non è ancora disponibile per la tua residenza fiscale ({country}). Al momento è offerto solo per la Spagna. Puoi cambiare la tua residenza fiscale in Impostazioni.",
   "fiscal.renta.header.title": "Valori pronti da incollare nella dichiarazione spagnola · Anno {year}",
   "fiscal.renta.header.subtitle": "Ogni importo evidenziato è pronto da incollare nella sua casella. Gli importi informativi sono solo di riferimento e non vanno inseriti nella dichiarazione.",
   "fiscal.renta.header.legend.copy": "Da copiare nella dichiarazione",
@@ -547,6 +548,8 @@
   "settings.marketPrice": "Prezzo di mercato",
   "settings.moneyDecimals": "Decimali denaro",
   "settings.quantityDecimals": "Decimali quantità",
+  "settings.taxCountry": "Residenza fiscale",
+  "settings.taxCountryHelp": "Il tuo paese di residenza fiscale. L'assistente alla dichiarazione (Modo Renta) è disponibile solo per la Spagna per ora; i paesi contrassegnati con ✓ hanno un adattatore.",
   "settings.priceUpdateFreq": "Aggiorna prezzi ogni",
   "settings.manual": "Manuale",
   "settings.min5": "5 minuti",

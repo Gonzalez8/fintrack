@@ -83,3 +83,24 @@ class TestSettingsView:
         # User 2 should still have default EUR
         resp = c2.get("/api/settings/")
         assert resp.data["base_currency"] == "EUR"
+
+    def test_default_tax_country_is_es(self, client, user):
+        resp = client.get("/api/settings/")
+        assert resp.data["tax_country"] == "ES"
+
+    def test_update_tax_country(self, client, user):
+        client.get("/api/settings/")
+        resp = client.patch("/api/settings/", {"tax_country": "DE"}, format="json")
+        assert resp.status_code == 200
+        assert resp.data["tax_country"] == "DE"
+
+    def test_tax_country_normalized_to_uppercase(self, client, user):
+        client.get("/api/settings/")
+        resp = client.patch("/api/settings/", {"tax_country": "fr"}, format="json")
+        assert resp.status_code == 200
+        assert resp.data["tax_country"] == "FR"
+
+    def test_tax_country_rejects_invalid(self, client, user):
+        client.get("/api/settings/")
+        resp = client.patch("/api/settings/", {"tax_country": "ESP"}, format="json")
+        assert resp.status_code == 400

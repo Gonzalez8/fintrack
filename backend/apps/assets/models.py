@@ -190,6 +190,15 @@ class Settings(models.Model):
             "double-taxation block. Missing countries fall back to 0.15 (15%)."
         ),
     )
+    tax_country = models.CharField(
+        max_length=2,
+        default="ES",
+        help_text=(
+            "User's country of fiscal residence (ISO 3166-1 alpha-2). "
+            "Drives which tax-declaration adapter is shown. "
+            "Currently only 'ES' has a Modo Renta adapter; other countries hide the tab."
+        ),
+    )
 
     class Meta:
         verbose_name_plural = "settings"

@@ -259,6 +259,7 @@ export interface Settings {
   snapshot_frequency: number;
   data_retention_days: number | null;
   purge_portfolio_snapshots: boolean;
+  tax_country: string;
 }
 
 // ── Reports ──────────────────────────────────────────────────────

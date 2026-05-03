@@ -83,4 +83,13 @@ class SettingsSerializer(serializers.ModelSerializer):
             "data_retention_days",
             "purge_portfolio_snapshots",
             "tax_treaty_limits",
+            "tax_country",
         ]
+
+    def validate_tax_country(self, value):
+        if not value:
+            return "ES"
+        normalized = value.strip().upper()
+        if len(normalized) != 2 or not normalized.isalpha():
+            raise serializers.ValidationError("tax_country must be an ISO 3166-1 alpha-2 code (2 letters).")
+        return normalized

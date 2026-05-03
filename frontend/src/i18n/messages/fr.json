@@ -475,6 +475,7 @@
 
   "fiscal.tab.financial": "Analyse financière",
   "fiscal.tab.renta": "Mode déclaration",
+  "fiscal.adapterUnavailable": "L'assistant de déclaration n'est pas encore disponible pour votre résidence fiscale ({country}). Il n'est actuellement proposé que pour l'Espagne. Vous pouvez modifier votre résidence fiscale dans les Paramètres.",
   "fiscal.renta.header.title": "Valeurs prêtes à coller dans la déclaration espagnole · Année {year}",
   "fiscal.renta.header.subtitle": "Chaque montant mis en évidence est prêt à être collé dans la case correspondante. Les montants informatifs sont uniquement pour référence et ne sont pas saisis dans la déclaration.",
   "fiscal.renta.header.legend.copy": "À copier dans la déclaration",
@@ -547,6 +548,8 @@
   "settings.marketPrice": "Prix du marché",
   "settings.moneyDecimals": "Décimales argent",
   "settings.quantityDecimals": "Décimales quantité",
+  "settings.taxCountry": "Résidence fiscale",
+  "settings.taxCountryHelp": "Votre pays de résidence fiscale. L'assistant de déclaration (Modo Renta) n'est disponible que pour l'Espagne pour l'instant ; les pays marqués ✓ disposent d'un adaptateur.",
   "settings.priceUpdateFreq": "Actualiser les prix toutes les",
   "settings.manual": "Manuel",
   "settings.min5": "5 minutes",

@@ -247,3 +247,24 @@ class TestSavingsGoal:
         client = APIClient()
         resp = client.get("/api/savings-goals/")
         assert resp.status_code == 401
+
+
+class TestTaxDeclarationCountryGate:
+    def test_es_resident_returns_200(self, client, user):
+        from apps.assets.models import Settings as UserSettings
+
+        UserSettings.objects.update_or_create(user=user, defaults={"tax_country": "ES"})
+        resp = client.get("/api/reports/tax-declaration/?year=2025")
+        assert resp.status_code == 200
+
+    def test_unsupported_country_returns_404(self, client, user):
+        from apps.assets.models import Settings as UserSettings
+
+        UserSettings.objects.update_or_create(user=user, defaults={"tax_country": "DE"})
+        resp = client.get("/api/reports/tax-declaration/?year=2025")
+        assert resp.status_code == 404
+        assert "DE" in resp.data["detail"]
+
+    def test_missing_year_returns_400(self, client, user):
+        resp = client.get("/api/reports/tax-declaration/")
+        assert resp.status_code == 400

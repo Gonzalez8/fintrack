@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-05-03
+
+### Added
+
+- **Fiscal residence setting.** New "Residencia fiscal" selector in Settings that maps to `Settings.tax_country` (ISO 3166-1 alpha-2, default `ES`). The list shows ~25 common countries with localized names via `Intl.DisplayNames`; entries marked with ✓ have a tax-declaration adapter implemented. (#61)
+- **Per-country gating of the Modo Renta tab.** The "Modo Renta" tab is now only rendered when an adapter exists for the user's fiscal residence. For other countries the tab disappears and a small note explains where to change residence. The endpoint `/api/reports/tax-declaration/?year=YYYY` returns 404 in those cases — defense in depth, not just frontend gating. (#61)
+- New API fields on `GET /api/settings/`: `tax_country`. Backwards-compatible (additive). (#61)
+
+### Changed
+
+- **Per-country tax-adapter pattern.** Spanish IRPF logic was extracted from `apps/reports/services.py` into a new `apps/reports/tax_adapters/` package (`base.py` Protocol, `common.py` country-agnostic helpers, `es.py` SpanishTaxAdapter). The frontend Renta component moves under `app/(dashboard)/tax/adapters/es-renta-tab.tsx` and dispatches via a `TAX_ADAPTERS` map. Output of the Spanish adapter is byte-identical to v2.4.x — no user-facing behaviour change. New countries can now be added without touching the existing one. See [ADR-007](docs/adr/007-tax-adapter-pattern.md) for the full design and the add-a-country recipe. (#62)
+
+### Migrations
+
+- `assets.0007_settings_tax_country`: adds `tax_country` to `Settings` with default `"ES"`. Additive, no data loss; existing users keep the Modo Renta tab unchanged. (#61)
+
 ## [2.4.2] - 2026-05-02
 
 ### Fixed

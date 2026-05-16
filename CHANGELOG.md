@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-05-16
+
+### Added
+
+- **Payroll evolution tab in `/nominas`.** New "Evolución" tab next to the existing list (same `Tabs` pattern used in `/tax`) with three visual blocks: a Recharts stacked-bar of annual gross split by `payroll_type` (Monthly / Bonus / Atrasos / Other), a line chart of "bonus as a percentage of the monthly base" by year, and a year-by-year table with monthly / bonus / atrasos / total gross / net / effective IRPF % / take-home / bonus-of-monthly. The colour palette matches the list-view badges and the financial-analysis composition strip, so the type taxonomy stays consistent across the app. Pure client-side aggregation from a single `/payrolls/?page_size=1000` fetch — no backend changes. (#77)
+- **Bonus as % of monthly base on the financial-analysis composition strip.** The BONUS row now suffixes its share with "(N % sobre el mensual)", which is the figure most comp packages quote as the bonus target ("X % bonus on base salary"). Renders only when both `MONTHLY` and `BONUS` buckets have data. (#75)
+
+### Fixed
+
+- **Nóminas entry missing from the mobile bottom-nav.** Payroll shipped in v2.5.0 / v2.6.0 with a sidebar entry on desktop but no equivalent on mobile, so phone users couldn't reach `/nominas` from any nav surface. Adds the entry to the mobile "Más" sheet right after Intereses, keeping income-related sections grouped. (#76)
+
+### Dependencies
+
+- None.
+
 ## [2.6.0] - 2026-05-16
 
 ### Added

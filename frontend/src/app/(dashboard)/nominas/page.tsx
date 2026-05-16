@@ -1,5 +1,5 @@
-import { NominasContent } from "./nominas-content";
+import { NominasTabs } from "./nominas-tabs";
 
 export default function NominasPage() {
-  return <NominasContent />;
+  return <NominasTabs />;
 }

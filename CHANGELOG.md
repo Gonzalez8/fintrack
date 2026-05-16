@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-05-16
+
+### Added
+
+- **Payroll tracking** — new app `apps/payroll/` with `Employer` and `Payroll` models. Track gross, SS, IRPF withholding, net, base IRPF, base CC and employer cost per payslip. The serializer never rejects a payslip for the classic `gross − ss − irpf ≠ net` descuadre (anticipos, embargos, dietas exentas, especie or regularizations legitimately break it); the discrepancy is surfaced as an informational `net_mismatch` field instead. (#63, #74)
+- **PDF parser for Spanish payslips** — experimental and suggestion-only. `POST /api/payrolls/parse-pdf/` returns a set of suggested fields the user reviews in the form before clicking "Crear"; the endpoint never writes. Refactored into a Strategy + registry (`apps/payroll/services/parsers/`) so a future AI / OCR parser plugs in without touching the view or the regex parser. Robust extraction across line breaks and Unicode dashes; `employer_cost` summed from APORTACIÓN EMPRESA lines; `base_cc` guarded against single-number heuristics on atrasos templates. See [ADR-008](docs/adr/008-payroll-and-pdf-parser.md). (#63, #74)
+- **`payroll_type` classification** — machine-readable enum `MONTHLY` / `BONUS` / `ATRASOS` / `OTHER` decoupled from the free-text `concept`. Inferred at save time from keyword patterns, overridable manually in the form. Pagas extra and bonus share the `BONUS` bucket by design — the legal distinction doesn't add analytics signal. (#74)
+- **Bulk operations** — `POST /api/payrolls/bulk-create/` and `bulk-delete/`, transactional and capped at 100 items per request. Frontend supports multi-file upload (parallel parse, stacked review with per-row error mapping) and multi-select on the list with a bulk-delete action bar. (#74)
+- **Spanish Modo Renta — "Rendimientos del trabajo" block.** Aggregates `gross_subject` (from `Payroll.base_irpf`, falling back to `gross`), SS contributions, IRPF withholdings, and a per-employer breakdown. Matches AEAT casilla "Retribuciones dinerarias" exactly when the user fills `base_irpf` (excludes cheque comida and other exempt items). (#63, #74)
+- **Financial-analysis tab — payroll KPIs.** New "Rendimientos del trabajo" section with four KPIs (bruto sujeto IRPF, tipo IRPF efectivo, take-home rate, neto cobrado) and a year-over-year comparison via a reusable `DeltaPill`. Composition strip shows % of gross by `payroll_type`. (#74)
+
+### Changed
+
+- **Modo Renta employment field renamed** — `employment_income.gross` → `gross_subject` and now computed from `Payroll.base_irpf` when present (mirrors AEAT casilla 0003 "Retribuciones dinerarias"). Falls back to `gross` for legacy rows so nothing breaks. Documented caveat: for atrasos with reducción de irregularidad (>2 years / indemnizaciones, rare), the value would under-report and the user must adjust manually. (#74)
+- **Clearer net-mismatch warnings** — `payroll_net_mismatch` notices now include the payslip concept («Enero 2025», «Extra Febrero 2025»…), individual amounts (bruto / SS / IRPF / net) and the delta, so the user can locate the offending payslip and spot the cause at a glance. (#74)
+- **Parse-pdf response enrichment** — the view post-processes any parser's output with the inferred `payroll_type`, so new parsers benefit automatically without modifying their code. (#74)
+
+### Fixed
+
+- **Duplicate-payroll conflicts surface cleanly** — the `(owner, employer, period_start, period_end, concept)` unique constraint now returns a 400 with the conflicting period and concept named, instead of a 500 IntegrityError. (#74)
+- **Employer `Select` stays controlled across renders** — fixes a Base UI warning that appeared when editing a saved payroll. (#74)
+- **DRF validation errors render as readable text** — the toast now extracts the human message from the DRF error envelope instead of dumping raw JSON. (#74)
+- **Same period, different concept now coexists** — a monthly salary and a bonus for the same window can be saved separately by changing the concept (e.g. "Extra Febrero 2025"). The uniqueness key includes `concept` since migration `payroll.0003`. (#74)
+
+### Migrations
+
+- `payroll.0001_initial` — creates `Employer` and `Payroll`. (#63)
+- `payroll.0002_payroll_concept` — adds the free-text `concept` field. (#74)
+- `payroll.0003_loosen_unique_to_include_concept` — relaxes the uniqueness key to include `concept`. (#74)
+- `payroll.0004_payroll_payroll_type` — adds the `payroll_type` column with default `MONTHLY`. (#74)
+- `payroll.0005_backfill_payroll_type` — classifies existing rows by running keyword inference over their `concept`. Idempotent forward, no-op reverse. (#74)
+- `payroll.0006_alter_payroll_payroll_type` — merges any pre-existing `EXTRA` rows into `BONUS` (data step) **before** the `AlterField` removes `EXTRA` from the choices set. No orphan values. (#74)
+
+All migrations are additive and safe to roll back individually.
+
+### Dependencies
+
+- Bump `yfinance` to latest (#72)
+- Bump `django` to latest (#68)
+- Bump `djangorestframework` to latest (#66)
+- Bump `google-auth` (#69)
+- Bump `psycopg` (#70)
+- Bump `@base-ui/react` from 1.2.0 to 1.4.1 (#65)
+- Bump `lucide-react` from 0.577.0 to 1.16.0 — major bump, icon names compatible with current usage; CI green (#67)
+- Dev-only: bump `typescript` from 5.9.3 to 6.0.3 (#64), `vitest` from 4.1.2 to 4.1.5 (#71), `@vitest/coverage-v8` (#73)
+
 ## [2.5.0] - 2026-05-03
 
 ### Added

@@ -467,6 +467,7 @@
   "fiscal.payrollTakeHome": "Take-home-Quote (Netto/Brutto) {year}",
   "fiscal.payrollNet": "Netto erhalten {year}",
   "fiscal.payrollComposition": "Brutto-Zusammensetzung nach Typ {year}",
+  "fiscal.payrollBonusOfMonthly": "({pct} % vom Grundgehalt)",
   "fiscal.incomeSection": "Ertraege aus Kapitalvermoegen",
   "fiscal.dividendsTitle": "Dividenden {year}",
   "fiscal.noDividends": "Keine Dividenden in {year}",

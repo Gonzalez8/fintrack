@@ -923,6 +923,15 @@ function PayrollSection({
     }))
     .filter((row) => row.amount > 0);
 
+  // Extra label for BONUS rows: bonus as a percentage of the monthly base.
+  // Many comp packages quote variable pay as "% of base salary" (e.g. "target
+  // 20 % bonus on base"), so this is the figure the user actually compares
+  // against. Only meaningful when both buckets have data.
+  const bonusOfMonthlyPct =
+    current.byType.MONTHLY > 0 && current.byType.BONUS > 0
+      ? (current.byType.BONUS / current.byType.MONTHLY) * 100
+      : null;
+
   return (
     <section className="space-y-3">
       <SectionHeader
@@ -1021,6 +1030,13 @@ function PayrollSection({
                   <span className="font-mono tabular-nums">
                     {row.pct.toFixed(1)} % · {formatMoney(row.amount.toFixed(2))}
                   </span>
+                  {row.type === "BONUS" && bonusOfMonthlyPct !== null && (
+                    <span className="text-muted-foreground">
+                      {t("fiscal.payrollBonusOfMonthly", {
+                        pct: bonusOfMonthlyPct.toFixed(1),
+                      })}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

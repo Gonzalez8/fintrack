@@ -467,6 +467,7 @@
   "fiscal.payrollTakeHome": "Take-home (neto/bruto) {year}",
   "fiscal.payrollNet": "Neto cobrado {year}",
   "fiscal.payrollComposition": "Composición del bruto por tipo {year}",
+  "fiscal.payrollBonusOfMonthly": "({pct} % sobre el mensual)",
   "fiscal.incomeSection": "Rendimientos del capital mobiliario",
   "fiscal.dividendsTitle": "Dividendos {year}",
   "fiscal.noDividends": "Sin dividendos en {year}",

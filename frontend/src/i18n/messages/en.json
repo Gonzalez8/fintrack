@@ -467,6 +467,7 @@
   "fiscal.payrollTakeHome": "Take-home rate (net/gross) {year}",
   "fiscal.payrollNet": "Net received {year}",
   "fiscal.payrollComposition": "Gross composition by type {year}",
+  "fiscal.payrollBonusOfMonthly": "({pct} % of monthly base)",
   "fiscal.incomeSection": "Investment income",
   "fiscal.dividendsTitle": "Dividends {year}",
   "fiscal.noDividends": "No dividends in {year}",

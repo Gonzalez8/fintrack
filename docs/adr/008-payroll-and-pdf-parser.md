@@ -80,20 +80,83 @@ We **never** mix work-income retentions with capital-mobiliary casillas. (The we
 
 ### PDF parser
 
-`apps/payroll/services/pdf_parser.py` implements a regex-based, best-effort parser for digitally-generated Spanish payslips:
+The parser is structured as a **Strategy registry** so we can add alternative implementations (AI, OCR, per-employer template) later without touching the rest of the codebase. SOLID-friendly: the view depends on the abstraction, concrete parsers live in their own files, and switching the active one is a Django setting away.
 
-- `extract_text(file)` — thin pdfplumber wrapper.
-- `parse_payslip_text(text)` — pure function returning `{suggested: {...}, confidence: float, warnings: [str]}`. Spanish-monetary regex (`,XX` decimal) skips percentages automatically.
-- `parse_payslip(file)` — composes both for the view.
+```
+apps/payroll/services/
+├── pdf_parser.py             # legacy regex helpers (parse_es_decimal,
+│                             # parse_payslip_text, extract_text). Kept as
+│                             # internal utilities used by regex_es.py.
+└── parsers/
+    ├── __init__.py           # registry + get_default_parser() reading
+    │                         # `settings.PAYSLIP_PARSER`
+    ├── base.py               # PayslipParser Protocol + PayslipParseResult
+    │                         # dataclass — the abstraction the view depends on
+    └── regex_es.py           # RegexEsPayslipParser — wraps pdf_parser.py;
+                              # self-registers as "regex-es" (the default)
+```
 
-Hard rules (non-negotiable):
+Hard rules (non-negotiable, apply to every parser):
 
 1. **Read-only.** The parser never creates, modifies, or deletes records.
 2. **Suggestion only.** The frontend pre-fills the form and the user *must* confirm. Strict parse-then-review.
 3. **Explicit invocation only.** Triggered by user file upload from the dialog. No cron, no email handler, no folder watcher.
-4. **Best-effort.** When confidence < 0.3 the endpoint returns `422` and the user fills the form by hand. The parser is documented as `experimental` in CLAUDE.md, README and this ADR.
+4. **Best-effort.** When confidence < 0.3 the endpoint returns `422` and the user fills the form by hand. Each parser is documented as `experimental` until proven on a wide range of templates.
 
-The endpoint accepts `multipart/form-data` (max 10 MB), uses `IsAuthenticated`, and lazily imports pdfplumber so unit tests run with the helper mocked (no C dependency in CI).
+The endpoint accepts `multipart/form-data` (max 10 MB), uses `IsAuthenticated`, and asks the registry for `get_default_parser()`. The registry reads `settings.PAYSLIP_PARSER` (env `PAYSLIP_PARSER`, default `"regex-es"`) and returns the matching implementation. Misspelt setting → loud `RuntimeError` at request time so the operator notices immediately.
+
+#### Adding a new parser (e.g. AI-based)
+
+The minimum surface to ship a Claude-powered parser:
+
+1. **Create `parsers/ai_claude.py`** with a class that satisfies the Protocol:
+
+   ```python
+   from . import register
+   from .base import PayslipParseResult
+
+   class AiClaudePayslipParser:
+       name = "ai-claude"
+
+       def __init__(self, client=None):
+           self.client = client or _build_default_client()
+
+       def parse(self, file_obj) -> PayslipParseResult:
+           # Send PDF bytes to Claude, get structured JSON back
+           response = self.client.messages.create(...)
+           suggested = _to_payslip_dict(response)
+           return PayslipParseResult(
+               suggested=suggested,
+               confidence=_score(suggested),
+               warnings=[],
+               extracted_text=None,  # AI parsers don't necessarily extract text
+               parser_name=self.name,
+           )
+
+   register(AiClaudePayslipParser())
+   ```
+
+2. **Import it from `parsers/__init__.py`** so it self-registers at startup:
+
+   ```python
+   from . import regex_es  # noqa
+   from . import ai_claude  # noqa
+   ```
+
+3. **Switch the default** with an env var:
+
+   ```bash
+   PAYSLIP_PARSER=ai-claude
+   ```
+
+The view, the regex parser, the frontend dialog, the URL routing, the form contract, the i18n keys and the existing tests do **not** change. Operators can also flip the setting per environment (regex in CI, AI in production) without rebuilds.
+
+#### Why a registry instead of a flag?
+
+- A flag (`USE_AI_PARSER=true`) forces a binary choice and bakes `if` branches into the view.
+- A registry lets us run **multiple** parsers at once — e.g. compare AI vs regex on a sample to evaluate accuracy — by selecting them by name from tests or admin scripts.
+- It satisfies Open/Closed: adding a parser is *only additive*. No edits to any file already shipped.
+- It mirrors `apps/reports/tax_adapters/` (ADR-007) so contributors familiar with that area already know the pattern.
 
 ## Consequences
 

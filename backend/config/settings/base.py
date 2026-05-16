@@ -224,3 +224,8 @@ SPECTACULAR_SETTINGS = {
 # ---------------------------------------------------------------------------
 ALLOW_REGISTRATION = os.environ.get("ALLOW_REGISTRATION", "true").lower() in ("true", "1", "yes")
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+
+# Payslip PDF parser strategy (apps.payroll.services.parsers). Built-in
+# values: "regex-es". Future values may include "ai-claude" or similar.
+# See ADR-008 for the strategy pattern.
+PAYSLIP_PARSER = os.environ.get("PAYSLIP_PARSER", "regex-es")

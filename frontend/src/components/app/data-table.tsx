@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface Column<T> {
   key: string;
-  header: string;
+  header: React.ReactNode;
   className?: string;
   render: (row: T) => React.ReactNode;
 }

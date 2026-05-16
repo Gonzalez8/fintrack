@@ -19,6 +19,7 @@ function makePayroll(year: number, month: number, gross: number): Payroll {
     period_start: periodStart,
     period_end: periodEnd,
     concept: "Mensual",
+    payroll_type: "MONTHLY",
     employer: EMPLOYER_ID,
     employer_name: EMPLOYER_NAME,
     employer_cif: EMPLOYER_CIF,

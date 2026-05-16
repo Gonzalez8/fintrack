@@ -570,11 +570,26 @@ export interface EmployerFormData {
   notes?: string;
 }
 
+/** Machine-readable payroll classification. Mirrors `Payroll.PayrollType`
+ * in the backend. `MONTHLY` is the default for vanilla monthly payslips.
+ * BONUS bundles bonus / variable / pagas extra into a single bucket
+ * (non-monthly extra payments) — see the backend docstring for the
+ * reasoning. */
+export type PayrollType = "MONTHLY" | "BONUS" | "ATRASOS" | "OTHER";
+
+export const PAYROLL_TYPES: PayrollType[] = [
+  "MONTHLY",
+  "BONUS",
+  "ATRASOS",
+  "OTHER",
+];
+
 export interface Payroll {
   id: string;
   period_start: string;
   period_end: string;
   concept: string;
+  payroll_type: PayrollType;
   employer: string;
   employer_name: string;
   employer_cif: string;
@@ -596,6 +611,7 @@ export interface PayrollFormData {
   period_start: string;
   period_end: string;
   concept: string;
+  payroll_type: PayrollType;
   employer: string;
   gross: string;
   ss_employee: string;
@@ -607,12 +623,29 @@ export interface PayrollFormData {
   notes?: string;
 }
 
+/** Single row in a bulk-create request to POST /api/payrolls/bulk-create/. */
+export type BulkPayrollItem = Omit<PayrollFormData, "base_irpf" | "base_cc" | "employer_cost" | "notes"> & {
+  base_irpf?: string | null;
+  base_cc?: string | null;
+  employer_cost?: string | null;
+  notes?: string;
+};
+
+export interface BulkPayrollCreateResponse {
+  created: Payroll[];
+}
+
+export interface BulkPayrollCreateErrorResponse {
+  errors: Array<Record<string, string[]> | null>;
+}
+
 /** Payload returned by POST /api/payrolls/parse-pdf/ when the parser succeeds. */
 export interface PayrollPdfSuggestion {
   suggested: {
     period_start: string | null;
     period_end: string | null;
     concept: string | null;
+    payroll_type: PayrollType;
     gross: string | null;
     ss_employee: string | null;
     irpf_withholding: string | null;

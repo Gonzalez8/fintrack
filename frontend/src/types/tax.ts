@@ -76,7 +76,7 @@ export interface TaxCapitalGainsBlock {
 export interface TaxEmploymentByEmployer {
   name: string;
   cif: string;
-  gross: string;
+  gross_subject: string;
   ss_deductible: string;
   withholding: string;
   net: string;
@@ -84,7 +84,7 @@ export interface TaxEmploymentByEmployer {
 
 export interface TaxEmploymentBlock {
   casilla: string;
-  gross: string;
+  gross_subject: string;
   ss_deductible: string;
   withholding: string;
   net_informative: string;
@@ -102,7 +102,7 @@ export interface TaxSummary {
   sales_transmission: string;
   sales_acquisition: string;
   sales_net: string;
-  employment_gross: string;
+  employment_gross_subject: string;
   employment_ss_deductible: string;
   employment_withholding: string;
 }

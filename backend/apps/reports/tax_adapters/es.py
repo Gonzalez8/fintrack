@@ -364,7 +364,7 @@ class SpanishTaxAdapter:
             "sales_transmission": capital_gains_block["transmission_total"],
             "sales_acquisition": capital_gains_block["acquisition_total"],
             "sales_net": capital_gains_block["net_result"],
-            "employment_gross": employment_block["gross"],
+            "employment_gross_subject": employment_block["gross_subject"],
             "employment_ss_deductible": employment_block["ss_deductible"],
             "employment_withholding": employment_block["withholding"],
         }
@@ -384,7 +384,16 @@ class SpanishTaxAdapter:
     def _build_employment_block(self, user, year: int, warnings: list[dict]) -> dict:
         """Aggregate Payroll rows into the "Rendimientos del trabajo" block.
 
-        - Sums gross / ss_employee / irpf_withholding / net for the year.
+        - Sums the **IRPF-subject** retribución dineraria for the year. We
+          use ``base_irpf`` when the payslip has it (it already excludes
+          exempt items like cheque comida / transporte that don't go on
+          casilla "Retribuciones dinerarias"), and fall back to ``gross``
+          (total devengado) when the user didn't fill that field. The
+          difference between ``gross`` and ``base_irpf`` is typically just
+          retribuciones exentas; for atrasos con reducción de
+          irregularidad (>2 años / indemnizaciones, raro) this would
+          under-report and the user must adjust manually.
+        - Also sums ss_employee / irpf_withholding / net.
         - Breaks down by employer (every employer with at least one payroll
           in the year, even if its totals are 0).
         - Emits informational warnings (never errors) for net-mismatch and
@@ -402,11 +411,12 @@ class SpanishTaxAdapter:
             .order_by("employer__name", "period_end")
         )
 
-        total_gross = total_ss = total_irpf = total_net = Decimal("0")
+        total_subject = total_ss = total_irpf = total_net = Decimal("0")
         by_employer_acc: dict[str, dict] = {}
 
         for p in payrolls_qs:
-            total_gross += p.gross
+            subject = p.base_irpf if p.base_irpf is not None else p.gross
+            total_subject += subject
             total_ss += p.ss_employee or Decimal("0")
             total_irpf += p.irpf_withholding or Decimal("0")
             total_net += p.net
@@ -417,14 +427,14 @@ class SpanishTaxAdapter:
                 {
                     "name": p.employer.name,
                     "cif": p.employer.cif or "",
-                    "gross": Decimal("0"),
+                    "gross_subject": Decimal("0"),
                     "ss_deductible": Decimal("0"),
                     "withholding": Decimal("0"),
                     "net": Decimal("0"),
                     "_months": set(),
                 },
             )
-            bucket["gross"] += p.gross
+            bucket["gross_subject"] += subject
             bucket["ss_deductible"] += p.ss_employee or Decimal("0")
             bucket["withholding"] += p.irpf_withholding or Decimal("0")
             bucket["net"] += p.net
@@ -432,16 +442,23 @@ class SpanishTaxAdapter:
 
             # Net-mismatch is informational. The text deliberately avoids
             # implying the payslip is wrong — many real ones break the
-            # identity legitimately.
-            expected = p.gross - (p.ss_employee or Decimal("0")) - (p.irpf_withholding or Decimal("0"))
-            if abs(expected - p.net) > NET_MISMATCH_TOLERANCE:
+            # identity legitimately. We include the concept (if any), the
+            # individual amounts and the delta so the user can match the
+            # warning to a specific payslip and spot the cause at a glance.
+            ss = p.ss_employee or Decimal("0")
+            irpf = p.irpf_withholding or Decimal("0")
+            expected = p.gross - ss - irpf
+            delta = expected - p.net
+            if abs(delta) > NET_MISMATCH_TOLERANCE:
+                label = f"«{p.concept}» " if p.concept else ""
                 warnings.append(
                     {
                         "kind": "payroll_net_mismatch",
                         "scope": "employment_income",
                         "message": (
-                            f"Nómina de '{p.employer.name}' ({p.period_end}): "
-                            f"gross − ss − irpf = {q(expected)} difiere del neto {q(p.net)}. "
+                            f"Nómina {label}de '{p.employer.name}' ({p.period_end}): "
+                            f"bruto {q(p.gross)} − SS {q(ss)} − IRPF {q(irpf)} = {q(expected)}, "
+                            f"no cuadra con el neto {q(p.net)} (Δ {q(delta)}). "
                             "Es esperable cuando hay anticipos, embargos, dietas exentas, "
                             "retribución en especie u otros ajustes; revisa si procede."
                         ),
@@ -472,8 +489,8 @@ class SpanishTaxAdapter:
                 )
 
         return {
-            "casilla": "Rendimientos del trabajo · Retribuciones dinerarias y retenciones",
-            "gross": str(q(total_gross)),
+            "casilla": "Rendimientos del trabajo · Retribuciones dinerarias (sujetas) y retenciones",
+            "gross_subject": str(q(total_subject)),
             "ss_deductible": str(q(total_ss)),
             "withholding": str(q(total_irpf)),
             "net_informative": str(q(total_net)),
@@ -481,7 +498,7 @@ class SpanishTaxAdapter:
                 {
                     "name": v["name"],
                     "cif": v["cif"],
-                    "gross": str(q(v["gross"])),
+                    "gross_subject": str(q(v["gross_subject"])),
                     "ss_deductible": str(q(v["ss_deductible"])),
                     "withholding": str(q(v["withholding"])),
                     "net": str(q(v["net"])),

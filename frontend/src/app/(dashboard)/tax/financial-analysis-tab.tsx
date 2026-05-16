@@ -23,10 +23,71 @@ import type {
   Dividend,
   Interest,
   PaginatedResponse,
+  Payroll,
+  PayrollType,
 } from "@/types";
 
 interface Props {
   year: string;
+}
+
+interface PayrollAggregates {
+  /** Number of payslips in the year. */
+  count: number;
+  /** Sum of `gross_subject` (= base_irpf when present, else gross). This
+   *  is what AEAT considers "Retribuciones dinerarias sujetas" for the
+   *  Renta. We use the same convention the Modo Renta tab uses. */
+  grossSubject: number;
+  /** Sum of `gross` — informational, includes the exempt slice. */
+  grossDevengado: number;
+  /** Sum of `ss_employee` and `irpf_withholding`. */
+  ssEmployee: number;
+  irpfWithholding: number;
+  /** Sum of `net` (líquido a percibir, lo que de verdad llega). */
+  net: number;
+  /** Effective IRPF rate = irpf / gross_subject × 100. NaN when no
+   *  payslips this year (avoids divide-by-zero). */
+  irpfEffectivePct: number;
+  /** Take-home = net / gross_devengado × 100. */
+  takeHomePct: number;
+  /** Distribution of gross_devengado by payroll_type. Used for the
+   *  composition bar. */
+  byType: Record<PayrollType, number>;
+}
+
+function aggregatePayrolls(payrolls: Payroll[]): PayrollAggregates {
+  const byType: Record<PayrollType, number> = {
+    MONTHLY: 0,
+    BONUS: 0,
+    ATRASOS: 0,
+    OTHER: 0,
+  };
+  let grossSubject = 0;
+  let grossDevengado = 0;
+  let ssEmployee = 0;
+  let irpfWithholding = 0;
+  let net = 0;
+  for (const p of payrolls) {
+    // Mirror the Spanish adapter: prefer base_irpf when present.
+    const subject = p.base_irpf ? parseFloat(p.base_irpf) : parseFloat(p.gross);
+    grossSubject += subject;
+    grossDevengado += parseFloat(p.gross);
+    ssEmployee += parseFloat(p.ss_employee);
+    irpfWithholding += parseFloat(p.irpf_withholding);
+    net += parseFloat(p.net);
+    byType[p.payroll_type] += parseFloat(p.gross);
+  }
+  return {
+    count: payrolls.length,
+    grossSubject,
+    grossDevengado,
+    ssEmployee,
+    irpfWithholding,
+    net,
+    irpfEffectivePct: grossSubject > 0 ? (irpfWithholding / grossSubject) * 100 : NaN,
+    takeHomePct: grossDevengado > 0 ? (net / grossDevengado) * 100 : NaN,
+    byType,
+  };
 }
 
 export function FinancialAnalysisTab({ year }: Props) {
@@ -57,6 +118,30 @@ export function FinancialAnalysisTab({ year }: Props) {
         `/interests/?year=${year}&page_size=500`,
       ),
   });
+
+  // Payrolls for the current year and the previous one. Year-over-year
+  // comparison is the whole point of the new KPI cards, so we fetch both
+  // up front. 500 page size is enough for any realistic payslip count.
+  const prevYear = String(parseInt(year) - 1);
+  const { data: payrollsThisYear } = useQuery({
+    queryKey: ["payrolls-fiscal", year],
+    queryFn: () =>
+      api.get<PaginatedResponse<Payroll>>(
+        `/payrolls/?year=${year}&page_size=500`,
+      ),
+  });
+  const { data: payrollsPrevYear } = useQuery({
+    queryKey: ["payrolls-fiscal", prevYear],
+    queryFn: () =>
+      api.get<PaginatedResponse<Payroll>>(
+        `/payrolls/?year=${prevYear}&page_size=500`,
+      ),
+  });
+
+  const payrollAggregates = aggregatePayrolls(payrollsThisYear?.results ?? []);
+  const payrollAggregatesPrev = aggregatePayrolls(
+    payrollsPrevYear?.results ?? [],
+  );
 
   const summary = years?.find((y) => y.year === parseInt(year));
 
@@ -210,6 +295,19 @@ export function FinancialAnalysisTab({ year }: Props) {
           highlight
         />
       </div>
+
+      {/* Payroll-derived metrics. Only rendered when there's at least one
+          payslip in the year — keeps the tab compact for users who don't
+          track payrolls. */}
+      {payrollAggregates.count > 0 && (
+        <PayrollSection
+          t={t}
+          year={year}
+          prevYear={prevYear}
+          current={payrollAggregates}
+          previous={payrollAggregatesPrev}
+        />
+      )}
 
       <section className="space-y-3">
         <SectionHeader
@@ -774,16 +872,184 @@ export function FinancialAnalysisTab({ year }: Props) {
   );
 }
 
+// Visual colour for each payroll_type slice in the composition bar.
+// Matches the badge colours in /nominas so the user sees the same
+// taxonomy in both places.
+const TYPE_BAR_COLOURS: Record<PayrollType, string> = {
+  MONTHLY: "bg-cyan-500",
+  BONUS: "bg-violet-500",
+  ATRASOS: "bg-amber-500",
+  OTHER: "bg-muted-foreground/50",
+};
+
+function PayrollSection({
+  t,
+  year,
+  prevYear,
+  current,
+  previous,
+}: {
+  t: ReturnType<typeof useTranslations>;
+  year: string;
+  prevYear: string;
+  current: PayrollAggregates;
+  previous: PayrollAggregates;
+}) {
+  // Money delta: relative change vs previous year (or NaN if no prev data).
+  const grossDelta =
+    previous.grossSubject > 0
+      ? ((current.grossSubject - previous.grossSubject) / previous.grossSubject) * 100
+      : NaN;
+
+  // Rate deltas: absolute percentage-point change (pp).
+  const irpfDelta = Number.isFinite(previous.irpfEffectivePct)
+    ? current.irpfEffectivePct - previous.irpfEffectivePct
+    : NaN;
+  const takeHomeDelta = Number.isFinite(previous.takeHomePct)
+    ? current.takeHomePct - previous.takeHomePct
+    : NaN;
+  const netDelta =
+    previous.net > 0 ? ((current.net - previous.net) / previous.net) * 100 : NaN;
+
+  // Composition: pct of gross_devengado per type.
+  const totalForBar = current.grossDevengado || 1;
+  const composition: Array<{ type: PayrollType; amount: number; pct: number }> = (
+    ["MONTHLY", "BONUS", "ATRASOS", "OTHER"] as PayrollType[]
+  )
+    .map((type) => ({
+      type,
+      amount: current.byType[type],
+      pct: (current.byType[type] / totalForBar) * 100,
+    }))
+    .filter((row) => row.amount > 0);
+
+  return (
+    <section className="space-y-3">
+      <SectionHeader
+        eyebrow={t("fiscal.payrollSection")}
+        title={t("fiscal.payrollTitle", { year })}
+        total={{
+          value: current.grossSubject.toFixed(2),
+          colored: false,
+        }}
+      />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiCard
+          label={t("fiscal.payrollGrossSubject", { year })}
+          value={current.grossSubject.toFixed(2)}
+          delta={
+            <DeltaPill
+              delta={grossDelta}
+              unit="%"
+              positiveIsGood
+              previous={prevYear}
+            />
+          }
+        />
+        <KpiCard
+          label={t("fiscal.payrollIrpfRate", { year })}
+          value={`${current.irpfEffectivePct.toFixed(2)} %`}
+          raw
+          delta={
+            <DeltaPill
+              delta={irpfDelta}
+              unit="pp"
+              positiveIsGood={false}
+              previous={prevYear}
+            />
+          }
+        />
+        <KpiCard
+          label={t("fiscal.payrollTakeHome", { year })}
+          value={`${current.takeHomePct.toFixed(2)} %`}
+          raw
+          delta={
+            <DeltaPill
+              delta={takeHomeDelta}
+              unit="pp"
+              positiveIsGood
+              previous={prevYear}
+            />
+          }
+        />
+        <KpiCard
+          label={t("fiscal.payrollNet", { year })}
+          value={current.net.toFixed(2)}
+          colored
+          delta={
+            <DeltaPill
+              delta={netDelta}
+              unit="%"
+              positiveIsGood
+              previous={prevYear}
+            />
+          }
+        />
+      </div>
+
+      {/* Composition by type. Hidden when there's only one type to avoid
+          a useless 100%-monthly bar. */}
+      {composition.length > 1 && (
+        <Card>
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">
+              {t("fiscal.payrollComposition", { year })}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 pb-4 px-4">
+            <div className="flex h-3 w-full overflow-hidden rounded-sm">
+              {composition.map((row) => (
+                <div
+                  key={row.type}
+                  className={TYPE_BAR_COLOURS[row.type]}
+                  style={{ width: `${row.pct}%` }}
+                  title={`${t(`payroll.type.${row.type}` as const)} · ${row.pct.toFixed(1)} %`}
+                />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              {composition.map((row) => (
+                <div key={row.type} className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className={`inline-block h-2 w-2 rounded-sm ${TYPE_BAR_COLOURS[row.type]}`}
+                  />
+                  <span className="text-muted-foreground">
+                    {t(`payroll.type.${row.type}` as const)}
+                  </span>
+                  <span className="font-mono tabular-nums">
+                    {row.pct.toFixed(1)} % · {formatMoney(row.amount.toFixed(2))}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </section>
+  );
+}
+
 function KpiCard({
   label,
   value,
   colored,
   highlight,
+  raw,
+  delta,
 }: {
   label: string;
   value: string;
   colored?: boolean;
   highlight?: boolean;
+  /** Skip ``formatMoney`` and render the value verbatim. For percentages
+   *  and any other non-money KPI. */
+  raw?: boolean;
+  /** Optional comparative line shown below the value (e.g. "+2.1 pp vs
+   *  2024"). Pre-built by the caller via :func:`DeltaPill` so colour /
+   *  arrow direction is decided at the call site. */
+  delta?: React.ReactNode;
 }) {
   return (
     <Card
@@ -798,14 +1064,56 @@ function KpiCard({
       </CardHeader>
       <CardContent className="pb-4 px-4">
         <div className="font-mono text-xl font-bold tabular-nums">
-          {colored ? (
+          {raw ? (
+            value
+          ) : colored ? (
             <MoneyCell value={value} colored />
           ) : (
             formatMoney(value)
           )}
         </div>
+        {delta != null && <div className="mt-1 text-xs">{delta}</div>}
       </CardContent>
     </Card>
+  );
+}
+
+/** Small badge for the year-over-year comparison line inside a KpiCard.
+ *
+ * - ``positiveIsGood`` flips the colour semantics so an increase shows
+ *   red instead of green (used for IRPF rate: paying more tax is "bad").
+ * - ``unit`` controls the suffix: "%" for relative changes on money,
+ *   "pp" for absolute percentage-point changes on rates.
+ * - ``previous`` is the comparison year label.
+ */
+function DeltaPill({
+  delta,
+  unit,
+  positiveIsGood = true,
+  previous,
+}: {
+  delta: number;
+  unit: "%" | "pp" | "€";
+  positiveIsGood?: boolean;
+  previous: string;
+}) {
+  if (!Number.isFinite(delta)) {
+    return <span className="text-muted-foreground">— vs {previous}</span>;
+  }
+  const sign = delta > 0 ? "+" : "";
+  const isGood = positiveIsGood ? delta >= 0 : delta <= 0;
+  const colour =
+    Math.abs(delta) < 0.005
+      ? "text-muted-foreground"
+      : isGood
+        ? "text-emerald-600 dark:text-emerald-400"
+        : "text-red-600 dark:text-red-400";
+  return (
+    <span className={colour}>
+      {sign}
+      {delta.toFixed(unit === "pp" ? 2 : unit === "%" ? 1 : 2)}
+      {unit === "€" ? " €" : ` ${unit}`} vs {previous}
+    </span>
   );
 }
 

@@ -349,7 +349,7 @@ def test_summary_replicates_block_totals(user, asset_es, asset_us):
 # ---------------------------------------------------------------------------
 
 
-def _payroll(user, employer, period_end, gross, ss, irpf, net, period_start=None):
+def _payroll(user, employer, period_end, gross, ss, irpf, net, period_start=None, base_irpf=None):
     from apps.payroll.models import Payroll
 
     if period_start is None:
@@ -363,6 +363,7 @@ def _payroll(user, employer, period_end, gross, ss, irpf, net, period_start=None
         ss_employee=ss,
         irpf_withholding=irpf,
         net=net,
+        base_irpf=base_irpf,
     )
 
 
@@ -404,7 +405,8 @@ def test_employment_block_aggregates_year(user, employer_acme):
     emp = out["employment_income"]
 
     assert emp["casilla"].startswith("Rendimientos del trabajo")
-    assert emp["gross"] == "10000.00"
+    # No base_irpf set on either payroll → falls back to gross.
+    assert emp["gross_subject"] == "10000.00"
     assert emp["ss_deductible"] == "600.00"
     assert emp["withholding"] == "2800.00"
     assert emp["net_informative"] == "6600.00"
@@ -437,10 +439,10 @@ def test_employment_block_groups_by_employer(user, employer_acme, employer_globe
     emp = out["employment_income"]
 
     by_name = {e["name"]: e for e in emp["by_employer"]}
-    assert by_name["Acme S.L."]["gross"] == "5000.00"
-    assert by_name["Globex Corp"]["gross"] == "3000.00"
+    assert by_name["Acme S.L."]["gross_subject"] == "5000.00"
+    assert by_name["Globex Corp"]["gross_subject"] == "3000.00"
     assert by_name["Globex Corp"]["cif"] == ""  # employer_globex has no CIF
-    assert emp["gross"] == "8000.00"
+    assert emp["gross_subject"] == "8000.00"
 
 
 def test_employment_year_filter(user, employer_acme):
@@ -465,14 +467,14 @@ def test_employment_year_filter(user, employer_acme):
     )
 
     out = tax_declaration(user, YEAR)
-    assert out["employment_income"]["gross"] == "5000.00"
+    assert out["employment_income"]["gross_subject"] == "5000.00"
 
 
 def test_employment_block_empty_year(user):
     """No payrolls → block exists with zero totals and empty breakdown."""
     out = tax_declaration(user, YEAR)
     emp = out["employment_income"]
-    assert emp["gross"] == "0.00"
+    assert emp["gross_subject"] == "0.00"
     assert emp["ss_deductible"] == "0.00"
     assert emp["withholding"] == "0.00"
     assert emp["by_employer"] == []
@@ -493,18 +495,50 @@ def test_employment_summary_replicates_totals(user, employer_acme):
     s = out["summary"]
     emp = out["employment_income"]
 
-    assert s["employment_gross"] == emp["gross"]
+    assert s["employment_gross_subject"] == emp["gross_subject"]
     assert s["employment_ss_deductible"] == emp["ss_deductible"]
     assert s["employment_withholding"] == emp["withholding"]
 
 
 def test_employment_net_mismatch_emits_warning(user, employer_acme):
-    """A payslip with gross-ss-irpf != net produces an info warning, never an error."""
-    # gross 5000 - ss 300 - irpf 1400 = 3300, but net = 3200 (anticipo)
+    """A payslip with gross-ss-irpf != net produces an info warning, never an error.
+
+    The message must surface the individual amounts and the delta so the
+    user can quickly identify which payslip is involved and why.
+    """
+    # gross 5000 - ss 300 - irpf 1400 = 3300, but net = 3200 (anticipo).
+    # The concept must show up between «» so it's easy to spot in a list.
+    from apps.payroll.models import Payroll
+
+    Payroll.objects.create(
+        owner=user,
+        employer=employer_acme,
+        period_start=datetime.date(YEAR, 1, 1),
+        period_end=datetime.date(YEAR, 1, 31),
+        concept="Enero 2025",
+        gross=Decimal("5000"),
+        ss_employee=Decimal("300"),
+        irpf_withholding=Decimal("1400"),
+        net=Decimal("3200"),
+    )
+
+    out = tax_declaration(user, YEAR)
+    msg = next(w for w in out["warnings"] if w["kind"] == "payroll_net_mismatch")["message"]
+    assert "«Enero 2025»" in msg
+    assert "bruto 5000.00" in msg
+    assert "SS 300.00" in msg
+    assert "IRPF 1400.00" in msg
+    assert "neto 3200.00" in msg
+    assert "Δ 100.00" in msg
+    assert "anticipos" in msg or "embargos" in msg
+
+
+def test_employment_net_mismatch_without_concept(user, employer_acme):
+    """When concept is empty, the warning still works but skips the «...»."""
     _payroll(
         user,
         employer_acme,
-        datetime.date(YEAR, 1, 31),
+        datetime.date(YEAR, 2, 28),
         gross=Decimal("5000"),
         ss=Decimal("300"),
         irpf=Decimal("1400"),
@@ -512,10 +546,10 @@ def test_employment_net_mismatch_emits_warning(user, employer_acme):
     )
 
     out = tax_declaration(user, YEAR)
-    kinds = [w["kind"] for w in out["warnings"]]
-    assert "payroll_net_mismatch" in kinds
     msg = next(w for w in out["warnings"] if w["kind"] == "payroll_net_mismatch")["message"]
-    assert "anticipos" in msg or "embargos" in msg
+    # No leading «...» since concept is empty.
+    assert msg.startswith("Nómina de 'Acme S.L.'")
+    assert "«" not in msg
 
 
 def test_employment_missing_months_warning(user, employer_acme):
@@ -542,6 +576,53 @@ def test_employment_missing_months_warning(user, employer_acme):
     out = tax_declaration(user, YEAR)
     kinds = [w["kind"] for w in out["warnings"]]
     assert "payroll_missing_months" in kinds
+
+
+def test_employment_uses_base_irpf_when_present(user, employer_acme):
+    """When the payslip has ``base_irpf`` (exempt items like cheque comida
+    already excluded), the Renta casilla "Retribuciones dinerarias" must
+    use that — not the bigger T. Devengado. Mirrors what AEAT expects."""
+    # Mes con cheque restaurante 100 € exento → base_irpf < gross.
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 1, 31),
+        gross=Decimal("4633.33"),
+        base_irpf=Decimal("4533.33"),
+        ss=Decimal("300.24"),
+        irpf=Decimal("1170.96"),
+        net=Decimal("3027.13"),
+    )
+    # Mes sin cheque → base_irpf == gross (idéntico al devengado).
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 2, 28),
+        gross=Decimal("5133.33"),
+        base_irpf=Decimal("5133.33"),
+        ss=Decimal("318.48"),
+        irpf=Decimal("1315.67"),
+        net=Decimal("3499.18"),
+    )
+    # Mes sin base_irpf → fallback a gross.
+    _payroll(
+        user,
+        employer_acme,
+        datetime.date(YEAR, 3, 31),
+        gross=Decimal("4633.33"),
+        base_irpf=None,
+        ss=Decimal("300.24"),
+        irpf=Decimal("1195.86"),
+        net=Decimal("3137.23"),
+    )
+
+    out = tax_declaration(user, YEAR)
+    emp = out["employment_income"]
+
+    # 4533.33 (base) + 5133.33 (base==gross) + 4633.33 (gross fallback) = 14299.99
+    assert emp["gross_subject"] == "14299.99"
+    assert emp["by_employer"][0]["gross_subject"] == "14299.99"
+    assert out["summary"]["employment_gross_subject"] == "14299.99"
 
 
 def test_employment_no_missing_months_when_complete(user, employer_acme):

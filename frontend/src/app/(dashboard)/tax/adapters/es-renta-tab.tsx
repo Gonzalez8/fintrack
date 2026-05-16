@@ -178,8 +178,8 @@ function EmploymentBlock({
         <div className="grid gap-2 md:grid-cols-3">
           <CopyableField
             t={t}
-            label={t("fiscal.renta.employment.gross")}
-            value={block.gross}
+            label={t("fiscal.renta.employment.grossSubject")}
+            value={block.gross_subject}
           />
           <CopyableField
             t={t}
@@ -204,7 +204,7 @@ function EmploymentBlock({
                 <TableRow>
                   <TableHead>{t("fiscal.renta.employment.byEmployer")}</TableHead>
                   <TableHead className="text-right">
-                    {t("fiscal.renta.employment.gross")}
+                    {t("fiscal.renta.employment.grossSubject")}
                   </TableHead>
                   <TableHead className="text-right">
                     {t("fiscal.renta.employment.ssDeductible")}
@@ -231,7 +231,7 @@ function EmploymentBlock({
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatMoney(row.gross)}
+                      {formatMoney(row.gross_subject)}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatMoney(row.ss_deductible)}
@@ -249,7 +249,7 @@ function EmploymentBlock({
                 <TableRow className="font-semibold">
                   <TableCell>{t("fiscal.total")}</TableCell>
                   <TableCell className="text-right">
-                    {formatMoney(block.gross)}
+                    {formatMoney(block.gross_subject)}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatMoney(block.ss_deductible)}
@@ -827,7 +827,7 @@ function SummaryBlock({ t, data }: { t: T; data: TaxDeclaration }) {
     const parts: string[] = [];
     parts.push(`RENTA WEB — ${data.year}`, "");
     parts.push("RENDIMIENTOS DEL TRABAJO");
-    parts.push(`  ${t("fiscal.renta.employment.gross")}: ${formatForRenta(summary.employment_gross)}`);
+    parts.push(`  ${t("fiscal.renta.employment.grossSubject")}: ${formatForRenta(summary.employment_gross_subject)}`);
     parts.push(`  ${t("fiscal.renta.employment.ssDeductible")}: ${formatForRenta(summary.employment_ss_deductible)}`);
     parts.push(`  ${t("fiscal.renta.employment.withholding")}: ${formatForRenta(summary.employment_withholding)}`);
     parts.push("");

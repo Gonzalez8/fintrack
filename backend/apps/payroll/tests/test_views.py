@@ -225,12 +225,14 @@ class TestPayrollCRUD:
         assert res.status_code == 400
         assert "period_end" in res.data
 
-    def test_unique_period_per_employer(self, client, employer, payroll):
-        # Same period for the same employer → conflict on the unique constraint
+    def test_unique_period_concept_per_employer(self, client, employer, payroll):
+        """Same (employer, period, concept) → conflict on the unique constraint."""
         payload = {
             "employer": str(employer.id),
             "period_start": "2026-01-01",
             "period_end": "2026-01-31",
+            # Match the default concept of the `payroll` fixture (which is "")
+            "concept": payroll.concept,
             "gross": "5000",
             "ss_employee": "300",
             "irpf_withholding": "1400",
@@ -238,6 +240,23 @@ class TestPayrollCRUD:
         }
         res = client.post("/api/payrolls/", payload, format="json")
         assert res.status_code == 400
+
+    def test_same_period_different_concept_is_allowed(self, client, employer, payroll):
+        """Two payslips sharing the same period but with different concepts
+        (e.g. monthly salary + bonus for the same window) must coexist."""
+        payload = {
+            "employer": str(employer.id),
+            "period_start": str(payroll.period_start),
+            "period_end": str(payroll.period_end),
+            "concept": "Bono extraordinario",
+            "gross": "1500",
+            "ss_employee": "0",
+            "irpf_withholding": "300",
+            "net": "1200",
+        }
+        res = client.post("/api/payrolls/", payload, format="json")
+        assert res.status_code == 201
+        assert res.data["concept"] == "Bono extraordinario"
 
     def test_payroll_multi_tenancy(self, client, client2, payroll):
         res = client2.get("/api/payrolls/")
@@ -333,3 +352,281 @@ class TestPayrollSoftValidations:
         }
         res = client.post("/api/payrolls/", payload, format="json")
         assert res.status_code == 201
+
+
+# ---------------------------------------------------------------------------
+# Payroll type (machine-readable classification)
+# ---------------------------------------------------------------------------
+
+
+class TestInferPayrollType:
+    """Pure unit tests for the keyword inference. No DB."""
+
+    @pytest.mark.parametrize(
+        "concept,expected",
+        [
+            ("", "MONTHLY"),
+            (None, "MONTHLY"),
+            ("Mensual", "MONTHLY"),
+            ("Enero 2025", "MONTHLY"),
+            ("Diciembre 2025", "MONTHLY"),
+            # Pagas extra y bonus comparten categoría — la analítica los
+            # trata igual ("non-monthly extra payments").
+            ("Extra Febrero 2025", "BONUS"),
+            ("Paga Extra Verano", "BONUS"),
+            ("EXTRA AGOSTO 2025 Part 2", "BONUS"),
+            ("Bono Q3", "BONUS"),
+            ("Bonus anual", "BONUS"),
+            ("INCENTIVO EMPRESA 1S", "BONUS"),
+            ("Variable", "BONUS"),
+            ("Objetivos 2024", "BONUS"),
+            ("Atrasos Convenio", "ATRASOS"),
+            ("Atraso Junio", "ATRASOS"),
+            ("Regularización IRPF", "ATRASOS"),
+            ("Liquidación final", "OTHER"),
+            ("Finiquito", "OTHER"),
+            ("Indemnización", "OTHER"),
+        ],
+    )
+    def test_classification(self, concept, expected):
+        from apps.payroll.models import infer_payroll_type
+
+        assert infer_payroll_type(concept) == expected
+
+    def test_atrasos_wins_over_bonus_when_both_present(self):
+        """An 'atrasos' payslip can mention 'extra' or 'bonus' in the
+        period covered. The more specific keyword (atrasos) must win."""
+        from apps.payroll.models import infer_payroll_type
+
+        assert infer_payroll_type("Atrasos Extra Diciembre 2024") == "ATRASOS"
+
+
+@pytest.mark.django_db
+class TestPayrollTypeField:
+    def test_create_defaults_to_monthly(self, client, employer):
+        payload = {
+            "employer": str(employer.id),
+            "period_start": "2026-02-01",
+            "period_end": "2026-02-28",
+            "gross": "5000",
+            "ss_employee": "300",
+            "irpf_withholding": "1200",
+            "net": "3500",
+        }
+        res = client.post("/api/payrolls/", payload, format="json")
+        assert res.status_code == 201
+        assert res.data["payroll_type"] == "MONTHLY"
+
+    def test_create_accepts_explicit_type(self, client, employer):
+        payload = {
+            "employer": str(employer.id),
+            "period_start": "2026-02-01",
+            "period_end": "2026-02-28",
+            "concept": "Bono Q1",
+            "payroll_type": "BONUS",
+            "gross": "5000",
+            "ss_employee": "300",
+            "irpf_withholding": "1200",
+            "net": "3500",
+        }
+        res = client.post("/api/payrolls/", payload, format="json")
+        assert res.status_code == 201
+        assert res.data["payroll_type"] == "BONUS"
+
+    def test_update_changes_type(self, client, payroll):
+        # payroll fixture defaults to MONTHLY; flip to ATRASOS via PATCH.
+        res = client.patch(
+            f"/api/payrolls/{payroll.id}/",
+            {"payroll_type": "ATRASOS"},
+            format="json",
+        )
+        assert res.status_code == 200
+        assert res.data["payroll_type"] == "ATRASOS"
+
+    def test_invalid_type_rejected(self, client, employer):
+        payload = {
+            "employer": str(employer.id),
+            "period_start": "2026-02-01",
+            "period_end": "2026-02-28",
+            "payroll_type": "NOT_A_TYPE",
+            "gross": "5000",
+            "ss_employee": "300",
+            "irpf_withholding": "1200",
+            "net": "3500",
+        }
+        res = client.post("/api/payrolls/", payload, format="json")
+        assert res.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Bulk endpoints
+# ---------------------------------------------------------------------------
+
+
+def _payload(employer_id, year, month, end_day, concept="Mensual"):
+    return {
+        "employer": str(employer_id),
+        "period_start": f"{year}-{month:02d}-01",
+        "period_end": f"{year}-{month:02d}-{end_day:02d}",
+        "concept": concept,
+        "gross": "5000.00",
+        "ss_employee": "300.00",
+        "irpf_withholding": "1200.00",
+        "net": "3500.00",
+    }
+
+
+@pytest.mark.django_db
+class TestPayrollBulkDelete:
+    def test_deletes_only_requested_ids(self, client, user, employer):
+        ids = []
+        for m in (1, 2, 3):
+            p = Payroll.objects.create(
+                owner=user,
+                employer=employer,
+                period_start=datetime.date(2025, m, 1),
+                period_end=datetime.date(2025, m, 28),
+                gross=Decimal("5000"),
+                ss_employee=Decimal("300"),
+                irpf_withholding=Decimal("1200"),
+                net=Decimal("3500"),
+            )
+            ids.append(str(p.id))
+        # Delete only the first two
+        res = client.post(
+            "/api/payrolls/bulk-delete/",
+            {"ids": ids[:2]},
+            format="json",
+        )
+        assert res.status_code == 200
+        assert res.data["deleted"] == 2
+        assert Payroll.objects.filter(owner=user).count() == 1
+
+    def test_empty_list_is_a_noop(self, client):
+        res = client.post(
+            "/api/payrolls/bulk-delete/",
+            {"ids": []},
+            format="json",
+        )
+        assert res.status_code == 200
+        assert res.data["deleted"] == 0
+
+    def test_rejects_non_list_input(self, client):
+        res = client.post(
+            "/api/payrolls/bulk-delete/",
+            {"ids": "not-a-list"},
+            format="json",
+        )
+        assert res.status_code == 400
+
+    def test_cannot_delete_other_users_payrolls(self, client, client2, other_user, employer_other):
+        # user2 has a payroll under their own employer
+        p = Payroll.objects.create(
+            owner=other_user,
+            employer=employer_other,
+            period_start=datetime.date(2025, 1, 1),
+            period_end=datetime.date(2025, 1, 31),
+            gross=Decimal("1000"),
+            ss_employee=Decimal("0"),
+            irpf_withholding=Decimal("0"),
+            net=Decimal("1000"),
+        )
+        # user1 tries to delete it
+        res = client.post(
+            "/api/payrolls/bulk-delete/",
+            {"ids": [str(p.id)]},
+            format="json",
+        )
+        assert res.status_code == 200
+        # Reports 0 deletions and the record still exists.
+        assert res.data["deleted"] == 0
+        assert Payroll.objects.filter(id=p.id).exists()
+
+
+@pytest.mark.django_db
+class TestPayrollBulkCreate:
+    def test_creates_all_in_one_transaction(self, client, employer):
+        payloads = [
+            _payload(employer.id, 2025, 1, 31),
+            _payload(employer.id, 2025, 2, 28),
+            _payload(employer.id, 2025, 3, 31),
+        ]
+        res = client.post(
+            "/api/payrolls/bulk-create/",
+            {"payrolls": payloads},
+            format="json",
+        )
+        assert res.status_code == 201
+        assert len(res.data["created"]) == 3
+        # Verify they were actually persisted
+        assert Payroll.objects.count() == 3
+
+    def test_rolls_back_when_any_row_invalid(self, client, employer):
+        payloads = [
+            _payload(employer.id, 2025, 1, 31),
+            # period_end < period_start → hard error
+            {
+                "employer": str(employer.id),
+                "period_start": "2025-02-28",
+                "period_end": "2025-02-01",
+                "concept": "Invalid",
+                "gross": "5000",
+                "ss_employee": "300",
+                "irpf_withholding": "1200",
+                "net": "3500",
+            },
+            _payload(employer.id, 2025, 3, 31),
+        ]
+        res = client.post(
+            "/api/payrolls/bulk-create/",
+            {"payrolls": payloads},
+            format="json",
+        )
+        assert res.status_code == 400
+        assert "errors" in res.data
+        assert res.data["errors"][0] is None  # row 0 OK
+        assert res.data["errors"][1] is not None  # row 1 bad
+        assert res.data["errors"][2] is None  # row 2 OK
+        # Nothing was persisted
+        assert Payroll.objects.count() == 0
+
+    def test_empty_list_returns_empty_array(self, client):
+        res = client.post(
+            "/api/payrolls/bulk-create/",
+            {"payrolls": []},
+            format="json",
+        )
+        assert res.status_code == 201
+        assert res.data["created"] == []
+
+    def test_rejects_non_list_input(self, client):
+        res = client.post(
+            "/api/payrolls/bulk-create/",
+            {"payrolls": "not-a-list"},
+            format="json",
+        )
+        assert res.status_code == 400
+
+    def test_owner_is_injected_per_item(self, client, user, employer):
+        payloads = [_payload(employer.id, 2025, 4, 30)]
+        res = client.post(
+            "/api/payrolls/bulk-create/",
+            {"payrolls": payloads},
+            format="json",
+        )
+        assert res.status_code == 201
+        # Loaded record must belong to the authenticated user
+        p = Payroll.objects.get()
+        assert p.owner == user
+
+    def test_cannot_create_under_other_users_employer(self, client, employer_other):
+        """Cross-tenant employer FK on bulk-create must be rejected like the
+        single endpoint already does."""
+        payloads = [_payload(employer_other.id, 2025, 5, 31)]
+        res = client.post(
+            "/api/payrolls/bulk-create/",
+            {"payrolls": payloads},
+            format="json",
+        )
+        assert res.status_code == 400
+        assert Payroll.objects.count() == 0

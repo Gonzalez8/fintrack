@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, FileUp, AlertTriangle } from "lucide-react";
+import { Plus, Pencil, Trash2, FileUp, AlertTriangle, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { api, ApiClientError, extractApiErrorMessage } from "@/lib/api-client";
@@ -28,6 +28,8 @@ import { SwipeCard } from "@/components/app/swipe-card";
 import { DetailDrawer } from "@/components/app/detail-drawer";
 import { formatMoney } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
+import { BulkPayrollDialog } from "./bulk-payroll-dialog";
+import { PAYROLL_TYPES } from "@/types";
 import type {
   Employer,
   EmployerFormData,
@@ -35,10 +37,30 @@ import type {
   Payroll,
   PayrollFormData,
   PayrollPdfSuggestion,
+  PayrollType,
 } from "@/types";
 
 const currentYear = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 11 }, (_, i) => String(currentYear - 5 + i));
+
+// Visual classification for the type badge. MONTHLY has no badge because
+// it's the default and would just add visual noise on most rows.
+const TYPE_BADGE_CLASSES: Record<Exclude<PayrollType, "MONTHLY">, string> = {
+  BONUS: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  ATRASOS: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  OTHER: "bg-muted text-muted-foreground",
+};
+
+function TypeBadge({ type, label }: { type: PayrollType; label: string }) {
+  if (type === "MONTHLY") return null;
+  return (
+    <span
+      className={`inline-flex items-center rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${TYPE_BADGE_CLASSES[type]}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 function lastDayOfMonth(yyyyMmDd: string): string {
   if (!yyyyMmDd) return "";
@@ -57,6 +79,7 @@ function emptyForm(): PayrollFormData {
     period_start: start,
     period_end: lastDayOfMonth(start),
     concept: "Mensual",
+    payroll_type: "MONTHLY",
     employer: "",
     gross: "",
     ss_employee: "0",
@@ -74,6 +97,9 @@ export function NominasContent() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Payroll | null>(null);
   const [detailItem, setDetailItem] = useState<Payroll | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkFiles, setBulkFiles] = useState<File[] | null>(null);
+  const bulkInputRef = useRef<HTMLInputElement | null>(null);
 
   const yearFilter = searchParams.get("year") || "";
   const employerFilter = searchParams.get("employer") || "";
@@ -111,15 +137,111 @@ export function NominasContent() {
     onError: () => toast.error(t("common.errorDeleting")),
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: string[]) =>
+      api.post<{ deleted: number }>("/payrolls/bulk-delete/", { ids }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["payrolls"], refetchType: "active" });
+      toast.success(t("payroll.bulkDeleted", { count: String(res.deleted) }));
+      setSelectedIds(new Set());
+    },
+    onError: (err) =>
+      toast.error(extractApiErrorMessage(err, t("common.errorDeleting"))),
+  });
+
+  // Drop selection ids that are no longer in the visible page so the "select
+  // all" checkbox state stays consistent after filtering / refetching.
+  const visibleIds = useMemo(() => payrolls.map((p) => p.id), [payrolls]);
+  const selectedVisible = useMemo(
+    () => visibleIds.filter((id) => selectedIds.has(id)),
+    [visibleIds, selectedIds],
+  );
+  const allVisibleSelected =
+    visibleIds.length > 0 && selectedVisible.length === visibleIds.length;
+
+  function toggleId(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllVisible() {
+    if (allVisibleSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        visibleIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        visibleIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  }
+
+  function onBulkFilesPicked(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+    setBulkFiles(files);
+    // Reset the input so re-picking the same file fires onChange again.
+    if (bulkInputRef.current) bulkInputRef.current.value = "";
+  }
+
+  function confirmBulkDelete() {
+    const ids = Array.from(selectedIds).filter((id) => visibleIds.includes(id));
+    if (ids.length === 0) return;
+    if (!confirm(t("payroll.bulkDeleteConfirm", { count: String(ids.length) }))) {
+      return;
+    }
+    bulkDeleteMutation.mutate(ids);
+  }
+
   const columns: Column<Payroll>[] = [
+    {
+      key: "select",
+      header: (
+        <input
+          type="checkbox"
+          checked={allVisibleSelected}
+          onChange={toggleAllVisible}
+          aria-label={t("payroll.bulkSelectAll")}
+          className="h-4 w-4 cursor-pointer accent-cyan-500"
+        />
+      ),
+      className: "w-10",
+      render: (p) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(p.id)}
+          onChange={(e) => {
+            e.stopPropagation();
+            toggleId(p.id);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={t("payroll.bulkSelectRow")}
+          className="h-4 w-4 cursor-pointer accent-cyan-500"
+        />
+      ),
+    },
     {
       key: "period",
       header: t("payroll.period"),
       render: (p) => (
         <div className="flex flex-col">
-          {p.concept && (
-            <span className="text-sm font-medium">{p.concept}</span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {p.concept && (
+              <span className="text-sm font-medium">{p.concept}</span>
+            )}
+            <TypeBadge
+              type={p.payroll_type}
+              label={t(`payroll.type.${p.payroll_type}` as const)}
+            />
+          </div>
           <span className="font-mono text-xs text-muted-foreground">
             {p.period_start} → {p.period_end}
           </span>
@@ -231,6 +353,21 @@ export function NominasContent() {
             ))}
           </SelectContent>
         </Select>
+        <input
+          ref={bulkInputRef}
+          type="file"
+          accept="application/pdf"
+          multiple
+          className="hidden"
+          onChange={onBulkFilesPicked}
+        />
+        <Button
+          variant="outline"
+          onClick={() => bulkInputRef.current?.click()}
+        >
+          <Upload className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">{t("payroll.bulkUpload")}</span>
+        </Button>
         <Button
           className="hidden sm:flex"
           onClick={() => {
@@ -242,6 +379,34 @@ export function NominasContent() {
           <span className="hidden sm:inline">{t("common.new")}</span>
         </Button>
       </div>
+
+      {/* Selection bar — appears when any payroll on the current page is selected */}
+      {selectedVisible.length > 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-cyan-500/30 bg-cyan-500/5 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedIds(new Set())}
+              title={t("payroll.bulkClearSelection")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <span className="text-sm">
+              {t("payroll.bulkSelectionCount", { count: String(selectedVisible.length) })}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={confirmBulkDelete}
+            disabled={bulkDeleteMutation.isPending}
+          >
+            <Trash2 className="h-3.5 w-3.5 sm:mr-1" />
+            <span className="hidden sm:inline">{t("payroll.bulkDeleteSelected")}</span>
+          </Button>
+        </div>
+      )}
 
       {/* Mobile cards */}
       <div className="sm:hidden space-y-2">
@@ -259,14 +424,35 @@ export function NominasContent() {
             accentColor="border-l-cyan-500"
           >
             <div className="space-y-1">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-sm font-medium">{p.employer_name}</p>
-                  {p.concept && (
-                    <p className="text-xs text-cyan-600 dark:text-cyan-400">{p.concept}</p>
-                  )}
+              <div className="flex justify-between items-start gap-2">
+                <div className="flex items-start gap-2 min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(p.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleId(p.id);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={t("payroll.bulkSelectRow")}
+                    className="h-4 w-4 mt-0.5 cursor-pointer accent-cyan-500 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{p.employer_name}</p>
+                    <div className="flex items-center gap-1.5">
+                      {p.concept && (
+                        <p className="text-xs text-cyan-600 dark:text-cyan-400 truncate">
+                          {p.concept}
+                        </p>
+                      )}
+                      <TypeBadge
+                        type={p.payroll_type}
+                        label={t(`payroll.type.${p.payroll_type}` as const)}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground shrink-0">
                   {p.period_start} → {p.period_end}
                 </span>
               </div>
@@ -320,6 +506,17 @@ export function NominasContent() {
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           payroll={editing}
+          employers={employers}
+        />
+      )}
+
+      {bulkFiles && bulkFiles.length > 0 && (
+        <BulkPayrollDialog
+          open
+          onOpenChange={(v) => {
+            if (!v) setBulkFiles(null);
+          }}
+          files={bulkFiles}
           employers={employers}
         />
       )}
@@ -386,6 +583,7 @@ function PayrollDialog({
         period_start: payroll.period_start,
         period_end: payroll.period_end,
         concept: payroll.concept ?? "",
+        payroll_type: payroll.payroll_type,
         employer: payroll.employer,
         gross: payroll.gross,
         ss_employee: payroll.ss_employee,
@@ -432,6 +630,7 @@ function PayrollDialog({
         period_start: form.period_start,
         period_end: form.period_end,
         concept: form.concept,
+        payroll_type: form.payroll_type,
         employer: form.employer,
         gross: form.gross,
         ss_employee: form.ss_employee || "0",
@@ -473,12 +672,19 @@ function PayrollDialog({
             {!payroll && (
               <PdfUploadSection
                 employers={employers}
-                onSuggested={(suggestion, matchedEmployerId) => {
+                onSuggested={(suggestion, matchedEmployerId, filenameConcept) => {
                   setForm((f) => ({
                     ...f,
                     period_start: suggestion.suggested.period_start ?? f.period_start,
                     period_end: suggestion.suggested.period_end ?? f.period_end,
-                    concept: suggestion.suggested.concept ?? f.concept,
+                    // The uploaded filename is the source of truth for the
+                    // concept. Users name files how they want to see them in
+                    // the list ("Extra Febrero 2025.pdf", "Bono Q3.pdf"…), so
+                    // we respect that and ignore whatever the parser extracts.
+                    // Falls back to the current form value only when the
+                    // filename is empty.
+                    concept: filenameConcept ?? f.concept,
+                    payroll_type: suggestion.suggested.payroll_type,
                     employer: matchedEmployerId ?? f.employer,
                     gross: suggestion.suggested.gross ?? f.gross,
                     ss_employee: suggestion.suggested.ss_employee ?? f.ss_employee,
@@ -516,15 +722,39 @@ function PayrollDialog({
               </div>
             </div>
 
-            {/* Concept */}
-            <div className="space-y-1.5">
-              <Label>{t("payroll.concept")}</Label>
-              <Input
-                value={form.concept}
-                onChange={(e) => setForm((f) => ({ ...f, concept: e.target.value }))}
-                placeholder={t("payroll.conceptPlaceholder")}
-                maxLength={120}
-              />
+            {/* Concept + Type */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
+              <div className="space-y-1.5">
+                <Label>{t("payroll.concept")}</Label>
+                <Input
+                  value={form.concept}
+                  onChange={(e) => setForm((f) => ({ ...f, concept: e.target.value }))}
+                  placeholder={t("payroll.conceptPlaceholder")}
+                  maxLength={120}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("payroll.type")}</Label>
+                <Select
+                  value={form.payroll_type}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, payroll_type: v as PayrollType }))
+                  }
+                >
+                  <SelectTrigger className="sm:w-[180px]">
+                    <span data-slot="select-value">
+                      {t(`payroll.type.${form.payroll_type}` as const)}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYROLL_TYPES.map((pt) => (
+                      <SelectItem key={pt} value={pt}>
+                        {t(`payroll.type.${pt}` as const)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Employer */}
@@ -758,6 +988,7 @@ function PdfUploadSection({
   onSuggested: (
     suggestion: PayrollPdfSuggestion,
     matchedEmployerId: string | null,
+    filenameConcept: string | null,
   ) => void;
 }) {
   const t = useTranslations();
@@ -796,7 +1027,11 @@ function PdfUploadSection({
         fd,
       );
       const matched = findMatchingEmployer(result);
-      onSuggested(result, matched);
+      // Use the filename (sans extension) as a fallback concept when the
+      // parser can't pull one out of the PDF text — file names are usually
+      // descriptive ("Extra Febrero 2025", "Atrasos Junio 2025"…).
+      const filenameConcept = file.name.replace(/\.pdf$/i, "").trim() || null;
+      onSuggested(result, matched, filenameConcept);
       toast.success(t("payroll.pdfRecognized"));
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 422) {

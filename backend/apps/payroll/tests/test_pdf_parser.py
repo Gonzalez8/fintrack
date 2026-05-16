@@ -243,6 +243,231 @@ def test_parses_payslip_without_period_block():
 
 
 # ---------------------------------------------------------------------------
+# parse_payslip_text — regression suite on real-world payslip variants
+#
+# Each entry mirrors a real payslip the user shared, anonymised to the
+# template-relevant text. Together they cover the layouts seen in 15 real
+# nóminas across an entire fiscal year (Enero 2025 → Diciembre 2025) plus
+# 3 extras (incentivos, atrasos). If the parser ever regresses on any of
+# these, CI will catch it.
+# ---------------------------------------------------------------------------
+
+
+def _normal_mensual_2025(month_name, end_day):
+    return (
+        "EMPRESA DOMICILIO Nº INSCRIPCIÓN S.S.\n"
+        f"08/13216175-88 1 000098 Mensual - 1 {month_name} 2025 a {end_day} {month_name} 2025 30\n"
+        "REM. TOTAL P.P. EXTRAS BASE C.C. BASE A.T. Y DES BASE I.R.P.F. T. DEVENGADO T. A DEDUCIR\n"
+        "4633,33 4633,33 4633,33 4633,33 4633,33 1496,10\n"
+        "Líquido a Percibir\n3137,23\n"
+        "Cotización Contingencias Comunes(4.70%) 217,77\n"
+        "Cotización Mecanismo Equidad Intergeneracional(0.13%) 6,02\n"
+        "Cotización Formación Profesional(0.10%) 4,63\n"
+        "Cotización Desempleo(1.55%) 71,82\n"
+        "Tributación IRPF(25.81%) 1195,86\n"
+        "DETERMINACIÓN DE LAS BASES DE COTIZACIÓN\n"
+        "Base Incapacidad Temporal Total 4633,33 23,60 % 1093,47\n"
+        "AT y EP 4633,33 2,05 % 94,98\n"
+        "Desempleo 4633,33 5,50 % 254,83\n"
+        "Formación Profesional 4633,33 0,60 % 27,80\n"
+        "Fondo de garantía salarial 4633,33 0,20 % 9,27\n"
+        "Base sujeta a retención I.R.P.F. 4633,33\n"
+    )
+
+
+REAL_PAYSLIP_CASES = [
+    # ── Enero 2025 — Mensual con Retribución Flexible (no salarial) ────────
+    (
+        "Enero 2025 (Mensual + Flex + Adhesión)",
+        (
+            "08/13216175-88 1 000098 Mensual - 1 Enero 2025 a 31 Enero 2025 30\n"
+            "REM. TOTAL P.P. EXTRAS BASE C.C. BASE A.T. Y DES BASE I.R.P.F. T. DEVENGADO T. A DEDUCIR\n"
+            "4633,33 4633,33 4633,33 4533,33 4633,33 1606,20\n"
+            "Líquido a Percibir\n3027,13\n"
+            "400 *RETRIBUCION FLEXIBLE -100,00\n"
+            "403 *RETRIBUCION FLEXIBLE COMIDA 100,00\n"
+            "410 -DESCUENTO RETRIB. FLEXIBLE 100,00\n"
+            "411 -COSTE ADHESION ANUAL 35,00\n"
+            "Cotización Contingencias Comunes(4.70%) 217,77\n"
+            "Cotización Mecanismo Equidad Intergeneracional(0.13%) 6,02\n"
+            "Cotización Formación Profesional(0.10%) 4,63\n"
+            "Cotización Desempleo(1.55%) 71,82\n"
+            "Tributación IRPF(25.83%) 1170,96\n"
+            "DETERMINACIÓN DE LAS BASES DE COTIZACIÓN\n"
+            "Base Incapacidad Temporal Total 4633,33 23,60 % 1093,47\n"
+            "AT y EP 4633,33 2,05 % 94,98\n"
+            "Desempleo 4633,33 5,50 % 254,83\n"
+            "Formación Profesional 4633,33 0,60 % 27,80\n"
+            "Fondo de garantía salarial 4633,33 0,20 % 9,27\n"
+            "Base sujeta a retención I.R.P.F. 4533,33\n"
+        ),
+        {
+            "concept": "Mensual",
+            "period_start": "2025-01-01",
+            "period_end": "2025-01-31",
+            "gross": "4633.33",
+            "net": "3027.13",
+            "irpf_withholding": "1170.96",
+            "ss_employee": "300.24",
+            "base_irpf": "4533.33",
+            "base_cc": "4633.33",
+            "employer_cost": "1480.35",
+        },
+    ),
+    # ── Febrero 2025 — Mensual con bono *Incentivo inline (sin Coste Empresa)
+    (
+        "Febrero 2025 (Mensual + Incentivo inline)",
+        (
+            "08/13216175-88 1 000098 Mensual - 1 Febrero 2025 a 28 Febrero 2025 30\n"
+            "REM. TOTAL P.P. EXTRAS BASE C.C. BASE A.T. Y DES BASE I.R.P.F. T. DEVENGADO T. A DEDUCIR\n"
+            "5133,33 4909,50 4909,50 5133,33 5133,33 1634,15\n"
+            "Líquido a Percibir\n3499,18\n"
+            "30,00 16,67 392 *Incentivo 500,00\n"
+            "Cotización Contingencias Comunes(4.70%) 230,75\n"
+            "Cotización Mecanismo Equidad Intergeneracional(0.13%) 6,38\n"
+            "Cotización Adicional de Solidaridad 0,34\n"
+            "Cotización Formación Profesional(0.10%) 4,91\n"
+            "Cotización Desempleo(1.55%) 76,10\n"
+            "Tributación IRPF(25.63%) 1315,67\n"
+            "DETERMINACIÓN DE LAS BASES DE COTIZACIÓN\n"
+            "Base Incapacidad Temporal Total 4909,50 23,60 % 1158,64\n"
+            "AT y EP 4909,50 2,05 % 100,65\n"
+            "Desempleo 4909,50 5,50 % 270,02\n"
+            "Formación Profesional 4909,50 0,60 % 29,46\n"
+            "Fondo de garantía salarial 4909,50 0,20 % 9,82\n"
+            "Base sujeta a retención I.R.P.F. 5133,33\n"
+        ),
+        {
+            "concept": "Mensual",
+            "period_start": "2025-02-01",
+            "period_end": "2025-02-28",
+            "gross": "5133.33",
+            "net": "3499.18",
+            "irpf_withholding": "1315.67",
+            "ss_employee": "318.48",
+            "base_irpf": "5133.33",
+            "base_cc": "4909.50",
+            "employer_cost": "1568.59",
+        },
+    ),
+    # ── Septiembre 2025 — Mensual sin "Coste Empresa : XXX" footer ────────
+    (
+        "Septiembre 2025 (Mensual sin footer)",
+        (
+            "08/13216175-88 1 000098 Mensual - 1 Septiembre 2025 a 30 Septiembre 2025 30\n"
+            "REM. TOTAL P.P. EXTRAS BASE C.C. BASE A.T. Y DES BASE I.R.P.F. T. DEVENGADO T. A DEDUCIR\n"
+            "5523,40 4909,50 4909,50 5523,40 5523,40 1978,32\n"
+            "Líquido a Percibir\n3545,08\n"
+            "Cotización Contingencias Comunes(4.70%) 230,75\n"
+            "Cotización Mecanismo Equidad Intergeneracional(0.13%) 6,38\n"
+            "Cotización Adicional de Solidaridad 0,95\n"
+            "Cotización Formación Profesional(0.10%) 4,91\n"
+            "Cotización Desempleo(1.55%) 76,10\n"
+            "Tributación IRPF(30.04%) 1659,23\n"
+            "DETERMINACIÓN DE LAS BASES DE COTIZACIÓN\n"
+            "Base Incapacidad Temporal Total 4909,50 23,60 % 1158,64\n"
+            "AT y EP 4909,50 2,05 % 100,65\n"
+            "Desempleo 4909,50 5,50 % 270,02\n"
+            "Formación Profesional 4909,50 0,60 % 29,46\n"
+            "Fondo de garantía salarial 4909,50 0,20 % 9,82\n"
+            "Base sujeta a retención I.R.P.F. 5523,40\n"
+        ),
+        {
+            "concept": "Mensual",
+            "period_start": "2025-09-01",
+            "period_end": "2025-09-30",
+            "gross": "5523.40",
+            "net": "3545.08",
+            "irpf_withholding": "1659.23",
+            "ss_employee": "319.09",
+            "base_irpf": "5523.40",
+            "base_cc": "4909.50",
+            "employer_cost": "1568.59",
+        },
+    ),
+    # ── Octubre 2025 — Mensual con footer Coste Empresa ───────────────────
+    (
+        "Octubre 2025 (Mensual + Coste Empresa footer)",
+        (
+            "08/13216175-88 1 000098 Mensual - 1 Octubre 2025 a 31 Octubre 2025 30\n"
+            "REM. TOTAL P.P. EXTRAS BASE C.C. BASE A.T. Y DES BASE I.R.P.F. T. DEVENGADO T. A DEDUCIR\n"
+            "5523,40 4909,50 4909,50 5523,40 5523,40 1978,87\n"
+            "Líquido a Percibir\n3544,53\n"
+            "Coste Empresa : 7036,23\n"
+            "Cotización Contingencias Comunes(4.70%) 230,75\n"
+            "Cotización Mecanismo Equidad Intergeneracional(0.13%) 6,38\n"
+            "Cotización Adicional de Solidaridad 0,95\n"
+            "Cotización Formación Profesional(0.10%) 4,91\n"
+            "Cotización Desempleo(1.55%) 76,10\n"
+            "Tributación IRPF(30.05%) 1659,78\n"
+            "DETERMINACIÓN DE LAS BASES DE COTIZACIÓN\n"
+            "Base Incapacidad Temporal Total 4909,50 23,60 % 1158,64\n"
+            "AT y EP 4909,50 2,05 % 100,65\n"
+            "Desempleo 4909,50 5,50 % 270,02\n"
+            "Formación Profesional 4909,50 0,60 % 29,46\n"
+            "Fondo de garantía salarial 4909,50 0,20 % 9,82\n"
+            "Base sujeta a retención I.R.P.F. 5523,40\n"
+        ),
+        {
+            "concept": "Mensual",
+            "period_start": "2025-10-01",
+            "period_end": "2025-10-31",
+            "gross": "5523.40",
+            "net": "3544.53",
+            "irpf_withholding": "1659.78",
+            "ss_employee": "319.09",
+            "base_irpf": "5523.40",
+            "base_cc": "4909.50",
+            "employer_cost": "7036.23",  # explicit footer wins
+        },
+    ),
+    # ── Extra Febrero 2025 — INCENTIVO 2S 2024 con período partido entre líneas
+    (
+        "Extra Febrero 2025 (INCENTIVO 2S 2024, period split)",
+        (
+            "08/13216175-88 1 000098 INCENTIVO 2S 2024 - 1 Julio 2024 a 31 Diciembre\n"
+            "2024 180\n"
+            "REM. TOTAL P.P. EXTRAS BASE C.C. BASE A.T. Y DES BASE I.R.P.F. T. DEVENGADO T. A DEDUCIR\n"
+            "6268,97 435,85 435,85 6268,97 6268,97 1647,47\n"
+            "Líquido a Percibir\n4621,50\n"
+            "Cotización Contingencias Comunes(4.82%) 21,00\n"
+            "Cotización Formación Profesional(0.10%) 0,45\n"
+            "Cotización Desempleo(1.55%) 6,75\n"
+            "Tributación IRPF(25.83%) 1619,27\n"
+            "DETERMINACIÓN DE LAS BASES DE COTIZACIÓN\n"
+            "Base Incapacidad Temporal Total 435,85 % Variable 102,85\n"
+            "AT y EP 435,85 % Variable 8,95\n"
+            "Desempleo 435,85 % Variable 23,95\n"
+            "Formación Profesional 435,85 % Variable 2,60\n"
+            "Fondo de garantía salarial 435,85 % Variable 0,85\n"
+            "Base sujeta a retención I.R.P.F. 6268,97\n"
+        ),
+        {
+            "concept": "INCENTIVO 2S 2024",
+            "period_start": "2024-07-01",
+            "period_end": "2024-12-31",
+            "gross": "6268.97",
+            "net": "4621.50",
+            "irpf_withholding": "1619.27",
+            "ss_employee": "28.20",
+            "base_irpf": "6268.97",
+            "base_cc": "435.85",
+            "employer_cost": "139.20",
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize("label,text,expected", REAL_PAYSLIP_CASES, ids=[c[0] for c in REAL_PAYSLIP_CASES])
+def test_real_payslip_regression(label, text, expected):
+    """Parametrised regression suite: parser must return the expected fields
+    for every real-world template variant we've encountered."""
+    out = parse_payslip_text(text)["suggested"]
+    for field, want in expected.items():
+        assert out[field] == want, f"[{label}] {field}: expected {want!r}, got {out[field]!r}"
+
+
+# ---------------------------------------------------------------------------
 # parse_payslip_text — irrelevant inputs
 # ---------------------------------------------------------------------------
 

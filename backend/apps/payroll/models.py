@@ -1,6 +1,44 @@
+import re
+
 from django.db import models
 
 from apps.core.models import UserOwnedModel
+
+# Keyword patterns for inferring payroll_type from the concept / filename.
+# Order matters: the FIRST match wins. ATRASOS is checked before BONUS
+# because an "atraso" payslip can mention bonus / extra terms in the
+# period it covers and we want the more specific keyword to win.
+# Pagas extra and bonus / variable share the same BONUS category by
+# design: they're both "non-monthly extra payments" from an analytics
+# point of view; distinguishing them adds noise without adding signal.
+_TYPE_INFERENCE_PATTERNS = [
+    ("ATRASOS", re.compile(r"\batraso", re.IGNORECASE)),
+    ("ATRASOS", re.compile(r"\bregulariza", re.IGNORECASE)),
+    ("BONUS", re.compile(r"\bbono", re.IGNORECASE)),
+    ("BONUS", re.compile(r"\bbonus\b", re.IGNORECASE)),
+    ("BONUS", re.compile(r"\bincent", re.IGNORECASE)),
+    ("BONUS", re.compile(r"\bvariable\b", re.IGNORECASE)),
+    ("BONUS", re.compile(r"\bobjetivos?\b", re.IGNORECASE)),
+    ("BONUS", re.compile(r"\bextra\b", re.IGNORECASE)),
+    ("BONUS", re.compile(r"\bpaga\s+extra", re.IGNORECASE)),
+    ("OTHER", re.compile(r"\bliquidaci", re.IGNORECASE)),
+    ("OTHER", re.compile(r"\bfiniquito\b", re.IGNORECASE)),
+    ("OTHER", re.compile(r"\bindemniza", re.IGNORECASE)),
+]
+
+
+def infer_payroll_type(concept: str | None) -> str:
+    """Best-effort classification from a free-text concept.
+
+    Returns ``MONTHLY`` when nothing matches — that's the most common
+    case for vanilla monthly payslips ("Enero 2025", "Febrero 2025"…).
+    """
+    if not concept:
+        return "MONTHLY"
+    for type_code, pattern in _TYPE_INFERENCE_PATTERNS:
+        if pattern.search(concept):
+            return type_code
+    return "MONTHLY"
 
 
 class Employer(UserOwnedModel):
@@ -74,6 +112,37 @@ class Payroll(UserOwnedModel):
         ),
     )
 
+    class PayrollType(models.TextChoices):
+        """Machine-readable classification of a payslip.
+
+        Decoupled from ``concept`` (free text) so analytics can rely on a
+        stable enum: bruto medio mensual sin bonus, % bonus sobre total
+        anual, distribución por tipo, etc. Inferred at save time from
+        the concept if the user doesn't override it.
+
+        BONUS covers pagas extra (junio/diciembre), variable por
+        objetivos, premios y cualquier otra retribución no mensual
+        regular. Distinguishing "paga extra" from "bonus" would be
+        legally accurate but adds noise without practical benefit to the
+        analysis.
+        """
+
+        MONTHLY = "MONTHLY", "Mensual"
+        BONUS = "BONUS", "Bonus / paga extra"
+        ATRASOS = "ATRASOS", "Atrasos / regularización"
+        OTHER = "OTHER", "Otro"
+
+    payroll_type = models.CharField(
+        max_length=16,
+        choices=PayrollType.choices,
+        default=PayrollType.MONTHLY,
+        help_text=(
+            "Tipo de nómina para análisis: mensual ordinaria, paga extra, "
+            "bonus/variable, atrasos o cualquier otra. Se infiere del "
+            "concepto al guardar; el usuario puede ajustarlo manualmente."
+        ),
+    )
+
     gross = models.DecimalField(
         max_digits=20,
         decimal_places=2,
@@ -135,9 +204,12 @@ class Payroll(UserOwnedModel):
     class Meta:
         ordering = ["-period_end", "-created_at"]
         constraints = [
+            # Uniqueness keyed on (employer, period, concept). Same period
+            # with different concepts is allowed: a regular monthly salary
+            # and a bonus for the same window can coexist.
             models.UniqueConstraint(
-                fields=["owner", "employer", "period_start", "period_end"],
-                name="unique_payroll_period_per_employer",
+                fields=["owner", "employer", "period_start", "period_end", "concept"],
+                name="unique_payroll_period_concept_per_employer",
             ),
             models.UniqueConstraint(
                 fields=["owner", "import_hash"],

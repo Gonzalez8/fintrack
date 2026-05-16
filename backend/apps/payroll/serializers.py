@@ -47,6 +47,7 @@ class PayrollSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
             "period_start",
             "period_end",
             "concept",
+            "payroll_type",
             "employer",
             "employer_name",
             "employer_cif",
@@ -97,19 +98,36 @@ class PayrollSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
         if period_start and period_end and period_end < period_start:
             raise serializers.ValidationError({"period_end": "period_end must be on or after period_start."})
 
-        # Surface the (owner, employer, period_start, period_end) UniqueConstraint as a
-        # 400 ValidationError instead of letting the DB raise IntegrityError → 500.
+        # Surface the (owner, employer, period_start, period_end, concept)
+        # UniqueConstraint as a 400 ValidationError instead of letting the DB
+        # raise IntegrityError → 500.
+        # Same period with different concepts is allowed by design (e.g. a
+        # monthly salary and a bonus that covers the same window). Only a
+        # genuine duplicate — same employer + period + concept — is rejected.
         request = self.context.get("request")
         employer = data.get("employer") or (self.instance and self.instance.employer)
+        concept = data.get("concept")
+        if concept is None and self.instance is not None:
+            concept = self.instance.concept
+        if concept is None:
+            concept = ""
         if request and request.user.is_authenticated and employer and period_start and period_end:
             qs = Payroll.objects.filter(
                 owner=request.user,
                 employer=employer,
                 period_start=period_start,
                 period_end=period_end,
+                concept=concept,
             )
             if self.instance is not None:
                 qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                raise serializers.ValidationError("A payroll for this employer and period already exists.")
+            existing = qs.first()
+            if existing is not None:
+                existing_concept = existing.concept or "(sin concepto)"
+                raise serializers.ValidationError(
+                    f"Ya existe una nómina para {employer.name} con periodo "
+                    f"{existing.period_start} → {existing.period_end} "
+                    f'y concepto "{existing_concept}". '
+                    "Si es un bonus o concepto distinto, cambia el campo Concepto."
+                )
         return data

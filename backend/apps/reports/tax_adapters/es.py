@@ -349,6 +349,9 @@ class SpanishTaxAdapter:
                 }
             )
 
+        # ----- RENDIMIENTOS DEL TRABAJO -------------------------------------
+        employment_block = self._build_employment_block(user, year, warnings)
+
         # ----- SUMMARY ------------------------------------------------------
         summary = {
             "interests_gross": interests_block["gross"],
@@ -361,6 +364,9 @@ class SpanishTaxAdapter:
             "sales_transmission": capital_gains_block["transmission_total"],
             "sales_acquisition": capital_gains_block["acquisition_total"],
             "sales_net": capital_gains_block["net_result"],
+            "employment_gross": employment_block["gross"],
+            "employment_ss_deductible": employment_block["ss_deductible"],
+            "employment_withholding": employment_block["withholding"],
         }
 
         return {
@@ -369,9 +375,119 @@ class SpanishTaxAdapter:
             "dividends": dividends_block,
             "double_taxation": double_taxation_block,
             "capital_gains": capital_gains_block,
+            "employment_income": employment_block,
             "summary": summary,
             "warnings": warnings,
             "infos": infos,
+        }
+
+    def _build_employment_block(self, user, year: int, warnings: list[dict]) -> dict:
+        """Aggregate Payroll rows into the "Rendimientos del trabajo" block.
+
+        - Sums gross / ss_employee / irpf_withholding / net for the year.
+        - Breaks down by employer (every employer with at least one payroll
+          in the year, even if its totals are 0).
+        - Emits informational warnings (never errors) for net-mismatch and
+          missing-month gaps. Real payslips legitimately break the
+          gross - ss - irpf == net identity (anticipos, embargos, dietas
+          exentas, especie, regularizaciones); we say so in the message
+          to avoid scaring the user.
+        """
+        # Imported lazily to avoid coupling at module load between apps.
+        from apps.payroll.models import Payroll
+
+        payrolls_qs = (
+            Payroll.objects.filter(owner=user, period_end__year=year)
+            .select_related("employer")
+            .order_by("employer__name", "period_end")
+        )
+
+        total_gross = total_ss = total_irpf = total_net = Decimal("0")
+        by_employer_acc: dict[str, dict] = {}
+
+        for p in payrolls_qs:
+            total_gross += p.gross
+            total_ss += p.ss_employee or Decimal("0")
+            total_irpf += p.irpf_withholding or Decimal("0")
+            total_net += p.net
+
+            key = str(p.employer_id)
+            bucket = by_employer_acc.setdefault(
+                key,
+                {
+                    "name": p.employer.name,
+                    "cif": p.employer.cif or "",
+                    "gross": Decimal("0"),
+                    "ss_deductible": Decimal("0"),
+                    "withholding": Decimal("0"),
+                    "net": Decimal("0"),
+                    "_months": set(),
+                },
+            )
+            bucket["gross"] += p.gross
+            bucket["ss_deductible"] += p.ss_employee or Decimal("0")
+            bucket["withholding"] += p.irpf_withholding or Decimal("0")
+            bucket["net"] += p.net
+            bucket["_months"].add(p.period_end.month)
+
+            # Net-mismatch is informational. The text deliberately avoids
+            # implying the payslip is wrong — many real ones break the
+            # identity legitimately.
+            expected = p.gross - (p.ss_employee or Decimal("0")) - (p.irpf_withholding or Decimal("0"))
+            if abs(expected - p.net) > NET_MISMATCH_TOLERANCE:
+                warnings.append(
+                    {
+                        "kind": "payroll_net_mismatch",
+                        "scope": "employment_income",
+                        "message": (
+                            f"Nómina de '{p.employer.name}' ({p.period_end}): "
+                            f"gross − ss − irpf = {q(expected)} difiere del neto {q(p.net)}. "
+                            "Es esperable cuando hay anticipos, embargos, dietas exentas, "
+                            "retribución en especie u otros ajustes; revisa si procede."
+                        ),
+                    }
+                )
+
+        # Missing-months heuristic: if an employer has at least one payslip
+        # this year, flag the months between the earliest and the latest
+        # that don't have a payslip. Best-effort — doesn't try to detect
+        # contracts that started/ended mid-year.
+        for bucket in by_employer_acc.values():
+            months = bucket.pop("_months")
+            if not months:
+                continue
+            first = min(months)
+            last = max(months)
+            missing = [m for m in range(first, last + 1) if m not in months]
+            if missing:
+                warnings.append(
+                    {
+                        "kind": "payroll_missing_months",
+                        "scope": "employment_income",
+                        "message": (
+                            f"Empleador '{bucket['name']}': faltan nóminas en los meses "
+                            f"{', '.join(str(m) for m in missing)} del {year} entre la primera y la última registradas."
+                        ),
+                    }
+                )
+
+        return {
+            "casilla": "Rendimientos del trabajo · Retribuciones dinerarias y retenciones",
+            "gross": str(q(total_gross)),
+            "ss_deductible": str(q(total_ss)),
+            "withholding": str(q(total_irpf)),
+            "net_informative": str(q(total_net)),
+            "by_employer": [
+                {
+                    "name": v["name"],
+                    "cif": v["cif"],
+                    "gross": str(q(v["gross"])),
+                    "ss_deductible": str(q(v["ss_deductible"])),
+                    "withholding": str(q(v["withholding"])),
+                    "net": str(q(v["net"])),
+                }
+                for v in sorted(by_employer_acc.values(), key=lambda x: x["name"].lower())
+            ],
         }
 
 

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.importer",
     "apps.realestate",
+    "apps.payroll",
 ]
 
 MIDDLEWARE = [

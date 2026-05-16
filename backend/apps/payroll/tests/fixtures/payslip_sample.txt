@@ -1,0 +1,51 @@
+GONZALEZ EMPLEADO, JUAN
+CL DEMO 1 1 1
+08000 BARCELONA
+BARCELONA
+
+NIF/CIF: B12345678
+
+EMPRESA  DOMICILIO  Nº INSCRIPCIÓN S.S.
+ACME DEMO S.L.  CL FALSA 123  28/0000000-00
+TRABAJADOR  CATEGORIA  CODIGO CONTRATO  ANTIGÜEDAD  D.N.I.
+GONZALEZ EMPLEADO, JUAN  TITULADO/A GRADO SUPERIOR  100  01/01/2020  00000000T
+Nº AFILIACIÓN S.S.  TARIFA  EPIG.  SECCIÓN  NRO.  PERIODO  TOT.DÍAS
+00/00000000-00  1  0807907203  000098  Mensual - 1 Enero 2026 a 31 Enero 2026  30
+CUANTIA  PRECIO  CONCEPTO  DEVENGOS  DEDUCCIONES
+30,00  51,97  1  *Salario Base  1559,05
+30,00  91,73  2  *Retrib. volunt. absorbible  2751,75
+30,00  1,67  9  *Comp. gastos teletrabajo  50,00
+30,00  15,05  33  *Pacto de Exclusividad  451,38
+30,00  15,05  125  *Pacto no concurrencia  451,38
+30,00  8,66  301  *Paga Extra  259,84
+
+Cotización Contingencias Comunes(4.70%)  239,76
+Cotización Mecanismo Equidad Intergeneracional(0.15%)  7,65
+Cotización Adicional de Solidaridad  0,80
+Cotización Formación Profesional(0.10%)  5,10
+Cotización Desempleo(1.55%)  79,07
+Tributación IRPF(28.86%)  1594,05
+
+REM. TOTAL  P.P. EXTRAS  BASE C.C.  BASE A.T. Y DES  BASE I.R.P.F.  T. DEVENGADO  T. A DEDUCIR
+5523,40   5101,20  5101,20  5523,40  5523,40  1926,43
+
+FECHA  SELLO EMPRESA  RECIBI
+sábado, 31 de Enero de 2026
+MADRID
+
+Líquido a Percibir
+3596,97
+
+Coste Empresa : 7195,54
+
+DETERMINACIÓN DE LAS BASES DE COTIZACIÓN A LA S.S. Y CONCEPTOS DE RECAUDACIÓN CONJUNTA Y DE LA BASE SUJETA A RETENCIÓN DEL IRPF Y APORTACIÓN DE LA EMPRESA
+CONCEPTO  BASE  TIPO  APORTACIÓN EMPRESA
+Contingencias Comunes
+Importe remuneración mensual  5523,40
+Base Incapacidad Temporal  Total  5101,20  23,60 %  1203,88
+Contingencias Profesionales
+AT y EP  5101,20  2,05 %  104,57
+Desempleo  5101,20  5,50 %  280,57
+Formación Profesional  5101,20  0,60 %  30,61
+Fondo de garantía salarial  5101,20  0,20 %  10,20
+Base sujeta a retención I.R.P.F.  5523,40

@@ -550,9 +550,88 @@ export interface StorageInfo {
   tables: Array<{ table: string; size_mb: number }>;
 }
 
+// ── Payroll ──────────────────────────────────────────────────────
+export interface Employer {
+  id: string;
+  name: string;
+  cif: string;
+  ss_account: string;
+  address: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployerFormData {
+  name: string;
+  cif: string;
+  ss_account?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface Payroll {
+  id: string;
+  period_start: string;
+  period_end: string;
+  concept: string;
+  employer: string;
+  employer_name: string;
+  employer_cif: string;
+  gross: string;
+  ss_employee: string;
+  irpf_withholding: string;
+  irpf_rate: string | null;
+  net: string;
+  base_irpf: string | null;
+  base_cc: string | null;
+  employer_cost: string | null;
+  notes: string;
+  net_mismatch: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollFormData {
+  period_start: string;
+  period_end: string;
+  concept: string;
+  employer: string;
+  gross: string;
+  ss_employee: string;
+  irpf_withholding: string;
+  net: string;
+  base_irpf?: string;
+  base_cc?: string;
+  employer_cost?: string;
+  notes?: string;
+}
+
+/** Payload returned by POST /api/payrolls/parse-pdf/ when the parser succeeds. */
+export interface PayrollPdfSuggestion {
+  suggested: {
+    period_start: string | null;
+    period_end: string | null;
+    concept: string | null;
+    gross: string | null;
+    ss_employee: string | null;
+    irpf_withholding: string | null;
+    net: string | null;
+    base_irpf: string | null;
+    base_cc: string | null;
+    employer_cost: string | null;
+    employer_name: string | null;
+    employer_cif: string | null;
+  };
+  confidence: number;
+  warnings: string[];
+}
+
 // ── Tax declaration (Modo Renta) ─────────────────────────────────
 export type {
   TaxDeclaration,
+  TaxEmploymentBlock,
+  TaxEmploymentByEmployer,
   TaxInterestsBlock,
   TaxInterestEntity,
   TaxDividendsBlock,

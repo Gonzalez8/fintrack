@@ -73,6 +73,24 @@ export interface TaxCapitalGainsBlock {
   rows: TaxCapitalGainRow[];
 }
 
+export interface TaxEmploymentByEmployer {
+  name: string;
+  cif: string;
+  gross: string;
+  ss_deductible: string;
+  withholding: string;
+  net: string;
+}
+
+export interface TaxEmploymentBlock {
+  casilla: string;
+  gross: string;
+  ss_deductible: string;
+  withholding: string;
+  net_informative: string;
+  by_employer: TaxEmploymentByEmployer[];
+}
+
 export interface TaxSummary {
   interests_gross: string;
   interests_withholding: string;
@@ -84,6 +102,9 @@ export interface TaxSummary {
   sales_transmission: string;
   sales_acquisition: string;
   sales_net: string;
+  employment_gross: string;
+  employment_ss_deductible: string;
+  employment_withholding: string;
 }
 
 export interface TaxNotice {
@@ -98,6 +119,7 @@ export interface TaxDeclaration {
   dividends: TaxDividendsBlock;
   double_taxation: TaxDoubleTaxationBlock;
   capital_gains: TaxCapitalGainsBlock;
+  employment_income: TaxEmploymentBlock;
   summary: TaxSummary;
   warnings: TaxNotice[];
   infos: TaxNotice[];

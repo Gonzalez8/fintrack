@@ -36,6 +36,7 @@ backend/          Django 5.1 + DRF REST API
     portfolio/    FIFO/LIFO/WAC cost basis engine
     reports/      Net worth, savings, evolution, savings goals
       tax_adapters/  Per-country tax-declaration adapters (registry + base + es.py) — see ADR-007
+    payroll/      Employer + Payroll models, CRUD + experimental PDF parser — see ADR-008
     realestate/   Property, Amortization, mortgage simulation
     importer/     JSON backup/restore
   config/

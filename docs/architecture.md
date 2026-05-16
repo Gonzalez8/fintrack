@@ -145,6 +145,12 @@ graph TB
         subgraph "apps/importer/"
             backup[BackupExportView<br/>BackupImportView<br/>JSON v1.0 format]
         end
+
+        subgraph "apps/payroll/"
+            payroll_views[EmployerViewSet<br/>PayrollViewSet]
+            payroll_parser[PDF parser<br/>parse_payslip_text · pdfplumber]
+            payroll_pdf_view[PayrollParsePdfView<br/>experimental, suggestion-only]
+        end
     end
 
     auth_views --> cookie_auth
@@ -158,6 +164,8 @@ graph TB
     tax_registry --> tax_es
     tax_es --> tax_common
     tax_es --> tax_base
+    tax_es --> payroll_views
+    payroll_pdf_view --> payroll_parser
     snapshot_tasks --> portfolio_engine
     price_service --> asset_models
 ```
@@ -349,6 +357,31 @@ erDiagram
         string base_type "PATRIMONY|CASH"
         date deadline
     }
+
+    Employer {
+        uuid id PK
+        string name
+        string cif "Spanish NIF/CIF, optional"
+        string ss_account
+        string address
+        text notes
+    }
+
+    Payroll {
+        uuid id PK
+        uuid employer FK
+        date period_start
+        date period_end
+        decimal gross "retribución dineraria total"
+        decimal ss_employee
+        decimal irpf_withholding
+        decimal net "as printed on the payslip"
+        decimal base_irpf "optional"
+        decimal base_cc "optional"
+        decimal employer_cost "optional"
+    }
+
+    Employer ||--o{ Payroll : "has"
 ```
 
 ### 4.2 Multi-Tenancy Model
@@ -680,6 +713,7 @@ Architecture Decision Records documenting key design choices:
 | [ADR-005](adr/005-demo-mode-msw.md) | Demo Mode with MSW and Static Data | Accepted |
 | [ADR-006](adr/006-per-user-redis-cache.md) | Per-User Redis Cache Namespaces | Accepted |
 | [ADR-007](adr/007-tax-adapter-pattern.md) | Per-Country Tax Adapter Pattern | Accepted |
+| [ADR-008](adr/008-payroll-and-pdf-parser.md) | Payroll Tracking and Best-Effort PDF Parser | Accepted |
 
 ---
 

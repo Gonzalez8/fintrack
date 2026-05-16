@@ -98,6 +98,13 @@ Fintrack ships **two layers** of tax reporting:
 - **Bulk snapshots** — Update all account balances at once
 - **JSON backup/restore** — Full data export and import
 
+### Payroll Tracking
+- **Digitised payslips** — Track monthly net, gross, Social Security contributions and income tax withheld per employer. Feeds the Spanish Modo Renta tab as "Rendimientos del trabajo".
+- **Best-effort PDF parser (experimental)** — Upload a Spanish payslip PDF and Fintrack extracts gross, SS, IRPF, net, base IRPF and employer info to pre-fill the form. Suggestion-only, you always review and confirm before saving. Falls back to manual entry on unrecognised templates or scanned PDFs.
+- **Employer registry** — Reusable employer records (name, CIF, SS account) referenced by every payslip. Inline employer creation from the payroll dialog.
+- **Soft conciliation** — A `gross − SS − IRPF − net` warning surfaces when the identity breaks (anticipos, embargos, dietas exentas, retribución en especie…), but never blocks saving — real payslips legitimately diverge from that identity.
+- See [ADR-008](docs/adr/008-payroll-and-pdf-parser.md) for the full design.
+
 ### Security & Auth
 - **JWT in httpOnly cookies** — Access + refresh tokens, SameSite=Lax
 - **Google OAuth 2.0** — One-click login with automatic account creation

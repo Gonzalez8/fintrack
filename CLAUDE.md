@@ -22,6 +22,7 @@ backend/          Django 5.1 + DRF (API pura)
     portfolio/    FIFO/LIFO/WAC engine
     reports/      Net worth, savings, evolution, savings goals
       tax_adapters/  Per-country tax-declaration adapters (registry + base + es.py)
+    payroll/      Employer + Payroll models, CRUD + experimental PDF parser
     realestate/   Property, Amortization, mortgage simulation
     importer/     JSON backup/restore
   config/
@@ -86,7 +87,8 @@ frontend/         Next.js 16 App Router
 
 ### Reports & Analysis
 - **Tax report (financial analysis):** Year-by-year fiscal summary, realized gains, dividends by country, interests by account. Mobile-first cards + desktop tables. Country-agnostic, always visible.
-- **Tax declaration (per-country):** A country-specific assistant that maps Fintrack data to the local tax-declaration form. Currently Spain only (Modo Renta → Renta Web / Modelo 100). The user picks their fiscal residence in Settings (`tax_country`); the tab is only shown when an adapter exists for that country. New countries plug in via the adapter pattern documented in [ADR-007](docs/adr/007-tax-adapter-pattern.md).
+- **Tax declaration (per-country):** A country-specific assistant that maps Fintrack data to the local tax-declaration form. Currently Spain only (Modo Renta → Renta Web / Modelo 100). The user picks their fiscal residence in Settings (`tax_country`); the tab is only shown when an adapter exists for that country. The Spanish adapter covers five blocks: rendimientos del trabajo (from Payroll), interests, dividends, double-taxation deduction, and capital gains. New countries plug in via the adapter pattern documented in [ADR-007](docs/adr/007-tax-adapter-pattern.md).
+- **Payroll tracking:** Digitised payslips (`Employer` + `Payroll` models). Manual entry plus an **experimental** best-effort PDF parser for Spanish payslips (`pdfplumber` + regex). The parser is suggestion-only — it never creates records, only pre-fills the form for the user to review. Feeds the Spanish Modo Renta as "Rendimientos del trabajo" and is the source for future income/savings reports. Architecture in [ADR-008](docs/adr/008-payroll-and-pdf-parser.md).
 - **Net worth evolution:** Stacked area chart (cash + investments) with range filters
 - **Savings:** Monthly/annual savings analysis with goals and projections
 - **CSV export:** Transactions, dividends, interests
@@ -151,6 +153,20 @@ Per-country tax-declaration logic lives behind a registry. Adding a new country 
 5. Frontend: add `DE: DeSteuerTab` to `TAX_ADAPTERS` in [frontend/src/app/(dashboard)/tax/adapters/index.ts](frontend/src/app/(dashboard)/tax/adapters/index.ts).
 
 No edits to `services.py`, `views.py`, `tax-content.tsx`, `settings-content.tsx` or any existing country adapter.
+
+## Payroll Architecture
+
+Spanish-payslip ingestion lives in `apps/payroll/` and feeds two consumers: the Spanish Modo Renta adapter (`employment_income` block) and future income/savings reports. Full design in [ADR-008](docs/adr/008-payroll-and-pdf-parser.md).
+
+- **`Employer` model** ([backend/apps/payroll/models.py](backend/apps/payroll/models.py)): `name`, `cif`, `ss_account`, `address`, `notes`. Owned by user, unique by `(owner, name)`.
+- **`Payroll` model**: FK `employer` (PROTECT), `period_start`/`period_end`, `gross`, `ss_employee`, `irpf_withholding`, `net`, optional `base_irpf`/`base_cc`/`employer_cost`. `gross` = retribución dineraria total (MVP only). Unique by `(owner, employer, period_start, period_end)`.
+- **Soft validation rule**: `gross − ss_employee − irpf_withholding == net` is *never* enforced as an error. Real payslips legitimately break it (anticipos, embargos, dietas exentas, retribución en especie, regularizations). The serializer exposes a `net_mismatch` field for the frontend to surface as an informational notice; the Modo Renta block emits a non-blocking warning.
+- **Schema headroom for future extensions** (not in MVP): `gross_in_kind` (retribución en especie), `gross_exempt` (rendimientos exentos), `non_salary_adjustments`. Adding them later is an additive migration.
+- **PDF parser** ([backend/apps/payroll/services/pdf_parser.py](backend/apps/payroll/services/pdf_parser.py)) — **experimental and suggestion-only**:
+  - `parse_payslip_text(text)` is a pure regex-based function returning `{suggested, confidence, warnings}`. Splitting it from the pdfplumber wrapper lets unit tests run with hand-written text fixtures (no real PDFs in CI).
+  - The view `POST /api/payrolls/parse-pdf/` is read-only. It never creates records. The frontend pre-fills the form with the suggestion and the user must click "Crear" to save (parse-then-review).
+  - Confidence < 0.3 → `422`. The user falls back to manual entry. No OCR (out of scope for the MVP).
+- **Frontend** ([frontend/src/app/(dashboard)/nominas/](frontend/src/app/(dashboard)/nominas/)): mirrors the `/interests` CRUD pattern. The PDF upload section sits at the top of the create dialog with an "experimental" banner; on success it pre-fills the form and matches the employer FK by CIF first, then by name.
 
 ## Real Estate Architecture
 

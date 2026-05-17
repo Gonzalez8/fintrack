@@ -271,7 +271,12 @@ export interface YearSummary {
   interests_gross: string;
   interests_net: string;
   realized_pnl: string;
+  payroll_gross: string;
+  payroll_net: string;
+  /** Investments only: dividends_net + interests_net + realized_pnl. */
   total_income: string;
+  /** total_income + payroll_net. */
+  total_with_payroll: string;
 }
 
 export interface PatrimonioPoint {

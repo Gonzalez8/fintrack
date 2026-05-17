@@ -1,10 +1,11 @@
 import logging
 from decimal import Decimal
 
-from django.db.models import Sum
-from django.db.models.functions import ExtractYear
+from django.db.models import F, Sum
+from django.db.models.functions import Coalesce, ExtractYear
 from django.utils import timezone
 
+from apps.payroll.models import Payroll
 from apps.portfolio.services import calculate_realized_pnl_fiscal
 from apps.transactions.models import Dividend, Interest
 
@@ -20,7 +21,10 @@ def _default_year(y):
         "interests_gross": "0",
         "interests_net": "0",
         "realized_pnl": "0",
+        "payroll_gross": "0",
+        "payroll_net": "0",
         "total_income": "0",
+        "total_with_payroll": "0",
     }
 
 
@@ -41,6 +45,20 @@ def year_summary(user):
         .order_by("year")
     )
 
+    # Mirror the Modo Renta / fiscal-tab convention: "gross subject" is
+    # base_irpf when present, otherwise gross. That's what AEAT considers
+    # rendimientos dinerarios sujetos for the Renta.
+    payroll_by_year = (
+        Payroll.objects.filter(owner=user)
+        .annotate(year=ExtractYear("period_end"))
+        .values("year")
+        .annotate(
+            total_gross=Sum(Coalesce(F("base_irpf"), F("gross"))),
+            total_net=Sum("net"),
+        )
+        .order_by("year")
+    )
+
     years = {}
     for d in dividend_by_year:
         y = d["year"]
@@ -55,6 +73,12 @@ def year_summary(user):
         years[y]["interests_gross"] = str(i["total_gross"] or Decimal("0"))
         years[y]["interests_net"] = str(i["total_net"] or Decimal("0"))
 
+    for p in payroll_by_year:
+        y = p["year"]
+        years.setdefault(y, _default_year(y))
+        years[y]["payroll_gross"] = str(p["total_gross"] or Decimal("0"))
+        years[y]["payroll_net"] = str(p["total_net"] or Decimal("0"))
+
     realized = calculate_realized_pnl_fiscal(user)
     sales_by_year = {}
     for sale in realized["realized_sales"]:
@@ -67,7 +91,9 @@ def year_summary(user):
         years[y]["realized_pnl"] = str(pnl)
 
     for y in years.values():
-        y["total_income"] = str(Decimal(y["dividends_net"]) + Decimal(y["interests_net"]) + Decimal(y["realized_pnl"]))
+        investments = Decimal(y["dividends_net"]) + Decimal(y["interests_net"]) + Decimal(y["realized_pnl"])
+        y["total_income"] = str(investments)
+        y["total_with_payroll"] = str(investments + Decimal(y["payroll_net"]))
 
     return sorted(years.values(), key=lambda x: x["year"])
 

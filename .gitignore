@@ -63,6 +63,7 @@ celerybeat-schedule.*
 # Claude Code / MCP
 .mcp.json
 .claude/worktrees/
+.playwright-mcp/
 
 # Misc
 *.bak

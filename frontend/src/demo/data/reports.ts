@@ -21,7 +21,10 @@ export const demoYearSummary: YearSummary[] = [
     interests_gross: "25.55",
     interests_net: "20.69",
     realized_pnl: "0.00",
+    payroll_gross: "32400.00",
+    payroll_net: "24600.00",
     total_income: "50.07",
+    total_with_payroll: "24650.07",
   },
   {
     year: 2024,
@@ -31,7 +34,10 @@ export const demoYearSummary: YearSummary[] = [
     interests_gross: "38.25",
     interests_net: "30.99",
     realized_pnl: "813.17",
+    payroll_gross: "34800.00",
+    payroll_net: "26200.00",
     total_income: "931.55",
+    total_with_payroll: "27131.55",
   },
   {
     year: 2025,
@@ -41,7 +47,10 @@ export const demoYearSummary: YearSummary[] = [
     interests_gross: "46.20",
     interests_net: "37.42",
     realized_pnl: "662.82",
+    payroll_gross: "37200.00",
+    payroll_net: "27900.00",
     total_income: "788.66",
+    total_with_payroll: "28688.66",
   },
 ];
 

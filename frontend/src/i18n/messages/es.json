@@ -836,6 +836,9 @@
   "fiscal.netDividendsShort": "Div. neto",
   "fiscal.netInterestsShort": "Int. neto",
   "fiscal.divWithholding": "Ret. dividendos",
+  "fiscal.payrollGrossShort": "Nóm. bruto",
+  "fiscal.payrollNetShort": "Nóm. neto",
+  "fiscal.totalInvestmentsShort": "Inversiones",
   "properties.finished": "Finalizada",
   "properties.mortgageFinished": "Hipoteca finalizada",
 

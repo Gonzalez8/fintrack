@@ -836,6 +836,9 @@
   "fiscal.netDividendsShort": "Div. netto",
   "fiscal.netInterestsShort": "Zins. netto",
   "fiscal.divWithholding": "Div. Quellenst.",
+  "fiscal.payrollGrossShort": "Gehalt brutto",
+  "fiscal.payrollNetShort": "Gehalt netto",
+  "fiscal.totalInvestmentsShort": "Anlagen",
   "properties.finished": "Abgeschlossen",
   "properties.mortgageFinished": "Hypothek abbezahlt",
 

@@ -10,6 +10,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from apps.assets.models import Account, AccountSnapshot, Asset, Settings
+from apps.payroll.models import Employer, Payroll
 from apps.reports.models import SavingsGoal
 from apps.reports.services import (
     annual_savings,
@@ -172,6 +173,82 @@ class TestYearSummary:
         assert len(result) == 2
         assert result[0]["year"] == 2023
         assert result[1]["year"] == 2024
+
+    def test_payrolls_only(self, user, settings_fifo):
+        employer = Employer.objects.create(owner=user, name="ACME")
+        Payroll.objects.create(
+            owner=user,
+            employer=employer,
+            period_start=datetime.date(2024, 1, 1),
+            period_end=datetime.date(2024, 1, 31),
+            concept="Mensual",
+            gross=Decimal("3000"),
+            ss_employee=Decimal("190"),
+            irpf_withholding=Decimal("400"),
+            net=Decimal("2410"),
+        )
+        result = year_summary(user)
+        assert len(result) == 1
+        y = result[0]
+        assert y["year"] == 2024
+        assert Decimal(y["payroll_gross"]) == Decimal("3000")
+        assert Decimal(y["payroll_net"]) == Decimal("2410")
+        # Investments-only total stays at 0; full total includes net payroll.
+        assert Decimal(y["total_income"]) == Decimal("0")
+        assert Decimal(y["total_with_payroll"]) == Decimal("2410")
+
+    def test_payroll_uses_base_irpf_when_present(self, user, settings_fifo):
+        """When base_irpf is filled, it overrides gross for the gross-subject
+        figure — matches the Modo Renta convention used by the fiscal tab."""
+        employer = Employer.objects.create(owner=user, name="ACME")
+        Payroll.objects.create(
+            owner=user,
+            employer=employer,
+            period_start=datetime.date(2024, 6, 1),
+            period_end=datetime.date(2024, 6, 30),
+            concept="Bonus",
+            gross=Decimal("5000"),
+            base_irpf=Decimal("4800"),  # below gross (e.g. dietas exentas)
+            ss_employee=Decimal("0"),
+            irpf_withholding=Decimal("1200"),
+            net=Decimal("3800"),
+        )
+        result = year_summary(user)
+        assert Decimal(result[0]["payroll_gross"]) == Decimal("4800")
+
+    def test_payroll_combined_with_investments(self, user, settings_fifo, asset, account):
+        """Investments total and total-with-payroll diverge by net payroll."""
+        employer = Employer.objects.create(owner=user, name="ACME")
+        Dividend.objects.create(
+            owner=user,
+            asset=asset,
+            date=datetime.date(2024, 3, 1),
+            gross=Decimal("50"),
+            tax=Decimal("5"),
+            net=Decimal("45"),
+        )
+        Interest.objects.create(
+            owner=user,
+            account=account,
+            date_start=datetime.date(2024, 1, 1),
+            date_end=datetime.date(2024, 3, 31),
+            gross=Decimal("30"),
+            net=Decimal("25"),
+        )
+        Payroll.objects.create(
+            owner=user,
+            employer=employer,
+            period_start=datetime.date(2024, 1, 1),
+            period_end=datetime.date(2024, 1, 31),
+            concept="Mensual",
+            gross=Decimal("2000"),
+            ss_employee=Decimal("120"),
+            irpf_withholding=Decimal("280"),
+            net=Decimal("1600"),
+        )
+        y = year_summary(user)[0]
+        assert Decimal(y["total_income"]) == Decimal("70")  # 45 + 25
+        assert Decimal(y["total_with_payroll"]) == Decimal("1670")  # 70 + 1600
 
 
 # ---------------------------------------------------------------------------

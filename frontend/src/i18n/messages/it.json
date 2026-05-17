@@ -836,6 +836,9 @@
   "fiscal.netDividendsShort": "Div. netto",
   "fiscal.netInterestsShort": "Int. netto",
   "fiscal.divWithholding": "Rit. dividendi",
+  "fiscal.payrollGrossShort": "Stip. lordo",
+  "fiscal.payrollNetShort": "Stip. netto",
+  "fiscal.totalInvestmentsShort": "Investimenti",
   "properties.finished": "Completato",
   "properties.mortgageFinished": "Mutuo estinto",
 

@@ -836,6 +836,9 @@
   "fiscal.netDividendsShort": "Net div.",
   "fiscal.netInterestsShort": "Net int.",
   "fiscal.divWithholding": "Div. withholding",
+  "fiscal.payrollGrossShort": "Payroll gross",
+  "fiscal.payrollNetShort": "Payroll net",
+  "fiscal.totalInvestmentsShort": "Investments",
   "properties.finished": "Finished",
   "properties.mortgageFinished": "Mortgage paid off",
 

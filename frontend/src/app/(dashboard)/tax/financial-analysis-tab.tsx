@@ -262,10 +262,30 @@ export function FinancialAnalysisTab({ year }: Props) {
       render: (y) => <MoneyCell value={y.realized_pnl} colored />,
     },
     {
+      key: "payroll_gross",
+      header: t("fiscal.payrollGrossShort"),
+      className: "text-right",
+      render: (y) => <MoneyCell value={y.payroll_gross} />,
+    },
+    {
+      key: "payroll_net",
+      header: t("fiscal.payrollNetShort"),
+      className: "text-right",
+      render: (y) => <MoneyCell value={y.payroll_net} />,
+    },
+    {
+      key: "total_investments",
+      header: t("fiscal.totalInvestmentsShort"),
+      className: "text-right",
+      render: (y) => <MoneyCell value={y.total_income} colored />,
+    },
+    {
       key: "total",
       header: "Total",
       className: "text-right",
-      render: (y) => <MoneyCell value={y.total_income} colored />,
+      render: (y) => (
+        <MoneyCell value={y.total_with_payroll} colored />
+      ),
     },
   ];
 
@@ -821,7 +841,9 @@ export function FinancialAnalysisTab({ year }: Props) {
 
         <div className="space-y-2 sm:hidden">
           {(years ?? []).map((y) => {
-            const total = parseFloat(y.total_income);
+            const total = parseFloat(y.total_with_payroll);
+            const investments = parseFloat(y.total_income);
+            const payrollNet = parseFloat(y.payroll_net);
             const positive = total >= 0;
             return (
               <div key={y.year} className="rounded-lg border border-border p-3 space-y-2">
@@ -845,8 +867,12 @@ export function FinancialAnalysisTab({ year }: Props) {
                     <p className="font-mono text-xs tabular-nums"><MoneyCell value={y.realized_pnl} colored /></p>
                   </div>
                   <div>
-                    <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">{t("fiscal.divWithholding")}</p>
-                    <p className="font-mono text-xs tabular-nums">{formatMoney(y.dividends_tax)}</p>
+                    <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">{t("fiscal.payrollNetShort")}</p>
+                    <p className="font-mono text-xs tabular-nums">{fmtMoney(payrollNet)}</p>
+                  </div>
+                  <div className="col-span-2 border-t border-border/40 pt-1.5">
+                    <p className="font-mono text-[9px] tracking-[1px] uppercase text-muted-foreground">{t("fiscal.totalInvestmentsShort")}</p>
+                    <p className="font-mono text-xs tabular-nums"><MoneyCell value={y.total_income} colored /></p>
                   </div>
                 </div>
               </div>

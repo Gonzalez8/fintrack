@@ -383,6 +383,7 @@
 
   "savings.annualSavings": "Épargne annuelle",
   "savings.patrimonyEvolution": "Évolution du patrimoine",
+  "savings.currentYearSavings": "Épargné {year}",
   "savings.totalPatrimony": "Patrimoine total",
   "savings.investments": "Investissements",
   "savings.avgAnnualSavings": "Épargne annuelle moy.",

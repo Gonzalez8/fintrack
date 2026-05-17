@@ -75,8 +75,16 @@ export function AnnualSavingsTab() {
     const best = years.reduce((a, b) =>
       parseFloat(b.total_real_savings) > parseFloat(a.total_real_savings) ? b : a,
     );
+    // Highlight what the user has actually saved in the calendar year
+    // they're currently in. Falls back to the latest year on record when
+    // the current year hasn't started reporting yet (e.g. browsing on
+    // 01-Jan before the first snapshot of the year).
+    const currentYearNum = new Date().getFullYear();
+    const currentYear =
+      years.find((y) => y.year === currentYearNum) ?? latest;
     return {
       patrimony: latest.patrimony,
+      currentYear,
       avgAnnual: avgAnnual.toFixed(2),
       bestYear: best,
     };
@@ -106,7 +114,22 @@ export function AnnualSavingsTab() {
     <div className="space-y-6">
       {/* KPI Cards */}
       {kpis && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Card className="border-primary/25 dark:bg-primary/[0.04]">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">
+                {t("savings.currentYearSavings", { year: String(kpis.currentYear.year) })}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-4 px-4">
+              <MoneyCell
+                value={kpis.currentYear.total_real_savings}
+                colored
+                className="text-base sm:text-xl font-bold"
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2 pt-4 px-4">
               <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">

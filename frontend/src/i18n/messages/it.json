@@ -383,6 +383,7 @@
 
   "savings.annualSavings": "Risparmio annuale",
   "savings.patrimonyEvolution": "Evoluzione del patrimonio",
+  "savings.currentYearSavings": "Risparmiato {year}",
   "savings.totalPatrimony": "Patrimonio totale",
   "savings.investments": "Investimenti",
   "savings.avgAnnualSavings": "Media annuale risparmio",

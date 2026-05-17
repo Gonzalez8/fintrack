@@ -383,6 +383,7 @@
 
   "savings.annualSavings": "Annual savings",
   "savings.patrimonyEvolution": "Patrimony evolution",
+  "savings.currentYearSavings": "Saved in {year}",
   "savings.totalPatrimony": "Total patrimony",
   "savings.investments": "Investments",
   "savings.avgAnnualSavings": "Avg annual savings",

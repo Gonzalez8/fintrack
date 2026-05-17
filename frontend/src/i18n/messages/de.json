@@ -383,6 +383,7 @@
 
   "savings.annualSavings": "Jaehrliche Ersparnis",
   "savings.patrimonyEvolution": "Vermoegensentwicklung",
+  "savings.currentYearSavings": "Gespart {year}",
   "savings.totalPatrimony": "Gesamtvermoegen",
   "savings.investments": "Investitionen",
   "savings.avgAnnualSavings": "Durchschn. jaehrl. Ersparnis",

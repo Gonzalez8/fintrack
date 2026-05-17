@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-05-17
+
+### Added
+
+- **Payroll totals in the year-history table (`/tax`).** The "Histórico por año" table now aggregates `Payroll` rows alongside dividends, interests and realized gains. Two new columns (`Nóm. bruto`, `Nóm. neto`) plus two distinct totals: **Inversiones** (the previous total — dividends_net + interests_net + realized_pnl) and **Total** (Inversiones + payroll_net). Gross-subject figure uses `COALESCE(base_irpf, gross)` — same convention as the Spanish Modo Renta tab. The existing `Total neto {year}` KPI keeps its investments-only meaning so backwards compatibility is preserved. Mobile cards updated to show payroll net + investments subtotal alongside the existing fields. i18n keys added in all 5 locales. (#78)
+- **"Ahorrado {year}" KPI in the annual savings tab.** The information already existed in the year-by-year table but was buried in the first row. A new highlighted KPI card now sits as the first of the row so the current calendar year's savings are visible at a glance. Falls back to the latest year on record when the current year hasn't started reporting yet (e.g. browsing on 01-Jan before the first snapshot). Grid pasa de 3 a 4 columnas en desktop, 2 en móvil. (#79)
+
 ## [2.7.0] - 2026-05-16
 
 ### Added

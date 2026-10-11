@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { api } from "@/lib/api-client";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, formatMonthYear } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { useChartTheme, SERIES } from "@/lib/chart-theme";
 import { useTranslations } from "@/i18n/use-translations";
@@ -37,15 +37,6 @@ interface ChartPoint {
   Efectivo: number;
   Inversiones: number;
   Total: number;
-}
-
-function formatHoverMonth(month: string): string {
-  const [y, m] = month.split("-").map(Number);
-  if (!y || !m) return month;
-  return new Date(y, m - 1, 1).toLocaleDateString("es-ES", {
-    month: "long",
-    year: "numeric",
-  });
 }
 
 function periodChange(first: number, last: number) {
@@ -142,7 +133,7 @@ export function PatrimonioEvolutionChart() {
               </span>
             </div>
             <div className="mt-1 h-4">
-              {hover && <p className="text-xs text-muted-foreground capitalize">{formatHoverMonth(hover.month)}</p>}
+              {hover && <p className="text-xs text-muted-foreground">{formatMonthYear(hover.month)}</p>}
             </div>
           </div>
 

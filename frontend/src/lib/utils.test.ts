@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatMoney, formatPct, formatQty, moneyColor } from "./utils";
+import { formatMoney, formatPct, formatQty, moneyColor, formatMonthYear, uiLocale } from "./utils";
 
 describe("formatMoney", () => {
   it("formats positive numbers", () => {
@@ -80,5 +80,39 @@ describe("moneyColor", () => {
 
   it("returns muted for null", () => {
     expect(moneyColor(null)).toBe("text-muted-foreground");
+  });
+});
+
+describe("uiLocale", () => {
+  it("reads the html lang attribute", () => {
+    document.documentElement.lang = "de";
+    expect(uiLocale()).toBe("de");
+  });
+
+  it("falls back to es when lang is empty", () => {
+    document.documentElement.lang = "";
+    expect(uiLocale()).toBe("es");
+  });
+});
+
+describe("formatMonthYear", () => {
+  it("capitalizes only the first letter", () => {
+    expect(formatMonthYear("2026-08", "es")).toBe("Agosto de 2026");
+  });
+
+  it("uses the given locale", () => {
+    expect(formatMonthYear("2026-08", "it")).toBe("Agosto 2026");
+    expect(formatMonthYear("2026-08", "de")).toBe("August 2026");
+    expect(formatMonthYear("2026-08", "en")).toBe("August 2026");
+    expect(formatMonthYear("2026-08", "fr")).toBe("Août 2026");
+  });
+
+  it("defaults to the UI locale", () => {
+    document.documentElement.lang = "en";
+    expect(formatMonthYear("2026-03")).toBe("March 2026");
+  });
+
+  it("returns the input when it is not a month key", () => {
+    expect(formatMonthYear("foo")).toBe("foo");
   });
 });

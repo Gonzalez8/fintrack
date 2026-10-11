@@ -62,3 +62,26 @@ export function moneyColor(value: string | number | null | undefined): string {
   if (num < 0) return "text-red-500";
   return "text-muted-foreground";
 }
+
+/**
+ * UI locale as set on <html lang> from the language cookie.
+ * Client-only; falls back to "es" during SSR.
+ */
+export function uiLocale(): string {
+  if (typeof document === "undefined") return "es";
+  return document.documentElement.lang || "es";
+}
+
+/**
+ * Format a "YYYY-MM" month key as "Month YYYY" in the UI locale,
+ * capitalizing only the first letter (e.g. es: "Agosto de 2026").
+ */
+export function formatMonthYear(month: string, locale = uiLocale()): string {
+  const [y, m] = month.split("-").map(Number);
+  if (!y || !m) return month;
+  const label = new Date(y, m - 1, 1).toLocaleDateString(locale, {
+    month: "long",
+    year: "numeric",
+  });
+  return label.charAt(0).toLocaleUpperCase(locale) + label.slice(1);
+}

@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { api } from "@/lib/api-client";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, formatMonthYear, uiLocale } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { useChartTheme } from "@/lib/chart-theme";
 import { useTranslations } from "@/i18n/use-translations";
@@ -63,9 +63,9 @@ function filterByRange(data: ChartPoint[], range: Range): ChartPoint[] {
 }
 
 function formatTooltipDate(dateStr: string): string {
-  if (dateStr.length === 7) return dateStr;
+  if (dateStr.length === 7) return formatMonthYear(dateStr);
   const d = new Date(dateStr);
-  return d.toLocaleDateString("es-ES", {
+  return d.toLocaleDateString(uiLocale(), {
     day: "2-digit",
     month: "long",
     year: "numeric",

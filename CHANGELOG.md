@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.1] - 2026-10-11
+
+### Fixed
+
+- **Hover date on the evolution charts is now localized and correctly capitalized.** The month shown under the net worth evolution header was hardcoded to Spanish ("agosto") in every UI language, and the CSS `capitalize` class uppercased every word ("Agosto De 2026"). It now follows the UI language (`<html lang>`) and only the first letter is capitalized — e.g. "Agosto de 2026", "August 2026", "Août 2026". The equity (RV) evolution chart's hover date gets the same locale fix. (#97)
+
+### Dependencies
+
+- Batch of pending Dependabot updates: `gunicorn` 26 (only drops the unused `eventlet` worker), `psycopg` >=3.3.4, `google-auth` >=2.53.0, `@tanstack/react-query` 5.104.2, `date-fns` 4.4.0, `tailwindcss` / `@tailwindcss/postcss` 4.3.3; dev/CI: `pytest-django`, `factory-boy`, `@types/node`, and GitHub Actions `checkout` / `setup-node` / `setup-python` v7. (#96)
+
 ## [2.9.0] - 2026-10-11
 
 ### Security

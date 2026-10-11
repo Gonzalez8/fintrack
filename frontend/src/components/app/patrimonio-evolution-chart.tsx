@@ -1,16 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { api } from "@/lib/api-client";
 import { formatMoney } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,10 +20,7 @@ const RANGES: { key: Range; label: string }[] = [
   { key: "MAX", label: "MAX" },
 ];
 
-function filterByRange(
-  data: PatrimonioPoint[],
-  range: Range,
-): PatrimonioPoint[] {
+function filterByRange(data: PatrimonioPoint[], range: Range): PatrimonioPoint[] {
   if (range === "MAX" || !data.length) return data;
   const now = new Date();
   const cutoff = new Date(now);
@@ -43,10 +32,34 @@ function filterByRange(
   return data.filter((p) => p.month >= cutoffKey);
 }
 
+interface ChartPoint {
+  month: string;
+  Efectivo: number;
+  Inversiones: number;
+  Total: number;
+}
+
+function formatHoverMonth(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  if (!y || !m) return month;
+  return new Date(y, m - 1, 1).toLocaleDateString("es-ES", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function periodChange(first: number, last: number) {
+  const abs = last - first;
+  const pct = first > 0 ? (abs / first) * 100 : 0;
+  return { abs, pct, positive: abs >= 0 };
+}
+
 export function PatrimonioEvolutionChart() {
   const ct = useChartTheme();
   const t = useTranslations();
   const [range, setRange] = useState<Range>("MAX");
+  const [hover, setHover] = useState<ChartPoint | null>(null);
+  const hoverRef = useRef<ChartPoint | null>(null);
 
   const { data: allData = [], isLoading } = useQuery({
     queryKey: ["patrimonio-evolution"],
@@ -54,7 +67,7 @@ export function PatrimonioEvolutionChart() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const chartData = useMemo(() => {
+  const chartData = useMemo<ChartPoint[]>(() => {
     return filterByRange(allData, range).map((p) => ({
       month: p.month,
       Efectivo: parseFloat(p.cash),
@@ -63,19 +76,36 @@ export function PatrimonioEvolutionChart() {
     }));
   }, [allData, range]);
 
+  // Recharts v3: use Tooltip content prop to capture the hovered point
+  const tooltipContent = useCallback(
+    (props: { active?: boolean; payload?: ReadonlyArray<{ payload?: ChartPoint }> }) => {
+      if (props.active && props.payload?.[0]?.payload) {
+        const p = props.payload[0].payload;
+        // Only update state if the hovered point changed (avoid re-render loop)
+        if (hoverRef.current?.month !== p.month) {
+          hoverRef.current = p;
+          // Schedule state update outside render
+          queueMicrotask(() => setHover(p));
+        }
+      }
+      return null; // no visible tooltip, the header shows the values
+    },
+    [],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    hoverRef.current = null;
+    setHover(null);
+  }, []);
+
   if (isLoading || allData.length === 0) return null;
 
+  // Display values: hovered point overrides the latest point
   const firstPoint = chartData[0];
-  const lastPoint = chartData[chartData.length - 1];
-  const evoCash = lastPoint?.Efectivo ?? 0;
-  const evoInvestments = lastPoint?.Inversiones ?? 0;
-  const evoTotal = lastPoint?.Total ?? 0;
-
-  function periodChange(first: number, last: number) {
-    const abs = last - first;
-    const pct = first > 0 ? (abs / first) * 100 : 0;
-    return { abs, pct, positive: abs >= 0 };
-  }
+  const displayPoint = hover ?? chartData[chartData.length - 1];
+  const evoCash = displayPoint?.Efectivo ?? 0;
+  const evoInvestments = displayPoint?.Inversiones ?? 0;
+  const evoTotal = displayPoint?.Total ?? 0;
 
   const totalChg = periodChange(firstPoint?.Total ?? 0, evoTotal);
   const cashChg = periodChange(firstPoint?.Efectivo ?? 0, evoCash);
@@ -88,42 +118,31 @@ export function PatrimonioEvolutionChart() {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
               {t("dashboard.patrimonioEvolution")}
             </p>
-            <p className="text-xl sm:text-3xl font-bold tabular-nums leading-none">
-              {formatMoney(evoTotal)}
-            </p>
+            <p className="text-xl sm:text-3xl font-bold tabular-nums leading-none">{formatMoney(evoTotal)}</p>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
-              {t("dashboard.investments")}: {formatMoney(evoInvestments)} ·{" "}
-              {t("dashboard.cash")}: {formatMoney(evoCash)}
+              {t("dashboard.investments")}: {formatMoney(evoInvestments)} · {t("dashboard.cash")}:{" "}
+              {formatMoney(evoCash)}
             </p>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs tabular-nums">
               <span className="text-muted-foreground">
                 Total&nbsp;
-                <span
-                  className={
-                    totalChg.positive ? "text-green-500" : "text-red-500"
-                  }
-                >
+                <span className={totalChg.positive ? "text-green-500" : "text-red-500"}>
                   {totalChg.positive ? "+" : ""}
-                  {formatMoney(totalChg.abs)}&nbsp; ({totalChg.positive
-                    ? "+"
-                    : ""}
+                  {formatMoney(totalChg.abs)}&nbsp; ({totalChg.positive ? "+" : ""}
                   {totalChg.pct.toFixed(2)}%)
                 </span>
               </span>
               <span className="text-muted-foreground">
                 {t("dashboard.cash")}&nbsp;
-                <span
-                  className={
-                    cashChg.positive ? "text-green-500" : "text-red-500"
-                  }
-                >
+                <span className={cashChg.positive ? "text-green-500" : "text-red-500"}>
                   {cashChg.positive ? "+" : ""}
-                  {formatMoney(cashChg.abs)}&nbsp; ({cashChg.positive
-                    ? "+"
-                    : ""}
+                  {formatMoney(cashChg.abs)}&nbsp; ({cashChg.positive ? "+" : ""}
                   {cashChg.pct.toFixed(2)}%)
                 </span>
               </span>
+            </div>
+            <div className="mt-1 h-4">
+              {hover && <p className="text-xs text-muted-foreground capitalize">{formatHoverMonth(hover.month)}</p>}
             </div>
           </div>
 
@@ -131,7 +150,11 @@ export function PatrimonioEvolutionChart() {
             {RANGES.map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setRange(key)}
+                onClick={() => {
+                  setRange(key);
+                  setHover(null);
+                  hoverRef.current = null;
+                }}
                 className={`px-2 py-1 sm:px-3 sm:py-1.5 font-mono text-[10px] tracking-wide rounded-md transition-all duration-150 ${
                   range === key
                     ? "bg-background shadow-sm text-primary border border-primary/20"
@@ -144,51 +167,44 @@ export function PatrimonioEvolutionChart() {
           </div>
         </div>
 
-        <ResponsiveContainer width="100%" height={200}>
-          <AreaChart
-            data={chartData}
-            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-          >
-            <XAxis
-              dataKey="month"
-              tick={ct.axisTick}
-              tickLine={false}
-              axisLine={false}
-              padding={{ left: 16, right: 16 }}
-            />
-            <YAxis hide />
-            <Tooltip
-              formatter={(v) => formatMoney(v as number)}
-              contentStyle={ct.tooltipStyle}
-              labelStyle={ct.tooltipLabelStyle}
-              itemStyle={ct.tooltipItemStyle}
-              cursor={ct.tooltipCursor}
-            />
-            <Legend
-              wrapperStyle={{
-                ...ct.legendStyle,
-                paddingLeft: "24px",
-                paddingBottom: "8px",
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="Efectivo"
-              stackId="1"
-              fill={SERIES.cash}
-              stroke={SERIES.cash}
-              fillOpacity={0.5}
-            />
-            <Area
-              type="monotone"
-              dataKey="Inversiones"
-              stackId="1"
-              fill={SERIES.investments}
-              stroke={SERIES.investments}
-              fillOpacity={0.5}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div onMouseLeave={handleMouseLeave}>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <XAxis
+                dataKey="month"
+                tick={ct.axisTick}
+                tickLine={false}
+                axisLine={false}
+                padding={{ left: 16, right: 16 }}
+              />
+              <YAxis hide />
+              <Tooltip cursor={ct.tooltipCursor} content={tooltipContent} />
+              <Legend
+                wrapperStyle={{
+                  ...ct.legendStyle,
+                  paddingLeft: "24px",
+                  paddingBottom: "8px",
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="Efectivo"
+                stackId="1"
+                fill={SERIES.cash}
+                stroke={SERIES.cash}
+                fillOpacity={0.5}
+              />
+              <Area
+                type="monotone"
+                dataKey="Inversiones"
+                stackId="1"
+                fill={SERIES.investments}
+                stroke={SERIES.investments}
+                fillOpacity={0.5}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

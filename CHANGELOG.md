@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-10-11
+
+### Security
+
+- **Next.js 16.2.3 → 16.3.8.** Fixes a critical middleware/proxy bypass in App Router applications via segment-prefetch routes, cache poisoning of middleware/proxy redirects, and a Server Components denial-of-service. Fintrack's auth gate runs in the Next.js middleware, so the bypass was directly relevant. `npm audit fix` also resolves transitive issues in `sharp` (libvips/libheif/librsvg), `postcss` and `proxy-addr`. Runtime audit goes from 2 critical + 19 high to 0 critical; the 8 remaining highs come from the `shadcn` CLI (glob/ts-morph tooling), which has no upstream fix and is never executed by the app (only its CSS is imported at build time). (#95)
+
+### Added
+
+- **Live header on the net worth evolution chart.** Hovering the dashboard's "Evolución del patrimonio" chart now updates the header with the hovered month — total, investments, cash and period changes (from the first month in range to the hovered one) — plus the month label, matching the equity evolution chart. The floating tooltip is replaced by this header readout; leaving the chart or changing range resets to the latest month. (#93)
+
 ## [2.8.0] - 2026-05-17
 
 ### Added

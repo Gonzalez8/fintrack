@@ -17,4 +17,4 @@ pytest-cov>=6,<8
 factory-boy>=3.3.3,<4
 ruff>=0.15.12,<1
 mypy>=1.13,<2
-django-stubs>=5,<7
+django-stubs>=6.1.2,<7

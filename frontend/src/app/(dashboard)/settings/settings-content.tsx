@@ -6,6 +6,7 @@ import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AiAccessCard } from "@/components/app/ai-access-card";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -623,6 +624,8 @@ export function SettingsContent() {
           )}
         </CardContent>
       </Card>
+
+      <AiAccessCard />
     </div>
   );
 }

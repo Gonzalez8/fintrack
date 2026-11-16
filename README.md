@@ -315,6 +315,8 @@ ALLOWED_HOSTS=your-domain.com,192.168.1.10
 docker compose -f docker-compose.prod.yml up -d
 ```
 
+*Behind a reverse proxy* (Nginx Proxy Manager, Traefik, Caddy…): the web host points to the frontend, so give the backend its own host, e.g. `fintrack-api.example.com` → backend port `8001`, add that name to `ALLOWED_HOSTS` and use `https://fintrack-api.example.com` as `FINTRACK_URL`. Use a **one-level** subdomain if your certificate is a wildcard — `*.example.com` covers `fintrack-api.example.com` but not `api.fintrack.example.com`.
+
 **3. Install [uv](https://docs.astral.sh/uv/)** (it downloads and runs the MCP for you):
 
 ```bash
@@ -402,6 +404,7 @@ The assistant uses Fintrack's own engine (FIFO/LIFO/WAC, splits, tax rules), so 
 | *This API token is read-only* | Create a read-and-write token if you want the assistant to add records |
 | `uvx: command not found` | Install uv (step 3) and restart Claude |
 | Claude Desktop: *spawn uvx ENOENT* / server fails to start | Use the full path from `which uvx` as `command` in `claude_desktop_config.json` |
+| *SSL: no alternative certificate subject name matches* | The certificate doesn't cover that host — with a wildcard, use a one-level subdomain (see step 2) |
 
 The full list of tools and how to develop the server are in [`mcp/README.md`](mcp/README.md); design rationale in [ADR-010](docs/adr/010-mcp-server-and-api-tokens.md).
 

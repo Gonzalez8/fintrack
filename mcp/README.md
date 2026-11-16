@@ -86,6 +86,15 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_get_tax_declaration` | read | Tax-declaration helper for your fiscal country |
 | `fintrack_list_pending_reviews` | read | Dividend drafts and detected splits waiting for you |
 | `fintrack_check_dividend_shares` | read | Dividends whose share count doesn't match your operations (missing operations) |
+| `fintrack_get_settings` | read | Base currency, cost methods, fiscal country |
+| `fintrack_list_payrolls` | read | Payslips (filters: year, month, type MONTHLY/BONUS/ATRASOS/OTHER) |
+| `fintrack_get_payroll_summary` | read | Income per year: gross, net, social security, effective IRPF, bonus and bonus % of fixed salary |
+| `fintrack_get_monthly_savings` | read | Savings per month: cash change + money invested = real savings |
+| `fintrack_get_annual_savings` | read | Savings per year |
+| `fintrack_get_investment_flows` | read | Money invested per month, asset or asset type (e.g. "how much in the S&P 500") |
+| `fintrack_list_account_snapshots` | read | Balance history of an account |
+| `fintrack_list_savings_goals` | read | Savings goals with projections |
+| `fintrack_list_properties` | read | Real estate and mortgages |
 | `fintrack_create_transaction` | write | Record a buy, sell or gift |
 | `fintrack_create_dividend` | write | Record a dividend |
 | `fintrack_create_interest` | write | Record interest income |
@@ -94,7 +103,32 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_dismiss_dividend_draft` | write | Dismiss a draft |
 | `fintrack_apply_split` | write | Apply a detected stock split |
 
+### Prompts
+
+Ready-made analyses (slash commands in Claude Code, e.g. `/mcp__fintrack__fintrack_monthly_review`; prompt menu in Claude Desktop):
+
+| Prompt | What it does |
+|---|---|
+| `fintrack_monthly_review` | Savings, investments, income and pending items of a month |
+| `fintrack_payroll_review` | Salary, bonus, IRPF and year-over-year change |
+| `fintrack_portfolio_analysis` | Portfolio and per-investment review; asks for your profile first |
+
 Assets can be referenced by ticker, name or id; accounts by name or id. Write tools are marked as such so your client asks for confirmation before running them.
+
+## Advisor skill (optional)
+
+`skills/fintrack-advisor/` is a [skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches the assistant how to answer financial questions with these tools: which tool fits each question, how to identify index funds, the definitions Fintrack uses, and a portfolio-review method (concentration, overlap, costs, currency, emergency fund, savings rate, bonus dependence, Spanish tax, mortgage vs investing). **Before giving opinions or recommendations it asks for your investor profile** (horizon, risk tolerance, goals, emergency fund, income stability, preferences) and never stores it.
+
+Each GitHub release attaches it as `fintrack-advisor.zip`.
+
+- **Claude Code** (personal skills):
+  ```bash
+  curl -L -o /tmp/fintrack-advisor.zip https://github.com/Gonzalez8/fintrack/releases/download/vX.Y.Z/fintrack-advisor.zip
+  mkdir -p ~/.claude/skills && unzip -o /tmp/fintrack-advisor.zip -d ~/.claude/skills/
+  ```
+- **Claude Desktop / claude.ai**: upload `fintrack-advisor.zip` in the *Skills* section of Settings.
+
+Without the skill everything still works; the `fintrack_portfolio_analysis` prompt covers the basics.
 
 ## Privacy
 

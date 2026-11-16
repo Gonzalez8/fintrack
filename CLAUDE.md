@@ -120,7 +120,8 @@ Design in [ADR-010](docs/adr/010-mcp-server-and-api-tokens.md).
 
 - **Personal access tokens** (`core.ApiToken`): created/revoked in Settings → AI access (`/api/auth/api-tokens/`, session only). Only the SHA-256 of the key is stored; the key (`ft_…`) is shown once. Scopes `READ` / `WRITE`.
 - **`ApiTokenAuthentication`** (first in `DEFAULT_AUTHENTICATION_CLASSES`, before the cookie JWT) enforces every rule itself because several views override `permission_classes`: tokens can never reach `/api/auth/` or `/api/backup/import/`, never `DELETE`, and READ tokens only use safe methods.
-- **`mcp/`** (`fintrack_mcp`, MCP Python SDK 2.x `MCPServer`, stdio): thin client of the REST API — 12 read tools + 7 write tools prefixed `fintrack_`, assets/accounts referenced by ticker or name. Runs on the user's computer (`uvx --from "git+…@vX.Y.Z#subdirectory=mcp" fintrack-mcp`, pinned to the release tag — Settings fills it from `NEXT_PUBLIC_APP_VERSION`, read from `frontend/package.json` in `next.config.ts`) with `FINTRACK_URL` (backend, port 8001 in prod; must be in `ALLOWED_HOSTS`) and `FINTRACK_TOKEN`. Tests use the in-process MCP `Client` against a `respx`-mocked API; CI job `mcp`.
+- **`mcp/`** (`fintrack_mcp`, MCP Python SDK 2.x `MCPServer`, stdio): thin client of the REST API — 21 read tools + 7 write tools prefixed `fintrack_` (incl. payroll summary, monthly/annual savings, investment flows, account snapshots, savings goals, properties; pure aggregations in `fintrack_mcp/insights.py`), 3 MCP prompts (monthly review, payroll review, portfolio analysis), assets/accounts referenced by ticker or name. Runs on the user's computer (`uvx --from "git+…@vX.Y.Z#subdirectory=mcp" fintrack-mcp`, pinned to the release tag — Settings fills it from `NEXT_PUBLIC_APP_VERSION`, read from `frontend/package.json` in `next.config.ts`) with `FINTRACK_URL` (backend, port 8001 in prod; must be in `ALLOWED_HOSTS`) and `FINTRACK_TOKEN`. Tests use the in-process MCP `Client` against a `respx`-mocked API; CI job `mcp`.
+- **`mcp/skills/fintrack-advisor/`**: Claude skill with the question→tool map, Fintrack definitions and a portfolio-review checklist; asks for the investor profile before recommending. Attached to each GitHub release as `fintrack-advisor.zip` (see `fintrack-release`). When MCP tools change, update the skill's tool table too.
 
 ## Change Propagation Checklist
 
@@ -128,7 +129,7 @@ A change is not done until everything that depends on it is updated **in the sam
 
 | If you change… | Also update |
 |---|---|
-| An API endpoint (new, renamed, new params or fields, response shape) | **MCP**: tools in `mcp/fintrack_mcp/server.py`, tests in `mcp/tests/`, tool table in `mcp/README.md`. Frontend `types/index.ts`. README → *API* section |
+| An API endpoint (new, renamed, new params or fields, response shape) | **MCP**: tools in `mcp/fintrack_mcp/server.py`, tests in `mcp/tests/`, tool table in `mcp/README.md` and in the advisor skill (`mcp/skills/fintrack-advisor/SKILL.md`). Frontend `types/index.ts`. README → *API* section |
 | A filter / query parameter | Frontend callers and MCP tools must use the **exact** `FilterSet` names — django-filter silently ignores unknown parameters (that is how the date/account filters of Operations broke) |
 | A list endpoint or its consumers | Send `page_size` equal to the paginator's size; pickers and summaries that need every row use `page_size=1000` (max). `StandardPagination` honours it |
 | A model holding user data | `owner` FK + `OwnedByUserMixin`, admin, backup export/import in `apps/importer` + round-trip test |

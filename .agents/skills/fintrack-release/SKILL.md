@@ -476,6 +476,16 @@ EOF
 )"
 ```
 
+### 5.5b Attach the advisor skill
+
+Every release attaches the MCP advisor skill so users can install the version
+matching their Fintrack:
+
+```bash
+(cd mcp/skills && zip -qr /tmp/fintrack-advisor.zip fintrack-advisor)
+gh release upload vX.Y.Z /tmp/fintrack-advisor.zip --clobber
+```
+
 ### 5.6 Post-Release Verification
 
 ```bash

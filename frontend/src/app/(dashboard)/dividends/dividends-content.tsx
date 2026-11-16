@@ -16,6 +16,7 @@ import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
 import { SwipeCard } from "@/components/app/swipe-card";
 import { DetailDrawer } from "@/components/app/detail-drawer";
+import { AssetCombobox } from "@/components/app/asset-combobox";
 import { Plus, Search, Pencil, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney } from "@/lib/utils";
@@ -50,7 +51,10 @@ export function DividendsContent() {
   }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dividends", page, debouncedSearch, yearFilter],
+    // Key on the URL "search" param the request uses, not the debounced input:
+    // otherwise the query runs with the stale URL value and caches it as the new
+    // text's result, so a search only applied after typing another key.
+    queryKey: ["dividends", page, search, yearFilter],
     queryFn: () => {
       const p = new URLSearchParams();
       p.set("page", String(page));
@@ -383,14 +387,6 @@ function DividendDialog({
 
   const assetList = Array.isArray(assets) ? assets : (assets as PaginatedResponse<Asset> | undefined)?.results ?? [];
 
-  // Compute display label (Base UI Portal unmounts items when closed, losing label resolution)
-  const selectedAssetLabel = (() => {
-    if (!form.asset) return "";
-    const asset = assetList.find((a) => a.id === form.asset);
-    if (!asset) return "";
-    return `${asset.name}${asset.ticker ? ` (${asset.ticker})` : ""}`;
-  })();
-
   // Computed preview values
   const gross = parseFloat(form.gross) || 0;
   const shares = parseFloat(form.shares as string) || 0;
@@ -413,20 +409,13 @@ function DividendDialog({
           {/* Activo */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">{t("common.asset")}</label>
-            <Select value={form.asset} onValueChange={(v) => v && handleAssetChange(v)}>
-              <SelectTrigger className="w-full">
-                <span className="flex flex-1 text-left truncate" data-slot="select-value">
-                  {selectedAssetLabel || <span className="text-muted-foreground">{t("common.select")}</span>}
-                </span>
-              </SelectTrigger>
-              <SelectContent className="z-[200]">
-                {assetList.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.name}{a.ticker ? ` (${a.ticker})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <AssetCombobox
+              options={assetList.map((a) => ({ id: a.id, name: a.name, ticker: a.ticker }))}
+              value={form.asset}
+              onChange={handleAssetChange}
+              placeholder={t("transactions.searchAsset")}
+              emptyText={t("transactions.noAssetMatch")}
+            />
           </div>
 
           {/* Numero de acciones */}

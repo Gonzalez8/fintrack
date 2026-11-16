@@ -205,3 +205,11 @@ def test_main_requires_configuration(monkeypatch, capsys):
     with pytest.raises(SystemExit) as exc:
         main()
     assert exc.value.code == 1 and "FINTRACK_TOKEN" in capsys.readouterr().err
+
+
+async def test_disallowed_host_points_to_allowed_hosts(api):
+    api.get("/portfolio/").mock(
+        return_value=httpx.Response(400, text="<h1>Bad Request (400)</h1>", headers={"content-type": "text/html"})
+    )
+    message = error_text(await call("fintrack_get_portfolio"))
+    assert "ALLOWED_HOSTS" in message and "fintrack.test" in message

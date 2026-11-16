@@ -50,6 +50,13 @@ class FintrackClient:
             raise FintrackError(f"Not allowed: {_detail(response)}")
         if response.status_code == 404:
             raise FintrackError(f"Not found: {_detail(response)}")
+        if response.status_code == 400 and "json" not in response.headers.get("content-type", ""):
+            # Django answers a host missing from ALLOWED_HOSTS with a plain 400 page before reaching the API
+            host = httpx.URL(self.base_url).host
+            raise FintrackError(
+                f"Fintrack refused the request for host '{host}'. Add it to ALLOWED_HOSTS in the server's .env "
+                "and restart the backend."
+            )
         if response.status_code == 400:
             raise FintrackError(f"Fintrack rejected the data: {_detail(response)}")
         if response.status_code >= 400:

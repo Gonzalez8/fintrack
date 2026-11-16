@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-11-16
+
+### Added
+
+- **Stock split support with automatic detection.** Splits used to be invisible to Fintrack: after a split, Yahoo returned the post-split price while the app kept the pre-split quantity, so the position showed a large fake loss (e.g. CrowdStrike 4:1 on 2026-07-02 valued as 1 × $226 instead of 4 × $226). Splits (and reverse splits such as 1:10) are now first-class events per asset: the FIFO/LIFO/WAC engine applies them in chronological order, so the shares held at the split date are multiplied and their unit cost divided — total cost unchanged, no gain realized — while trades before the split keep their original figures and trades after it are taken as already post-split. Sales after a split compute their gain against the adjusted cost. (#107)
+- **Auto-detection from Yahoo Finance.** A daily task (plus a "Search Yahoo" button) looks up the splits of your Yahoo-priced assets and suggests only those that happened after your first purchase and while you held shares, including assets with several splits in a row. Suggestions show up in a banner on the dashboard and portfolio to **Apply** or **Dismiss**; dismissed ones are never suggested again. The asset detail page has a new "Splits" section with the split history, manual add/edit/delete and on-demand detection. Splits are included in JSON backup/restore. Translated into all 5 languages. (#107)
+
+### Migration notes
+
+- New `transactions.StockSplit` table (migration `0007_stocksplit`, additive only). It is applied automatically on container start. Existing data is untouched: no split affects your portfolio until you apply it.
+- If you previously corrected a split by hand (multiplying the quantity of a buy and dividing its price), dismiss that suggestion — or undo the manual edit and apply the split — so it is not counted twice.
+
 ## [2.9.1] - 2026-10-11
 
 ### Fixed

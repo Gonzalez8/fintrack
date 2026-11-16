@@ -55,7 +55,7 @@ claude mcp add fintrack \
 {
   "mcpServers": {
     "fintrack": {
-      "command": "uvx",
+      "command": "/opt/homebrew/bin/uvx",
       "args": ["--from", "git+https://github.com/Gonzalez8/fintrack@vX.Y.Z#subdirectory=mcp", "fintrack-mcp"],
       "env": {
         "FINTRACK_URL": "http://192.168.1.10:8001",
@@ -65,6 +65,8 @@ claude mcp add fintrack \
   }
 }
 ```
+
+Claude Desktop doesn't inherit your terminal's `PATH`, hence the full path to `uvx` (Homebrew on Apple Silicon; use the output of `which uvx` otherwise). Claude Code runs from your terminal and can use plain `uvx`.
 
 Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches your backend's API. The Settings page shows both snippets with your version and token filled in. To update the MCP after upgrading Fintrack (only needed when the release notes mention MCP changes), use the new tag: in Claude Code `claude mcp remove fintrack` and add it again; in Claude Desktop edit the version and restart.
 

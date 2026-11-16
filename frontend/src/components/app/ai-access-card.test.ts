@@ -26,7 +26,7 @@ describe("MCP connection snippets", () => {
   it("builds a valid Claude Desktop config", () => {
     const config = JSON.parse(claudeDesktopConfig(URL, KEY));
     expect(config.mcpServers.fintrack).toEqual({
-      command: "uvx",
+      command: "/opt/homebrew/bin/uvx",
       args: ["--from", mcpPackage(), "fintrack-mcp"],
       env: { FINTRACK_URL: URL, FINTRACK_TOKEN: KEY },
     });

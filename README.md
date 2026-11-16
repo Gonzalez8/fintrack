@@ -338,13 +338,15 @@ claude mcp add fintrack \
 {
   "mcpServers": {
     "fintrack": {
-      "command": "uvx",
+      "command": "/opt/homebrew/bin/uvx",
       "args": ["--from", "git+https://github.com/Gonzalez8/fintrack@vX.Y.Z#subdirectory=mcp", "fintrack-mcp"],
       "env": { "FINTRACK_URL": "http://192.168.1.10:8001", "FINTRACK_TOKEN": "ft_your_token" }
     }
   }
 }
 ```
+
+Claude Desktop doesn't inherit your terminal's `PATH`, so the config uses the **full path** to `uvx` (`/opt/homebrew/bin/uvx` for Homebrew on Apple Silicon; run `which uvx` if you installed it differently).
 
 Replace `vX.Y.Z` with **your Fintrack version** (e.g. `v2.14.0`): the MCP is pinned to the same release as your backend so its tools always match your API. The Settings page fills in the exact version for you.
 
@@ -379,6 +381,7 @@ The assistant uses Fintrack's own engine (FIFO/LIFO/WAC, splits, tax rules), so 
 | *The Fintrack token was rejected* | The token was revoked or mistyped — create a new one in Settings |
 | *This API token is read-only* | Create a read-and-write token if you want the assistant to add records |
 | `uvx: command not found` | Install uv (step 3) and restart Claude |
+| Claude Desktop: *spawn uvx ENOENT* / server fails to start | Use the full path from `which uvx` as `command` in `claude_desktop_config.json` |
 
 The full list of tools and how to develop the server are in [`mcp/README.md`](mcp/README.md); design rationale in [ADR-010](docs/adr/010-mcp-server-and-api-tokens.md).
 

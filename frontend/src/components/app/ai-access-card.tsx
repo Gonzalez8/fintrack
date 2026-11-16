@@ -36,11 +36,17 @@ export function claudeCodeCommand(url: string, key: string): string {
   ].join("\n");
 }
 
+/**
+ * Claude Desktop is a GUI app and doesn't inherit the shell PATH, so a bare "uvx"
+ * fails with "spawn uvx ENOENT": use Homebrew's absolute path (Apple Silicon).
+ */
+export const DESKTOP_UVX_PATH = "/opt/homebrew/bin/uvx";
+
 export function claudeDesktopConfig(url: string, key: string): string {
   const config = {
     mcpServers: {
       fintrack: {
-        command: "uvx",
+        command: DESKTOP_UVX_PATH,
         args: ["--from", mcpPackage(), "fintrack-mcp"],
         env: { FINTRACK_URL: url, FINTRACK_TOKEN: key },
       },
@@ -169,6 +175,7 @@ export function AiAccessCard() {
               label="Claude Desktop (claude_desktop_config.json)"
               text={claudeDesktopConfig(backendUrl, created.key)}
             />
+            <p className="text-xs text-muted-foreground">{t("aiAccess.desktopPathHelp")}</p>
             <p className="text-xs text-muted-foreground">{t("aiAccess.uvHelp")}</p>
             <Button size="sm" variant="outline" onClick={() => setCreated(null)}>
               {t("aiAccess.done")}

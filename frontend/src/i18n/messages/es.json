@@ -1002,6 +1002,7 @@
   "aiAccess.backendUrl": "URL del backend",
   "aiAccess.backendUrlHelp": "Dirección con la que tu ordenador llega al backend de Fintrack (puerto 8001 por defecto). Debe estar en ALLOWED_HOSTS del servidor.",
   "aiAccess.uvHelp": "Necesitas uv instalado (brew install uv). Después de añadir la configuración, reinicia Claude Desktop o abre una sesión nueva de Claude Code.",
+  "aiAccess.desktopPathHelp": "Claude Desktop no ve el PATH de tu terminal, por eso usa la ruta completa de uvx. Si no instalaste uv con Homebrew en un Mac con Apple Silicon, cámbiala por la que te dé «which uvx».",
   "aiAccess.done": "Hecho",
   "aiAccess.name": "Nombre",
   "aiAccess.scope": "Permisos",

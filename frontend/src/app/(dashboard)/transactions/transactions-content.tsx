@@ -26,6 +26,7 @@ import { useTranslations } from "@/i18n/use-translations";
 import type { Transaction, TransactionFormData, Asset, Account, PaginatedResponse, PortfolioData, StockSplit } from "@/types";
 import { formatSplitRatio, interleaveSplits, splitAdjustedQuantity, type SplitRow } from "@/lib/splits";
 import { useDebounce } from "@/hooks/use-debounce";
+import { buildTransactionsQuery } from "@/lib/transactions-query";
 
 const PAGE_SIZE = 25;
 
@@ -59,14 +60,15 @@ export function TransactionsContent() {
   const { data, isLoading } = useQuery({
     queryKey: ["transactions", page, debouncedSearch, typeFilter, dateFrom, dateTo, accountFilter],
     queryFn: () => {
-      const p = new URLSearchParams();
-      p.set("page", String(page));
-      if (search) p.set("search", search);
-      if (typeFilter) p.set("type", typeFilter);
-      if (dateFrom) p.set("date_after", dateFrom);
-      if (dateTo) p.set("date_before", dateTo);
-      if (accountFilter) p.set("account", accountFilter);
-      return api.get<PaginatedResponse<Transaction>>(`/transactions/?${p}`);
+      const query = buildTransactionsQuery({
+        page,
+        search,
+        type: typeFilter,
+        dateFrom,
+        dateTo,
+        accountId: accountFilter,
+      });
+      return api.get<PaginatedResponse<Transaction>>(`/transactions/?${query}`);
     },
   });
 

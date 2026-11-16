@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-11-16
+
+### Added
+
+- **Splits are now visible wherever quantities appear.** After v2.10.0 quantities were right but unexplained: the operations list showed buys of 28 and 7 while the portfolio showed 119 shares. (#108)
+  - **Position history** on the asset detail page: trades and splits in chronological order with the shares held after each step (e.g. +28 → 28, split 4:1 → 112, +7 → 119), so the current quantity can be reconciled with the broker. Pending splits are listed as "not applied".
+  - **Operations list**: applied splits appear as rows on their date, linking to the position history, and trades before a split show what they represent today ("28 → 112 hoy"). Your recorded trades are never modified.
+  - **Portfolio**: positions affected by a split carry a "Split" badge; the position dialog shows which split it includes and links to the history.
+
+### Fixed
+
+- **Date and account filters in the operations list had no effect.** The page sent `date_after` / `date_before` / `account` while the API expects `from_date` / `to_date` / `account_id`, so every transaction was always listed. (#109)
+
 ## [2.10.0] - 2026-11-16
 
 ### Added

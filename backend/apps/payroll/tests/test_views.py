@@ -184,6 +184,23 @@ class TestPayrollCRUD:
         results = res.data.get("results", res.data)
         assert len(results) == 1
 
+    def test_filter_by_payroll_type(self, client, user, employer):
+        for month, payroll_type in ((6, "MONTHLY"), (7, "BONUS")):
+            Payroll.objects.create(
+                owner=user,
+                employer=employer,
+                period_start=datetime.date(2026, month, 1),
+                period_end=datetime.date(2026, month, 28),
+                payroll_type=payroll_type,
+                gross=Decimal("4000"),
+                ss_employee=Decimal("250"),
+                irpf_withholding=Decimal("900"),
+                net=Decimal("2850"),
+            )
+        res = client.get("/api/payrolls/?payroll_type=BONUS")
+        results = res.data.get("results", res.data)
+        assert [r["payroll_type"] for r in results] == ["BONUS"]
+
     def test_filter_by_employer(self, client, user, employer):
         other_employer = Employer.objects.create(owner=user, name="Other Inc")
         Payroll.objects.create(

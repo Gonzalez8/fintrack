@@ -15,6 +15,7 @@ class PayrollFilter(django_filters.FilterSet):
     year = django_filters.NumberFilter(field_name="period_end", lookup_expr="year")
     month = django_filters.NumberFilter(field_name="period_end", lookup_expr="month")
     employer_id = django_filters.UUIDFilter(field_name="employer_id")
+    payroll_type = django_filters.CharFilter(field_name="payroll_type")
 
     class Meta:
         model = Payroll

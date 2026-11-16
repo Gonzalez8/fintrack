@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] - 2026-11-16
+
+### Added
+
+- **AI access through MCP.** A local [MCP](https://modelcontextprotocol.io) server (`mcp/`) lets Claude Desktop or Claude Code work with your Fintrack: review your portfolio and position history, explain figures, check dividends against your operations, prepare tax data and — with a write-enabled token — record operations, dividends and interests or review dividend drafts and splits. It runs on your computer and talks to your Fintrack over your own network; nothing is exposed to the internet. 12 read tools and 7 write tools; no tool can delete anything. (#115)
+- **Personal access tokens.** Settings → *AI access (MCP)* creates read-only or read-and-write tokens, shows their last use and revokes them. The key is shown once (only a hash is stored) together with ready-to-copy configuration for Claude Code and Claude Desktop, pinned to this release. Tokens can never delete data, reach your profile, password or token settings, or restore backups. (#115)
+
+### Documentation
+
+- README: step-by-step guide to set up and use the MCP (with example questions, permissions and troubleshooting), new features from the last releases and the complete API list. New ADR-009 (splits and dividend drafts) and ADR-010 (MCP and tokens); development protocol updated so API changes keep the MCP in sync. (#115)
+
+### Migration notes
+
+- New `core.ApiToken` table (migration `core/0001_apitoken`, additive only), applied automatically on container start.
+- **To use the MCP:** add the address your computer uses to reach the server to `ALLOWED_HOSTS` in `.env` (the MCP calls the backend directly, port `8001`), install [uv](https://docs.astral.sh/uv/) on your computer (`brew install uv`) and copy the configuration from Settings → *AI access (MCP)*. Full guide: README → *AI Access (MCP)*.
+
 ## [2.13.0] - 2026-11-16
 
 ### Added

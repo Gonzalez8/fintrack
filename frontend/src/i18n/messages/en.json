@@ -943,5 +943,23 @@
   "splits.saved": "Split saved",
   "splits.saveError": "Could not save the split.",
   "splits.duplicateError": "A split for this asset on that date already exists.",
-  "splits.confirmDelete": "Delete this split? Quantities and costs will be recalculated without it."
+  "splits.confirmDelete": "Delete this split? Quantities and costs will be recalculated without it.",
+  "splits.badge": "Split",
+  "splits.splitOn": "{ratio} split on {date}",
+  "splits.includes": "Includes {detail}",
+  "splits.viewHistory": "View position history",
+  "splits.notApplied": "not applied",
+  "splits.adjustedQty": "→ {qty} today, after split",
+  "splits.adjustedQtyShort": "→ {qty} today",
+  "splits.adjustedHint": "Quantity recorded in the trade. The arrow shows the shares it represents today after later splits.",
+  "splits.sharesToday": "Shares today (after splits)",
+  "splits.rowHint": "Multiplies earlier shares",
+
+  "positionHistory.title": "Position history",
+  "positionHistory.help": "Your trades in this asset with the shares you held after each one.",
+  "positionHistory.helpWithSplits": "Your trades and the splits of this asset, with the shares you held after each step, so you can reconcile the current quantity with your broker.",
+  "positionHistory.currentShares": "Current shares",
+  "positionHistory.event": "Event",
+  "positionHistory.change": "Change",
+  "positionHistory.sharesAfter": "Shares after"
 }

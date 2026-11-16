@@ -943,5 +943,23 @@
   "splits.saved": "Division enregistrée",
   "splits.saveError": "Impossible d'enregistrer la division.",
   "splits.duplicateError": "Une division existe déjà pour cet actif à cette date.",
-  "splits.confirmDelete": "Supprimer cette division ? Les quantités et les coûts seront recalculés sans elle."
+  "splits.confirmDelete": "Supprimer cette division ? Les quantités et les coûts seront recalculés sans elle.",
+  "splits.badge": "Division",
+  "splits.splitOn": "division {ratio} du {date}",
+  "splits.includes": "Inclut {detail}",
+  "splits.viewHistory": "Voir l'historique de la position",
+  "splits.notApplied": "non appliquée",
+  "splits.adjustedQty": "→ {qty} aujourd'hui, après division",
+  "splits.adjustedQtyShort": "→ {qty} aujourd'hui",
+  "splits.adjustedHint": "Quantité saisie dans l'opération. La flèche indique le nombre d'actions qu'elle représente aujourd'hui après les divisions ultérieures.",
+  "splits.sharesToday": "Actions aujourd'hui (après divisions)",
+  "splits.rowHint": "Multiplie les actions antérieures",
+
+  "positionHistory.title": "Historique de la position",
+  "positionHistory.help": "Vos opérations sur cet actif avec les actions détenues après chacune.",
+  "positionHistory.helpWithSplits": "Vos opérations et les divisions de cet actif, avec les actions détenues après chaque étape, pour rapprocher la quantité actuelle de celle de votre courtier.",
+  "positionHistory.currentShares": "Actions actuelles",
+  "positionHistory.event": "Événement",
+  "positionHistory.change": "Variation",
+  "positionHistory.sharesAfter": "Actions après"
 }

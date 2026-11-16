@@ -71,3 +71,10 @@ export const TRANSACTION_TYPE_KEYS: Record<string, string> = {
   SELL: "label.txType.SELL",
   GIFT: "label.txType.GIFT",
 };
+
+export const TX_TYPE_BADGE_COLORS: Record<string, string> = {
+  BUY: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  SELL: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  GIFT: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  SPLIT: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+};

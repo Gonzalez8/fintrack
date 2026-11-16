@@ -125,6 +125,8 @@ export interface Transaction {
   tax: string;
   notes: string;
   import_hash: string | null;
+  /** Product of applied splits after this trade: shares today = quantity × split_factor. */
+  split_factor?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -216,6 +218,14 @@ export interface Position {
   unrealized_pnl: string;
   unrealized_pnl_pct: string;
   weight: string;
+  /** Applied splits of this asset, oldest first. */
+  splits?: PositionSplit[];
+}
+
+export interface PositionSplit {
+  date: string;
+  ratio_from: string;
+  ratio_to: string;
 }
 
 export interface RealizedSale {
@@ -345,6 +355,31 @@ export interface StockSplit {
   source: "MANUAL" | "AUTO";
   created_at: string;
   updated_at: string;
+}
+
+export type PositionHistoryEvent =
+  | {
+      kind: TransactionType;
+      id: string;
+      date: string;
+      account_name: string;
+      quantity: string;
+      price: string | null;
+      quantity_after: string;
+    }
+  | {
+      kind: "SPLIT";
+      id: string;
+      date: string;
+      status: StockSplitStatus;
+      ratio_from: string;
+      ratio_to: string;
+      quantity_after: string;
+    };
+
+export interface PositionHistory {
+  quantity: string;
+  events: PositionHistoryEvent[];
 }
 
 // ── Pagination ───────────────────────────────────────────────────

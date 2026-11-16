@@ -57,6 +57,9 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
   }
 
   // Pattern matching for parameterized routes
+  if (/^\/api\/assets\/[^/]+\/position-history/.test(cleanPath)) {
+    return { quantity: "0", events: [] } as T;
+  }
   if (/^\/api\/assets\/[^/]+\/price-history/.test(cleanPath)) {
     const id = cleanPath.split("/")[3];
     return data.getDemoPriceHistory(id) as T;

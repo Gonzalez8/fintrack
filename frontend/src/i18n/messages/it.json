@@ -943,5 +943,23 @@
   "splits.saved": "Frazionamento salvato",
   "splits.saveError": "Impossibile salvare il frazionamento.",
   "splits.duplicateError": "Esiste già un frazionamento per questo titolo in quella data.",
-  "splits.confirmDelete": "Eliminare questo frazionamento? Quantità e costi verranno ricalcolati senza di esso."
+  "splits.confirmDelete": "Eliminare questo frazionamento? Quantità e costi verranno ricalcolati senza di esso.",
+  "splits.badge": "Frazionamento",
+  "splits.splitOn": "frazionamento {ratio} del {date}",
+  "splits.includes": "Include {detail}",
+  "splits.viewHistory": "Vedi lo storico della posizione",
+  "splits.notApplied": "non applicato",
+  "splits.adjustedQty": "→ {qty} oggi, dopo il frazionamento",
+  "splits.adjustedQtyShort": "→ {qty} oggi",
+  "splits.adjustedHint": "Quantità registrata nell'operazione. La freccia indica le azioni che rappresenta oggi dopo i frazionamenti successivi.",
+  "splits.sharesToday": "Azioni oggi (dopo i frazionamenti)",
+  "splits.rowHint": "Moltiplica le azioni precedenti",
+
+  "positionHistory.title": "Storico della posizione",
+  "positionHistory.help": "Le tue operazioni su questo titolo con le azioni detenute dopo ciascuna.",
+  "positionHistory.helpWithSplits": "Le tue operazioni e i frazionamenti di questo titolo, con le azioni detenute dopo ogni passo, per riconciliare la quantità attuale con il tuo broker.",
+  "positionHistory.currentShares": "Azioni attuali",
+  "positionHistory.event": "Evento",
+  "positionHistory.change": "Variazione",
+  "positionHistory.sharesAfter": "Azioni dopo"
 }

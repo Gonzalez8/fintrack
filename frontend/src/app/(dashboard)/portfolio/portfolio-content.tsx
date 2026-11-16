@@ -15,6 +15,9 @@ import {
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell, PctCell } from "@/components/app/money-cell";
 import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
+import { SplitBadge } from "@/components/app/split-badge";
+import Link from "next/link";
+import { describeSplit } from "@/lib/splits";
 import { RefreshCw } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -81,13 +84,14 @@ export function PortfolioContent() {
       key: "name",
       header: t("common.name"),
       render: (p) => (
-        <div>
+        <div className="flex items-center gap-2">
           <span className="font-medium">{p.asset_name}</span>
           {p.asset_ticker && (
-            <span className="ml-2 text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {p.asset_ticker}
             </span>
           )}
+          <SplitBadge splits={p.splits} />
         </div>
       ),
     },
@@ -273,10 +277,15 @@ export function PortfolioContent() {
                       <p className="font-semibold text-sm leading-tight truncate">
                         {p.asset_name}
                       </p>
-                      {p.asset_ticker && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {p.asset_ticker}
-                        </p>
+                      {(p.asset_ticker || (p.splits?.length ?? 0) > 0) && (
+                        <div className="mt-0.5 flex items-center gap-1.5">
+                          {p.asset_ticker && (
+                            <p className="text-xs text-muted-foreground">
+                              {p.asset_ticker}
+                            </p>
+                          )}
+                          <SplitBadge splits={p.splits} />
+                        </div>
                       )}
                     </div>
                     <Badge variant="secondary" className={`shrink-0 ${ASSET_TYPE_BADGE_COLORS[p.asset_type] ?? ""}`}>
@@ -372,6 +381,20 @@ export function PortfolioContent() {
                 </Badge>
               )}
             </DialogTitle>
+            {selectedPosition?.splits?.length ? (
+              <p className="text-xs text-muted-foreground">
+                {t("splits.includes", {
+                  detail: selectedPosition.splits.map((sp) => describeSplit(sp, t)).join(" · "),
+                })}{" "}
+                ·{" "}
+                <Link
+                  href={`/assets/${selectedPosition.asset_id}#position-history`}
+                  className="text-primary hover:underline"
+                >
+                  {t("splits.viewHistory")}
+                </Link>
+              </p>
+            ) : null}
           </DialogHeader>
           {selectedPosition && (
             <PriceChart assetId={selectedPosition.asset_id} ticker={selectedPosition.asset_ticker ?? null} />

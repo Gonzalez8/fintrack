@@ -73,7 +73,7 @@ frontend/         Next.js 16 App Router
 - **Assets:** Stock, ETF, Fund, Crypto with Yahoo Finance price sync
 - **Accounts:** Checking, savings, investment, deposits, alternatives with balance snapshots
 - **Transactions:** Buy/Sell/Gift with commission and tax tracking
-- **Stock splits:** `StockSplit` per asset (date + `ratio_to:ratio_from`, e.g. 4:1 or reverse 1:10). The FIFO/LIFO/WAC engine applies APPLIED splits chronologically (before same-day trades): open lots get `qty × factor` and `unit cost ÷ factor`, total cost unchanged, nothing realized. Auto-detection reads Yahoo Finance splits for AUTO-priced assets (daily Celery task + `POST /api/splits/detect/`) and creates PENDING suggestions only when the split is after the first purchase and shares were held; the user applies or dismisses them from the dashboard/portfolio banner or the asset detail card. Dismissed splits are never suggested again. Included in JSON backup/restore.
+- **Stock splits:** `StockSplit` per asset (date + `ratio_to:ratio_from`, e.g. 4:1 or reverse 1:10). The FIFO/LIFO/WAC engine applies APPLIED splits chronologically (before same-day trades): open lots get `qty × factor` and `unit cost ÷ factor`, total cost unchanged, nothing realized. Auto-detection reads Yahoo Finance splits for AUTO-priced assets (daily Celery task + `POST /api/splits/detect/`) and creates PENDING suggestions only when the split is after the first purchase and shares were held; the user applies or dismisses them from the dashboard/portfolio banner or the asset detail card. Dismissed splits are never suggested again. Included in JSON backup/restore. Design in [ADR-009](docs/adr/009-stock-splits-and-dividend-drafts.md).
 - **Split visibility:** `GET /api/assets/{id}/position-history/` replays trades + splits with the shares held after each step ("Historial de la posición" card, anchor `#position-history`). Transactions expose `split_factor` (product of later APPLIED splits) so the operations list shows "28 → 112 hoy" and interleaves applied splits as rows (`interleaveSplits()` in `lib/splits.ts`). Portfolio positions carry `splits` and show a "Split" badge.
 - **Dividends:** Per-asset tracking with withholding tax by country
 - **Dividend drafts:** `DividendSuggestion` (kept apart from `Dividend`, so drafts never reach reports/tax). Yahoo dividends (ex-date + split-adjusted amount) become PENDING drafts with shares held on the ex-date, estimated gross and withholding (from the asset's last 4 dividends). Rules: only ex-dates after the latest recorded dividend of the asset (assets without any look back 1 year; `backfill` per asset goes to the first purchase), skip events already covered by a recorded dividend (window `[ex − 7d, next ex)`, one-to-one) or suggested before, only if shares were held. Review opens the dividend dialog pre-filled; saving calls `POST /api/dividend-suggestions/{id}/accept/`, which creates the real `Dividend`. Daily Celery task + `POST …/detect/`; `dismiss`, `dismiss-all`.
@@ -116,9 +116,28 @@ frontend/         Next.js 16 App Router
 
 ## AI Access (MCP)
 
+Design in [ADR-010](docs/adr/010-mcp-server-and-api-tokens.md).
+
 - **Personal access tokens** (`core.ApiToken`): created/revoked in Settings → AI access (`/api/auth/api-tokens/`, session only). Only the SHA-256 of the key is stored; the key (`ft_…`) is shown once. Scopes `READ` / `WRITE`.
 - **`ApiTokenAuthentication`** (first in `DEFAULT_AUTHENTICATION_CLASSES`, before the cookie JWT) enforces every rule itself because several views override `permission_classes`: tokens can never reach `/api/auth/` or `/api/backup/import/`, never `DELETE`, and READ tokens only use safe methods.
-- **`mcp/`** (`fintrack_mcp`, MCP Python SDK 2.x `MCPServer`, stdio): thin client of the REST API — 12 read tools + 7 write tools prefixed `fintrack_`, assets/accounts referenced by ticker or name. Runs on the user's computer (`uvx --from "git+…#subdirectory=mcp" fintrack-mcp`) with `FINTRACK_URL` (backend, port 8001 in prod; must be in `ALLOWED_HOSTS`) and `FINTRACK_TOKEN`. Tests use the in-process MCP `Client` against a `respx`-mocked API; CI job `mcp`.
+- **`mcp/`** (`fintrack_mcp`, MCP Python SDK 2.x `MCPServer`, stdio): thin client of the REST API — 12 read tools + 7 write tools prefixed `fintrack_`, assets/accounts referenced by ticker or name. Runs on the user's computer (`uvx --from "git+…@vX.Y.Z#subdirectory=mcp" fintrack-mcp`, pinned to the release tag — Settings fills it from `NEXT_PUBLIC_APP_VERSION`, read from `frontend/package.json` in `next.config.ts`) with `FINTRACK_URL` (backend, port 8001 in prod; must be in `ALLOWED_HOSTS`) and `FINTRACK_TOKEN`. Tests use the in-process MCP `Client` against a `respx`-mocked API; CI job `mcp`.
+
+## Change Propagation Checklist
+
+A change is not done until everything that depends on it is updated **in the same PR**. Nothing is left "for later":
+
+| If you change… | Also update |
+|---|---|
+| An API endpoint (new, renamed, new params or fields, response shape) | **MCP**: tools in `mcp/fintrack_mcp/server.py`, tests in `mcp/tests/`, tool table in `mcp/README.md`. Frontend `types/index.ts`. README → *API* section |
+| A filter / query parameter | Frontend callers and MCP tools must use the **exact** `FilterSet` names — django-filter silently ignores unknown parameters (that is how the date/account filters of Operations broke) |
+| A list endpoint or its consumers | Send `page_size` equal to the paginator's size; pickers and summaries that need every row use `page_size=1000` (max). `StandardPagination` honours it |
+| A model holding user data | `owner` FK + `OwnedByUserMixin`, admin, backup export/import in `apps/importer` + round-trip test |
+| A frontend API call or route | Demo mode: MSW handler (`demo/handlers.ts`) **and** server demo route (`demo/server-data.ts`); generic matchers such as `/api/assets/{id}` answer deeper paths unless a specific route comes first |
+| UI text | All 5 locale files |
+| Quantities, lots or cost basis | Portfolio engine (lot, WAC and `compute_investment_cost_by_month`), `position_history`, dividend-draft share counts, MCP `fintrack_check_dividend_shares` |
+| Authentication or tokens | `ApiTokenAuthentication` rules + tests, `docs/SECURITY.md`, MCP error messages |
+| A user-visible feature | README → *Features* (and *AI Access* if the assistant can use it), feature notes in this file, an ADR in `docs/adr/` for design decisions |
+| A migration | Prefer additive changes; list it under "Migration notes" in the release CHANGELOG |
 
 ## Key Conventions
 
@@ -239,6 +258,7 @@ This project uses **Semantic Versioning** and **Conventional Commits**.
 2. **Never create tags without user confirmation.** Tags trigger Docker builds.
 3. **i18n keys in ALL 5 locales.** Missing translations break the UI.
 4. **PR review before merge.** Use `/pr-review` or manual review.
+5. **API and MCP stay in sync.** Any API change updates the MCP tools, their tests and `mcp/README.md` in the same PR (see the Change Propagation Checklist).
 
 ## Common Commands
 
@@ -246,4 +266,8 @@ This project uses **Semantic Versioning** and **Conventional Commits**.
 docker compose exec backend python manage.py makemigrations <app>
 docker compose exec backend python manage.py migrate
 docker compose exec backend pytest
+
+# MCP server (outside Docker; Python ≥ 3.10)
+cd mcp && python -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/pytest && .venv/bin/ruff check . && .venv/bin/ruff format --check .
 ```

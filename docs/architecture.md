@@ -714,6 +714,8 @@ Architecture Decision Records documenting key design choices:
 | [ADR-006](adr/006-per-user-redis-cache.md) | Per-User Redis Cache Namespaces | Accepted |
 | [ADR-007](adr/007-tax-adapter-pattern.md) | Per-Country Tax Adapter Pattern | Accepted |
 | [ADR-008](adr/008-payroll-and-pdf-parser.md) | Payroll Tracking and Best-Effort PDF Parser | Accepted |
+| [ADR-009](adr/009-stock-splits-and-dividend-drafts.md) | Stock Splits and Dividend Drafts from Yahoo Finance | Accepted |
+| [ADR-010](adr/010-mcp-server-and-api-tokens.md) | MCP Server and Personal API Tokens | Accepted |
 
 ---
 

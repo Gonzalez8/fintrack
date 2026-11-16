@@ -24,6 +24,7 @@ If you discover a security vulnerability, please report it responsibly:
 - **Token rotation**: refresh tokens are rotated on each use and old tokens are blacklisted
 - **Rate limiting**: Authentication endpoints have per-scope throttling (login, register, password change)
 - **Multi-tenancy isolation**: Every database query is filtered by the authenticated user's `owner` FK
+- **Personal API tokens** (MCP server, scripts): `Authorization: Bearer ft_…`, stored as SHA-256 hashes, scoped `READ` or `WRITE`, revocable in Settings. Tokens can never reach `/api/auth/` (profile, password, token management) or restore backups, can never `DELETE`, and `READ` tokens only use safe methods. See [ADR-010](adr/010-mcp-server-and-api-tokens.md)
 
 ### Transport Security (Production)
 

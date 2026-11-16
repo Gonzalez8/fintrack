@@ -46,7 +46,7 @@ brew install uv        # macOS — or see https://docs.astral.sh/uv/
 claude mcp add fintrack \
   --env FINTRACK_URL=http://192.168.1.10:8001 \
   --env FINTRACK_TOKEN=ft_your_token \
-  -- uvx --from "git+https://github.com/Gonzalez8/fintrack#subdirectory=mcp" fintrack-mcp
+  -- uvx --from "git+https://github.com/Gonzalez8/fintrack@vX.Y.Z#subdirectory=mcp" fintrack-mcp
 ```
 
 **Claude Desktop** — `~/Library/Application Support/Claude/claude_desktop_config.json`:
@@ -56,7 +56,7 @@ claude mcp add fintrack \
   "mcpServers": {
     "fintrack": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/Gonzalez8/fintrack#subdirectory=mcp", "fintrack-mcp"],
+      "args": ["--from", "git+https://github.com/Gonzalez8/fintrack@vX.Y.Z#subdirectory=mcp", "fintrack-mcp"],
       "env": {
         "FINTRACK_URL": "http://192.168.1.10:8001",
         "FINTRACK_TOKEN": "ft_your_token"
@@ -66,7 +66,7 @@ claude mcp add fintrack \
 }
 ```
 
-The Settings page shows both snippets with your token filled in.
+Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches your backend's API. The Settings page shows both snippets with your version and token filled in. To update the MCP after upgrading Fintrack (only needed when the release notes mention MCP changes), use the new tag: in Claude Code `claude mcp remove fintrack` and add it again; in Claude Desktop edit the version and restart.
 
 ## Tools
 

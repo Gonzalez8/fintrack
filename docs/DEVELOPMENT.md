@@ -85,6 +85,14 @@ cd frontend
 npm run test:watch
 ```
 
+### MCP server
+
+```bash
+cd mcp
+python -m venv .venv && .venv/bin/pip install -e ".[dev]"   # Python >= 3.10
+.venv/bin/pytest
+```
+
 ## Linting & Formatting
 
 ### Backend (Python)
@@ -185,6 +193,17 @@ Every new key **must** be added to all 5 locale files:
 - `frontend/src/i18n/messages/de.json`
 - `frontend/src/i18n/messages/fr.json`
 - `frontend/src/i18n/messages/it.json`
+
+### Change an API endpoint
+
+The MCP server (`mcp/`) and the frontend are clients of the API. In the same PR:
+
+1. Update the MCP tools that call it (`mcp/fintrack_mcp/server.py`), their tests and the tool table in `mcp/README.md`.
+2. Update `frontend/src/types/index.ts` and demo mode (`demo/handlers.ts` + `demo/server-data.ts`).
+3. Use the exact `FilterSet` parameter names — unknown query params are silently ignored.
+4. Update the *API* section of the README.
+
+The full list lives in CLAUDE.md → *Change Propagation Checklist*.
 
 ### Add a new Django app
 

@@ -51,10 +51,14 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 - **Real-time pricing** — Automatic updates via Yahoo Finance
 - **Cost basis engines** — FIFO, LIFO, and Weighted Average Cost (WAC)
 - **Position tracking** — Unrealized P&L, cost basis, market value per position
+- **Stock splits** — Splits and reverse splits per asset, auto-detected daily from Yahoo Finance and applied after your review. The cost engine scales the lots held at the split date (more shares, same total cost); trades before and after the split keep their own figures ([ADR-009](docs/adr/009-stock-splits-and-dividend-drafts.md))
+- **Position history** — Per-asset timeline of operations and splits with the shares held after each step, so the current quantity can be reconciled with your broker. Split badges in the portfolio and split rows in the operations list ("28 → 112 today")
 
 ### Transaction Tracking
 - **Buy / Sell / Gift** transactions with commission and tax support
 - **Dividend tracking** — Gross, withholding tax, administration / custody fees, net and withholding rate per asset
+- **Dividend drafts** — Dividends detected on Yahoo Finance become pre-filled drafts (shares held on the ex-date, estimated gross and withholding). Review each one against your broker and accept it; drafts never count in reports or tax until accepted, and existing dividends are never duplicated
+- **Type-to-search pickers** — Pick the asset of a trade or dividend by typing part of its name or ticker
 - **Interest income** — Date-range based tracking per account, with optional explicit withholding tax (NULL = inferred from gross/net, 0 = confirmed no withholding) and fees
 - **Import deduplication** — Hash-based duplicate detection
 
@@ -110,6 +114,7 @@ Fintrack ships **two layers** of tax reporting:
 - **Google OAuth 2.0** — One-click login with automatic account creation
 - **Rate limiting** — Per-endpoint throttling (login, register, password change)
 - **Multi-tenancy** — Strict owner-based data isolation
+- **Personal API tokens** — Read-only or read-write tokens for the MCP server and scripts: hashed at rest, revocable, and unable to delete data, manage tokens or touch the account
 
 ### Real Estate & Mortgage
 - **Property tracking** — Current value, purchase price, net equity per property
@@ -125,6 +130,9 @@ Fintrack ships **two layers** of tax reporting:
 - **One-click toggle** — Eye icon in sidebar / mobile nav masks all personal monetary amounts
 - **Smart masking** — Only personal amounts hidden (balances, gains, dividends). Public data stays visible: asset prices, percentages, share quantities
 - **Persistent** — Stored in cookie, survives page reload
+
+### AI Assistant (MCP)
+- **Use Fintrack from Claude** — A local MCP server lets Claude Desktop or Claude Code review your portfolio, operations, dividends and reports, find inconsistencies and, with a write-enabled token, add records. See [AI Access (MCP)](#ai-access-mcp)
 
 ### Internationalization
 - **5 languages** — Spanish, English, German, French, Italian
@@ -281,7 +289,98 @@ Browser
 
 ## AI Access (MCP)
 
-Fintrack ships an [MCP](https://modelcontextprotocol.io) server so an AI assistant (Claude Desktop, Claude Code…) can review your portfolio, operations, dividends and reports and, with a write-enabled token, add records. It runs locally on your computer and talks to your Fintrack over your own network — no need to expose Fintrack to the internet. Create a token in **Settings → AI access (MCP)**; tokens can be read-only, can never delete data or touch your account, and can be revoked at any time. Setup and the list of tools: [`mcp/README.md`](mcp/README.md).
+Fintrack ships an [MCP](https://modelcontextprotocol.io) server (`mcp/`) so an AI assistant — **Claude Desktop** or **Claude Code** — can work with your data: review your portfolio and history, explain figures, spot missing operations, prepare your tax data and, if you allow it, record operations and dividends for you.
+
+It runs **locally on your computer** and talks to your Fintrack over your own network. Fintrack does **not** need to be exposed to the internet.
+
+```
+Claude Desktop / Claude Code ──stdio──▶ fintrack-mcp (your computer) ──HTTP + token──▶ Fintrack backend (:8001)
+```
+
+### Setup
+
+**1. Create a token** — In Fintrack go to **Settings → AI access (MCP)**, give it a name and choose its permissions:
+
+| Permission | The assistant can… |
+|---|---|
+| **Read only** (recommended to start) | Read portfolio, operations, dividends, interests, reports and pending reviews |
+| **Read and write** | Also create operations, dividends and interests, accept or dismiss dividend drafts and apply splits |
+
+The token (`ft_…`) is shown **once**, together with the configuration for Claude Code and Claude Desktop already filled in — copy it from there.
+
+**2. Let your computer reach the backend** — The MCP calls the backend directly (port `8001` in `docker-compose.prod.yml`; `http://localhost:8000` in development). Add the address you use to `ALLOWED_HOSTS` in `.env` and restart:
+
+```bash
+ALLOWED_HOSTS=your-domain.com,192.168.1.10
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**3. Install [uv](https://docs.astral.sh/uv/)** (it downloads and runs the MCP for you):
+
+```bash
+brew install uv            # macOS · see the uv docs for Linux/Windows
+```
+
+**4. Connect your assistant**
+
+*Claude Code:*
+
+```bash
+claude mcp add fintrack \
+  --env FINTRACK_URL=http://192.168.1.10:8001 \
+  --env FINTRACK_TOKEN=ft_your_token \
+  -- uvx --from "git+https://github.com/Gonzalez8/fintrack@vX.Y.Z#subdirectory=mcp" fintrack-mcp
+```
+
+*Claude Desktop* — add to `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/`) and restart the app:
+
+```json
+{
+  "mcpServers": {
+    "fintrack": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/Gonzalez8/fintrack@vX.Y.Z#subdirectory=mcp", "fintrack-mcp"],
+      "env": { "FINTRACK_URL": "http://192.168.1.10:8001", "FINTRACK_TOKEN": "ft_your_token" }
+    }
+  }
+}
+```
+
+Replace `vX.Y.Z` with **your Fintrack version** (e.g. `v2.14.0`): the MCP is pinned to the same release as your backend so its tools always match your API. The Settings page fills in the exact version for you.
+
+**5. Check it** — In Claude Code run `claude mcp list` (or `/mcp` inside a session): `fintrack` must show as connected. In Claude Desktop the Fintrack tools appear in the tools menu of a new chat. Then ask something simple such as *"What's my portfolio worth?"*.
+
+**Updating** — You don't need to touch the MCP on every Fintrack update; do it when the release notes mention MCP changes. Copy the new command from Settings (Claude Code: `claude mcp remove fintrack` and add it again; Claude Desktop: change the version in the config and restart).
+
+### What to ask
+
+- *"Summarise my portfolio: total value, gain, and the five biggest positions."*
+- *"Check whether any dividend's share count doesn't match my operations and tell me what could be missing."*
+- *"Show me the position history of BYD and explain how I got to 65 shares."*
+- *"How much did I receive in dividends in 2025, by country and with the withholding?"*
+- *"Which dividends are pending review? Accept the Apple one: paid on 16/11/2026, gross 0.33 €, withholding 0.05 €."* (write token)
+- *"I bought 5 Inditex shares today at 42.10 € on Trade Republic with 1 € commission — record it."* (write token)
+
+The assistant uses Fintrack's own engine (FIFO/LIFO/WAC, splits, tax rules), so figures match the app. It's analysis of your own data, not regulated financial advice.
+
+### Permissions and safety
+
+- **Before every write** your AI client asks for confirmation; the assistant is instructed to show you exactly what it will record.
+- **No token can delete** data, change your password or profile, create or revoke tokens, or restore backups — even a read-and-write one. Mistakes are fixed by you in the app.
+- **Revoke** a token at any time in Settings → AI access; it stops working immediately. Tokens are stored hashed and show their last use.
+- **Privacy:** whatever the assistant reads is sent to the AI provider to answer you. Prefer read-only tokens and revoke the ones you no longer use.
+
+### Troubleshooting
+
+| Message from the assistant | Fix |
+|---|---|
+| *Cannot connect to Fintrack at …* | Check `FINTRACK_URL` (backend port `8001`, not the web port) and that the server is reachable from your computer |
+| *Fintrack refused the request for host …* | Add that host/IP to `ALLOWED_HOSTS` and restart the backend |
+| *The Fintrack token was rejected* | The token was revoked or mistyped — create a new one in Settings |
+| *This API token is read-only* | Create a read-and-write token if you want the assistant to add records |
+| `uvx: command not found` | Install uv (step 3) and restart Claude |
+
+The full list of tools and how to develop the server are in [`mcp/README.md`](mcp/README.md); design rationale in [ADR-010](docs/adr/010-mcp-server-and-api-tokens.md).
 
 ## Tech Stack
 
@@ -304,12 +403,13 @@ Fintrack ships an [MCP](https://modelcontextprotocol.io) server so an AI assista
 fintrack/
 ├── backend/                       Django 5.1 + DRF
 │   ├── apps/
-│   │   ├── core/                  JWT auth, base models, health check
+│   │   ├── core/                  JWT auth, personal API tokens, base models, health check
 │   │   ├── assets/                Assets, accounts, snapshots, settings
-│   │   ├── transactions/          Transaction, Dividend, Interest
+│   │   ├── transactions/          Transaction, Dividend, Interest, StockSplit, DividendSuggestion
 │   │   ├── portfolio/             Cost basis engine (FIFO/LIFO/WAC)
 │   │   ├── reports/               Tax summaries, evolution, savings, goals
 │   │   ├── realestate/            Property, Amortization, mortgage simulation
+│   │   ├── payroll/               Employer, Payroll, PDF payslip parser
 │   │   └── importer/              JSON backup / restore
 │   └── config/
 │       ├── settings/              base.py · development.py · production.py
@@ -331,8 +431,12 @@ fintrack/
 │       ├── demo/                  MSW handlers (demo mode)
 │       └── i18n/                  Translations (es, en, de, fr, it)
 │
+├── mcp/                           MCP server (Python, stdio) for AI assistants
+│   ├── fintrack_mcp/              server.py (tools) · client.py (API client)
+│   └── tests/
+│
 ├── .github/workflows/
-│   ├── ci.yml                     Backend tests + frontend typecheck
+│   ├── ci.yml                     Backend, frontend and MCP lint + tests
 │   └── docker-publish.yml         Build & push to GHCR
 ├── docker-compose.yml             Development (6 services)
 ├── docker-compose.prod.yml        Production (pre-built images from GHCR)
@@ -357,8 +461,16 @@ GET     /api/auth/profile/                User profile
 PUT     /api/auth/profile/                Update username / email
 POST    /api/auth/change-password/        Change password + rotate JWT
 
-# Data (all owner-scoped, require Bearer token)
+# Personal access tokens (browser session only)
+GET     /api/auth/api-tokens/             List active tokens
+POST    /api/auth/api-tokens/             Create { name, scope: READ|WRITE } → key shown once
+DELETE  /api/auth/api-tokens/{id}/        Revoke
+
+# Data (all owner-scoped; JWT cookie/Bearer or a personal token "Bearer ft_…")
+# Lists are paginated: ?page=N&page_size=M (default 50, max 1000)
 CRUD    /api/assets/
+GET     /api/assets/{id}/price-history/   Yahoo price history (?period=1mo…max)
+GET     /api/assets/{id}/position-history/  Operations + splits with shares held after each step
 POST    /api/assets/update-prices/        Enqueue → 202 { task_id }
 GET     /api/tasks/{task_id}/             Celery task status
 CRUD    /api/accounts/
@@ -370,6 +482,23 @@ CRUD    /api/transactions/
 CRUD    /api/dividends/
 CRUD    /api/interests/
 GET     /api/portfolio/
+
+CRUD    /api/splits/                      Stock splits (?asset_id=, ?status=PENDING|APPLIED|DISMISSED)
+POST    /api/splits/{id}/apply/           Apply a detected split
+POST    /api/splits/{id}/dismiss/
+POST    /api/splits/detect/               Look up Yahoo splits → PENDING suggestions
+
+GET     /api/dividend-suggestions/        Dividend drafts (?status=, ?asset_id=)
+POST    /api/dividend-suggestions/{id}/accept/   Create the Dividend from reviewed figures
+POST    /api/dividend-suggestions/{id}/dismiss/
+POST    /api/dividend-suggestions/dismiss-all/
+POST    /api/dividend-suggestions/detect/        { asset_id?, backfill? }
+
+CRUD    /api/employers/
+CRUD    /api/payrolls/
+POST    /api/payrolls/parse-pdf/          Experimental payslip parser (suggestion only)
+POST    /api/payrolls/bulk-create/
+POST    /api/payrolls/bulk-delete/
 
 GET     /api/reports/year-summary/
 GET     /api/reports/patrimonio-evolution/

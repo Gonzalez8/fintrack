@@ -157,3 +157,49 @@ class StockSplit(UserOwnedModel):
 
     def __str__(self):
         return f"{self.date} Split {self.asset.name} {self.ratio_to}:{self.ratio_from} ({self.status})"
+
+
+class DividendSuggestion(UserOwnedModel):
+    """Draft dividend detected from Yahoo Finance, waiting for the user's review.
+
+    Kept apart from ``Dividend`` so drafts never reach reports or tax figures.
+    Accepting one creates the real ``Dividend`` (with the user's corrected
+    figures) and links it; dismissing it means it is never suggested again.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        ACCEPTED = "ACCEPTED", "Accepted"
+        DISMISSED = "DISMISSED", "Dismissed"
+
+    asset = models.ForeignKey("assets.Asset", on_delete=models.CASCADE, related_name="dividend_suggestions")
+    ex_date = models.DateField(help_text="Ex-dividend date reported by Yahoo (payment comes later).")
+    amount_per_share = models.DecimalField(max_digits=20, decimal_places=6, help_text="Gross amount per share.")
+    currency = models.CharField(max_length=3, help_text="Currency of the Yahoo quote the amount is in.")
+    shares = models.DecimalField(max_digits=20, decimal_places=6, help_text="Shares held on the ex-dividend date.")
+    gross = models.DecimalField(max_digits=20, decimal_places=2, help_text="Estimated gross = shares × amount.")
+    tax = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Estimated withholding from the user's past dividends of this asset; null when unknown.",
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    dividend = models.ForeignKey(
+        "transactions.Dividend",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Dividend created when the suggestion was accepted.",
+    )
+
+    class Meta:
+        ordering = ["-ex_date", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "asset", "ex_date"], name="unique_divsugg_owner_asset_exdate"),
+        ]
+
+    def __str__(self):
+        return f"{self.ex_date} Dividend draft {self.asset.name} {self.gross} {self.currency} ({self.status})"

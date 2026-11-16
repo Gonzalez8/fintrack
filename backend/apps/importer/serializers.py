@@ -3,7 +3,7 @@ from rest_framework import serializers
 from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, Settings
 from apps.realestate.models import Amortization, Property
 from apps.reports.models import SavingsGoal
-from apps.transactions.models import Dividend, Interest, StockSplit, Transaction
+from apps.transactions.models import Dividend, DividendSuggestion, Interest, StockSplit, Transaction
 
 
 class BackupAssetSerializer(serializers.ModelSerializer):
@@ -137,6 +137,24 @@ class BackupStockSplitSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockSplit
         fields = ["id", "asset", "date", "ratio_from", "ratio_to", "status", "source"]
+        extra_kwargs = {"id": {"read_only": False}}
+
+
+class BackupDividendSuggestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DividendSuggestion
+        fields = [
+            "id",
+            "asset",
+            "ex_date",
+            "amount_per_share",
+            "currency",
+            "shares",
+            "gross",
+            "tax",
+            "status",
+            "dividend",
+        ]
         extra_kwargs = {"id": {"read_only": False}}
 
 

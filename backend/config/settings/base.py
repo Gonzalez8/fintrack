@@ -212,6 +212,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.transactions.tasks.detect_splits_all_users_task",
         "schedule": 86400.0,  # daily
     },
+    "detect-dividends": {
+        "task": "apps.transactions.tasks.detect_dividends_all_users_task",
+        "schedule": 86400.0,  # daily
+    },
 }
 
 # ---------------------------------------------------------------------------

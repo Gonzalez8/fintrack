@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import Dividend, Interest, StockSplit, Transaction
+from .models import Dividend, DividendSuggestion, Interest, StockSplit, Transaction
 
 
 class _OwnershipValidationMixin:
@@ -196,3 +196,35 @@ class StockSplitSerializer(_OwnershipValidationMixin, serializers.ModelSerialize
         if ratio_from is not None and ratio_to is not None and ratio_from == ratio_to:
             raise serializers.ValidationError({"ratio_to": "Ratio must change the number of shares."})
         return attrs
+
+
+class DividendSuggestionSerializer(serializers.ModelSerializer):
+    asset_name = serializers.CharField(source="asset.name", read_only=True)
+    asset_ticker = serializers.CharField(source="asset.ticker", read_only=True)
+    asset_currency = serializers.CharField(source="asset.currency", read_only=True)
+    net = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DividendSuggestion
+        fields = [
+            "id",
+            "asset",
+            "asset_name",
+            "asset_ticker",
+            "asset_currency",
+            "ex_date",
+            "amount_per_share",
+            "currency",
+            "shares",
+            "gross",
+            "tax",
+            "net",
+            "status",
+            "dividend",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+    def get_net(self, obj):
+        return str(obj.gross - (obj.tax or Decimal("0")))

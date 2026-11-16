@@ -237,6 +237,7 @@ export function AssetsContent() {
     queryFn: () => {
       const params = new URLSearchParams();
       params.set("page", String(page));
+      params.set("page_size", String(PAGE_SIZE));
       if (search) params.set("search", search);
       if (typeFilter) params.set("type", typeFilter);
       return api.get<PaginatedResponse<Asset>>(`/assets/?${params}`);

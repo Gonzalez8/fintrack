@@ -66,6 +66,7 @@ export function TransactionsContent() {
     queryFn: () => {
       const query = buildTransactionsQuery({
         page,
+        pageSize: PAGE_SIZE,
         search,
         type: typeFilter,
         dateFrom,
@@ -86,7 +87,7 @@ export function TransactionsContent() {
   // per asset (not per account or type), so hide them when those filters are on.
   const { data: splitsData } = useQuery({
     queryKey: ["splits", "APPLIED"],
-    queryFn: () => api.get<PaginatedResponse<StockSplit>>("/splits/?status=APPLIED"),
+    queryFn: () => api.get<PaginatedResponse<StockSplit>>("/splits/?status=APPLIED&page_size=1000"),
   });
   const searchLower = search.toLowerCase();
   const visibleSplits =

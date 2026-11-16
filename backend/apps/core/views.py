@@ -2,7 +2,8 @@ import contextlib
 
 from django.conf import settings as django_settings
 from django.contrib.auth import authenticate
-from rest_framework import status
+from django.utils import timezone
+from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
@@ -10,6 +11,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from .mixins import OwnedByUserMixin
+from .models import ApiToken
+from .serializers import ApiTokenSerializer
 
 # ---------------------------------------------------------------------------
 # Cookie helpers
@@ -388,3 +393,30 @@ class HealthView(APIView):
             return Response({"status": "ok"})
         except Exception:
             return Response({"status": "error"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class ApiTokenViewSet(
+    OwnedByUserMixin, mixins.ListModelMixin, mixins.CreateModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet
+):
+    """Personal access tokens for the MCP server / scripts.
+
+    Lives under ``/api/auth/``, which API tokens themselves can never reach, so
+    a token cannot mint or revoke tokens. The key is returned once, on create.
+    Deleting revokes (keeps the row for the record).
+    """
+
+    serializer_class = ApiTokenSerializer
+    invalidates_financial_cache = False
+
+    def get_queryset(self):
+        return ApiToken.objects.filter(owner=self.request.user, revoked_at__isnull=True)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token, key = ApiToken.issue(request.user, serializer.validated_data["name"], serializer.validated_data["scope"])
+        return Response({**ApiTokenSerializer(token).data, "key": key}, status=status.HTTP_201_CREATED)
+
+    def perform_destroy(self, instance):
+        instance.revoked_at = timezone.now()
+        instance.save(update_fields=["revoked_at", "updated_at"])

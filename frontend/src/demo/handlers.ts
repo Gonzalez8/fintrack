@@ -283,6 +283,28 @@ const proxyHandlers = [
     return HttpResponse.json({ quantity: "0", events: [] });
   }),
 
+  // ---- API tokens (MCP) ----
+  http.get("/api/proxy/auth/api-tokens/", async () => {
+    await delay(200);
+    return HttpResponse.json(paginated([]));
+  }),
+
+  http.post("/api/proxy/auth/api-tokens/", async () => {
+    await delay(200);
+    return HttpResponse.json(
+      {
+        id: "demo-token",
+        name: "Claude",
+        scope: "READ",
+        key_prefix: "ft_demo000",
+        created_at: new Date().toISOString(),
+        last_used_at: null,
+        key: "ft_demo0000000000000000000000000000000000000",
+      },
+      { status: 201 },
+    );
+  }),
+
   // ---- Dividend drafts ----
   http.get("/api/proxy/dividend-suggestions/", async () => {
     await delay(200);

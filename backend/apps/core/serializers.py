@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from .models import ApiToken
+
 User = get_user_model()
 
 
@@ -63,3 +65,10 @@ class ChangePasswordSerializer(serializers.Serializer):
         if data["new_password"] != data["new_password_confirm"]:
             raise serializers.ValidationError({"new_password_confirm": "Las contrasenas no coinciden."})
         return data
+
+
+class ApiTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApiToken
+        fields = ["id", "name", "scope", "key_prefix", "created_at", "last_used_at"]
+        read_only_fields = ["id", "key_prefix", "created_at", "last_used_at"]

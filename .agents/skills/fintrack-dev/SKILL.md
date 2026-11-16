@@ -126,6 +126,20 @@ When implementing, follow these project rules (from CLAUDE.md):
   for public data
 - **Mobile:** `SwipeCard` for list items, FAB for new items, responsive split
   (`sm:hidden` / `hidden sm:block`)
+- **API ↔ MCP:** any API change (endpoint, params, fields, response shape)
+  updates the MCP tools in `mcp/fintrack_mcp/server.py`, their tests and the
+  tool table in `mcp/README.md` in the same PR
+- **Filters & pagination:** query params must match the backend `FilterSet`
+  names exactly (unknown ones are silently ignored); lists send `page_size`
+- **Demo mode:** new API calls need an MSW handler and a server demo route
+- **Backup:** new user-data models go into `apps/importer` export/import
+
+### Propagation check (do this before Step 3)
+
+Walk the **Change Propagation Checklist** in CLAUDE.md for every area you
+touched. A feature is not finished while something that depends on it is stale:
+MCP tools, frontend types, demo handlers, backup/restore, README (*Features*,
+*API*, *AI Access*), CLAUDE.md feature notes and ADRs.
 
 ### Track changes for the PR
 
@@ -133,6 +147,8 @@ Keep a mental or written log of what changed, organized by area:
 - Backend changes (models, views, serializers, services)
 - Frontend changes (components, pages, lib, types)
 - Config changes (i18n, settings, CI)
+- MCP changes (tools, tests, `mcp/README.md`)
+- Docs (README, CLAUDE.md, ADRs)
 
 ## Step 3 — Pre-PR Checklist
 
@@ -164,6 +180,14 @@ cd frontend && npx tsc --noEmit && npm run build
 for f in frontend/src/i18n/messages/*.json; do
   echo "$(basename $f): $(grep -c '"' $f) keys"
 done
+
+# 7. If the API or mcp/ changed: MCP lint + tests (Python >= 3.10)
+cd mcp && python -m venv .venv && .venv/bin/pip install -q -e ".[dev]" \
+  && .venv/bin/ruff check . && .venv/bin/ruff format --check . && .venv/bin/pytest -q
+
+# 8. If backend API changed: did the MCP change too? (should list mcp/ files)
+git diff --name-only origin/main...HEAD -- backend/apps/*/views.py backend/apps/*/urls.py \
+  backend/apps/*/serializers.py backend/apps/*/filters.py mcp/
 ```
 
 Report any failures and fix them before proceeding.
@@ -194,8 +218,11 @@ gh pr create \
 ### Frontend
 - {list of frontend changes, or "No frontend changes"}
 
+### MCP
+- {tools added/changed and tests, or "No API changes affecting the MCP"}
+
 ### Other
-- {i18n, config, CI changes, or "None"}
+- {i18n, config, CI, docs changes, or "None"}
 
 ## Checklist
 
@@ -206,6 +233,8 @@ gh pr create \
 - [x] My changes generate no new warnings
 - [x] Commit messages follow Conventional Commits
 - [{x or space}] i18n keys added to all 5 locale files (if applicable)
+- [{x or space}] MCP tools/tests/README updated for API changes (if applicable)
+- [x] Change Propagation Checklist (CLAUDE.md) reviewed
 
 ## Test Plan
 

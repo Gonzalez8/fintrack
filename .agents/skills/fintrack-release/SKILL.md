@@ -414,6 +414,9 @@ Rules for CHANGELOG entries:
 - Rewrite commit messages for user clarity — do NOT copy git log verbatim
 - Be specific: "Fix dividend withholding tax calculation for US stocks" not "bug fixes"
 - Link to PR numbers when available: `description (#123)`
+- **MCP changes** (anything under `mcp/`, or API changes the MCP tools depend on)
+  get their own line saying users should update the MCP command (Settings shows
+  it pinned to the new tag). Users only update the MCP when the notes say so.
 - Breaking Changes section is ALWAYS first when present
 - Security section is ALWAYS second when present
 

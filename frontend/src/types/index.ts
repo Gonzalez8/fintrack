@@ -405,6 +405,20 @@ export interface DividendSuggestion {
   updated_at: string;
 }
 
+// ── API tokens (MCP) ─────────────────────────────────────────────
+export type ApiTokenScope = "READ" | "WRITE";
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  scope: ApiTokenScope;
+  key_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  /** Only present in the response that creates the token. */
+  key?: string;
+}
+
 // ── Pagination ───────────────────────────────────────────────────
 export interface PaginatedResponse<T> {
   count: number;

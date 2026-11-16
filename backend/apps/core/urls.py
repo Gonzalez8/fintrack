@@ -1,6 +1,10 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
 from . import views
+
+router = DefaultRouter()
+router.register("api-tokens", views.ApiTokenViewSet, basename="api-token")
 
 urlpatterns = [
     # JWT auth
@@ -14,4 +18,6 @@ urlpatterns = [
     # Profile & password
     path("profile/", views.ProfileView.as_view(), name="profile"),
     path("change-password/", views.ChangePasswordView.as_view(), name="change-password"),
+    # Personal access tokens (MCP server, scripts)
+    path("", include(router.urls)),
 ]

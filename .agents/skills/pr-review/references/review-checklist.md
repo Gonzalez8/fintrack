@@ -152,6 +152,44 @@ const editMutation = useMutation({
 });
 ```
 
+## Change Propagation Patterns
+
+### API ↔ MCP Sync (BLOCKER when an MCP tool breaks)
+
+The MCP server (`mcp/fintrack_mcp/server.py`) is a client of the REST API. Any
+change to an endpoint it calls — path, query params, request fields, response
+shape — must update the tool, its test in `mcp/tests/` and the tool table in
+`mcp/README.md` in the same PR. New capabilities the assistant should use need a
+tool (read tools use `READ` annotations, writes `WRITE`; never add delete tools).
+
+### Filter Parameter Names (BLOCKER)
+
+django-filter silently ignores unknown query params, so a wrong name returns
+unfiltered data instead of an error.
+
+```ts
+// CORRECT — names from TransactionFilter
+buildTransactionsQuery({ dateFrom, dateTo, accountId }) // → from_date, to_date, account_id
+
+// WRONG — silently ignored, the list is never filtered
+p.set("date_after", dateFrom); p.set("account", accountId);
+```
+
+### Pagination (WARNING)
+
+Lists send `page_size` equal to the size their paginator uses; pickers and
+summaries that need every row use `page_size=1000` (`StandardPagination` max).
+React Query keys must use the same values the request uses (URL params), not a
+debounced copy, or results get cached under the wrong key.
+
+### Backup & Demo Coverage (WARNING)
+
+- New user-data models: add them to `apps/importer` export + import (after the
+  models they reference) with a round-trip test.
+- New API calls: MSW handler in `demo/handlers.ts` and a route in
+  `demo/server-data.ts`. Generic matchers (`/api/assets/{id}`) answer deeper
+  paths — add specific routes before them.
+
 ## Security Patterns
 
 ### Permission on API Views

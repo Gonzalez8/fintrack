@@ -130,6 +130,32 @@ Read the full diff and analyze for issues. For the detailed checklist, see
   in `types/index.ts`
 - **Hardcoded strings:** No hardcoded Spanish text (common mistake — check for
   Spanish words outside of `es.json`)
+- **Demo mode:** New API calls have an MSW handler (`demo/handlers.ts`) and a
+  server demo route (`demo/server-data.ts`)
+- **Query params & pagination:** Filter params match the backend `FilterSet`
+  names exactly; list calls send `page_size` matching the paginator
+
+### 3.4 Change propagation (always)
+
+Walk the **Change Propagation Checklist** in `CLAUDE.md` against the diff. The
+most important check:
+
+```bash
+# API surface touched by the PR
+git diff --name-only origin/main...HEAD -- 'backend/apps/*/urls.py' 'backend/apps/*/views.py' \
+  'backend/apps/*/serializers.py' 'backend/apps/*/filters.py'
+# MCP touched by the PR
+git diff --name-only origin/main...HEAD -- mcp/
+```
+
+| Finding | Severity |
+|---------|----------|
+| API endpoint/params/fields changed and the MCP tools that use them were not updated | BLOCKER |
+| New API capability the assistant should reasonably use, with no MCP tool (or no note explaining why) | WARNING |
+| `mcp/` changed without tests or without updating the tool table in `mcp/README.md` | WARNING |
+| New user-data model missing from backup export/import | WARNING |
+| New API call without demo-mode handlers | WARNING |
+| User-visible feature not reflected in README *Features* / CLAUDE.md | NOTE |
 
 ## Step 4 — Security Review
 
@@ -140,6 +166,9 @@ Read the full diff and analyze for issues. For the detailed checklist, see
 - **Secrets:** No hardcoded API keys, tokens, or passwords in the diff
 - **Auth bypass:** No endpoints that skip JWT validation
 - **Cross-tenant:** Verify `owner` filtering on all user-data queries
+- **API tokens:** Changes to auth must keep `ApiTokenAuthentication` rules —
+  tokens never reach `/api/auth/` or backup import, never `DELETE`, READ tokens
+  only use safe methods — with tests in `apps/core/tests/test_api_tokens.py`
 
 | Finding | Severity |
 |---------|----------|
@@ -147,6 +176,7 @@ Read the full diff and analyze for issues. For the detailed checklist, see
 | Missing permission class | BLOCKER |
 | Hardcoded secret | BLOCKER |
 | Missing input validation | WARNING |
+| API tokens able to reach account/token endpoints or delete | BLOCKER |
 
 ## Step 5 — CI Status Check
 
@@ -160,6 +190,7 @@ gh pr checks {PR}
 | backend-tests | PASS required |
 | frontend-lint | PASS required |
 | frontend-tests | PASS required |
+| mcp (MCP server lint & tests) | PASS required |
 
 If checks are still running, note "PENDING" status. If any check failed, include
 failure details and mark as a blocking issue.
@@ -190,6 +221,10 @@ Output format:
 ### i18n Completeness
 {PASS: all keys present in all 5 locales}
 {BLOCKER: missing keys listed with file and line}
+
+### Change Propagation
+{PASS: API ↔ MCP in sync, demo handlers, backup, docs updated}
+{Findings from step 3.4 with severity}
 
 ### CI Status
 

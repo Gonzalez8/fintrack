@@ -54,6 +54,7 @@ export function DividendsContent() {
     queryFn: () => {
       const p = new URLSearchParams();
       p.set("page", String(page));
+      p.set("page_size", String(PAGE_SIZE));
       if (search) p.set("search", search);
       if (yearFilter) p.set("year", yearFilter);
       return api.get<PaginatedResponse<Dividend>>(`/dividends/?${p}`);

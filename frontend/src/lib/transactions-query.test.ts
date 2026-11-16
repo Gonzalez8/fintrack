@@ -6,6 +6,7 @@ describe("buildTransactionsQuery", () => {
     const q = new URLSearchParams(
       buildTransactionsQuery({
         page: 2,
+        pageSize: 25,
         search: "crwd",
         type: "BUY",
         dateFrom: "2026-01-01",
@@ -15,6 +16,7 @@ describe("buildTransactionsQuery", () => {
     );
     expect(Object.fromEntries(q)).toEqual({
       page: "2",
+      page_size: "25",
       search: "crwd",
       type: "BUY",
       from_date: "2026-01-01",
@@ -24,6 +26,6 @@ describe("buildTransactionsQuery", () => {
   });
 
   it("omits empty filters", () => {
-    expect(buildTransactionsQuery({ page: 1, search: "", dateFrom: "" })).toBe("page=1");
+    expect(buildTransactionsQuery({ page: 1, pageSize: 25, search: "", dateFrom: "" })).toBe("page=1&page_size=25");
   });
 });

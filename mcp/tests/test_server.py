@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 19 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 28 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -213,3 +213,134 @@ async def test_disallowed_host_points_to_allowed_hosts(api):
     )
     message = error_text(await call("fintrack_get_portfolio"))
     assert "ALLOWED_HOSTS" in message and "fintrack.test" in message
+
+
+# ---------------------------------------------------------------- insights tools
+
+
+async def test_payroll_summary_pages_through_all_payslips(api):
+    p1 = [
+        {
+            "period_end": "2025-06-30",
+            "payroll_type": "MONTHLY",
+            "gross": "3000",
+            "net": "2200",
+            "ss_employee": "190",
+            "irpf_withholding": "610",
+            "employer_name": "Acme",
+        },
+    ]
+    p2 = [
+        {
+            "period_end": "2025-07-31",
+            "payroll_type": "BONUS",
+            "gross": "1500",
+            "net": "1000",
+            "ss_employee": "95",
+            "irpf_withholding": "405",
+            "employer_name": "Acme",
+        },
+        {
+            "period_end": "2024-12-31",
+            "payroll_type": "MONTHLY",
+            "gross": "2800",
+            "net": "2100",
+            "ss_employee": "180",
+            "irpf_withholding": "520",
+            "employer_name": "Acme",
+        },
+    ]
+    route = api.get("/payrolls/").mock(
+        side_effect=[httpx.Response(200, json=page(p1, next_url="p2")), httpx.Response(200, json=page(p2))]
+    )
+    result = payload(await call("fintrack_get_payroll_summary", {"from_year": 2025}))
+    assert route.call_count == 2
+    (y,) = result["years"]
+    assert y["year"] == 2025 and y["gross"] == "4500.00" and y["bonus_gross"] == "1500.00"
+    assert y["bonus_vs_monthly_pct"] == "50.00" and y["effective_irpf_pct"] == "22.56"
+
+
+async def test_list_payrolls_filters_by_type(api):
+    route = api.get("/payrolls/").mock(return_value=httpx.Response(200, json=page([])))
+    await call("fintrack_list_payrolls", {"year": 2025, "payroll_type": "BONUS"})
+    params = route.calls.last.request.url.params
+    assert params["year"] == "2025" and params["payroll_type"] == "BONUS"
+
+
+async def test_monthly_savings_passes_the_month_range(api):
+    route = api.get("/reports/monthly-savings/").mock(return_value=httpx.Response(200, json={"months": []}))
+    await call("fintrack_get_monthly_savings", {"from_month": "2026-01", "to_month": "2026-06"})
+    params = route.calls.last.request.url.params
+    assert params["from"] == "2026-01" and params["to"] == "2026-06"
+
+
+async def test_investment_flows_by_asset_with_search(api):
+    sp500 = {
+        "id": "55555555-5555-5555-5555-555555555555",
+        "name": "Vanguard S&P 500 ETF",
+        "ticker": "VUSA",
+        "type": "ETF",
+        "currency": "EUR",
+    }
+    api.get("/assets/").mock(return_value=httpx.Response(200, json=page([APPLE, sp500])))
+    route = api.get("/transactions/").mock(
+        return_value=httpx.Response(
+            200,
+            json=page(
+                [
+                    {
+                        "asset": sp500["id"],
+                        "type": "BUY",
+                        "date": "2026-01-05",
+                        "quantity": "2",
+                        "price": "100",
+                        "commission": "1",
+                        "tax": "0",
+                    },
+                    {
+                        "asset": sp500["id"],
+                        "type": "BUY",
+                        "date": "2026-03-05",
+                        "quantity": "1",
+                        "price": "110",
+                        "commission": "1",
+                        "tax": "0",
+                    },
+                ]
+            ),
+        )
+    )
+    result = payload(await call("fintrack_get_investment_flows", {"group_by": "asset", "search": "S&P 500"}))
+    assert route.calls.last.request.url.params["search"] == "S&P 500"
+    assert result["totals"]["net_invested"] == "312.00"
+    assert result["totals"]["months_in_period"] == 3 and result["totals"]["average_monthly_net_invested"] == "104.00"
+    assert result["groups"][0]["ticker"] == "VUSA"
+
+
+async def test_account_snapshots_filter_by_date(api):
+    route = api.get("/account-snapshots/").mock(
+        return_value=httpx.Response(
+            200, json=page([{"date": "2026-02-01", "balance": "10"}, {"date": "2025-12-01", "balance": "5"}])
+        )
+    )
+    result = payload(
+        await call("fintrack_list_account_snapshots", {"account": "Trade Republic", "from_date": "2026-01-01"})
+    )
+    assert route.calls.last.request.url.params["account"] == BROKER["id"]
+    assert [r["date"] for r in result["snapshots"]] == ["2026-02-01"]
+
+
+async def test_savings_goals_include_projection(api):
+    api.get("/savings-goals/").mock(return_value=httpx.Response(200, json=page([{"id": "g1", "name": "Casa"}])))
+    api.get("/savings-goals/g1/projection/").mock(return_value=httpx.Response(200, json={"reached_in_months": 30}))
+    result = payload(await call("fintrack_list_savings_goals"))
+    assert result["goals"][0]["projection"] == {"reached_in_months": 30}
+
+
+async def test_prompts_are_available():
+    server = create_server(FintrackClient(BASE, "ft_test"))
+    async with Client(server) as client:
+        names = {p.name for p in (await client.list_prompts()).prompts}
+        prompt = await client.get_prompt("fintrack_payroll_review", {"year": "2025"})
+    assert names == {"fintrack_monthly_review", "fintrack_payroll_review", "fintrack_portfolio_analysis"}
+    assert "2025" in prompt.messages[0].content.text

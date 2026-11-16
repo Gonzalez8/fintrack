@@ -963,5 +963,27 @@
   "positionHistory.currentShares": "Actions actuelles",
   "positionHistory.event": "Événement",
   "positionHistory.change": "Variation",
-  "positionHistory.sharesAfter": "Actions après"
+  "positionHistory.sharesAfter": "Actions après",
+
+  "dividendDrafts.title": "Dividendes à vérifier ({count})",
+  "dividendDrafts.description": "Brouillons détectés via Yahoo Finance. Vérifiez chacun avec votre courtier et enregistrez-le ; ils ne comptent dans les rapports et la fiscalité qu'une fois acceptés.",
+  "dividendDrafts.confirmDismissAll": "Ignorer tous les brouillons en attente ? Ils ne seront plus proposés.",
+  "dividendDrafts.dismissAll": "Tout ignorer",
+  "dividendDrafts.exDate": "ex-dividende",
+  "dividendDrafts.grossShort": "brut",
+  "dividendDrafts.review": "Vérifier",
+  "dividendDrafts.dismiss": "Ignorer",
+  "dividendDrafts.detect": "Rechercher des dividendes sur Yahoo",
+  "dividendDrafts.detectFound": "Nouveaux brouillons de dividendes : {count}. Vérifiez-les et acceptez-les.",
+  "dividendDrafts.detectNone": "Aucun nouveau dividende à enregistrer.",
+  "dividendDrafts.detectError": "Impossible de joindre Yahoo Finance. Réessayez plus tard.",
+  "dividendDrafts.accepted": "Dividende enregistré",
+  "dividendDrafts.reviewTitle": "Vérifier le dividende",
+  "dividendDrafts.fromYahoo": "Détecté sur Yahoo : ex-dividende le {date}, {shares} actions × {amount} ≈ {gross} brut.",
+  "dividendDrafts.checkWithTax": "La retenue est estimée à partir de vos dividendes précédents. Vérifiez avec votre courtier la date de paiement, le net et la retenue ; les montants Yahoo sont dans la devise de cotation.",
+  "dividendDrafts.checkNoTax": "Aucun dividende précédent pour estimer la retenue. Vérifiez avec votre courtier la date de paiement, le net et la retenue ; les montants Yahoo sont dans la devise de cotation.",
+  "dividendDrafts.assetCardTitle": "Dividendes",
+  "dividendDrafts.backfill": "Rechercher les dividendes antérieurs",
+  "dividendDrafts.assetCardHelp": "La recherche quotidienne ne propose que les dividendes postérieurs au dernier enregistré. Ce bouton recherche sur Yahoo tous les dividendes de cet actif depuis votre premier achat qui vous manquent.",
+  "dividendDrafts.goToDividends": "Aller aux dividendes"
 }

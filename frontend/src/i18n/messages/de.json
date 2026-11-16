@@ -963,5 +963,27 @@
   "positionHistory.currentShares": "Aktueller Bestand",
   "positionHistory.event": "Ereignis",
   "positionHistory.change": "Änderung",
-  "positionHistory.sharesAfter": "Bestand danach"
+  "positionHistory.sharesAfter": "Bestand danach",
+
+  "dividendDrafts.title": "Dividenden zur Prüfung ({count})",
+  "dividendDrafts.description": "Über Yahoo Finance erkannte Entwürfe. Prüfe jeden mit deinem Broker und speichere ihn; sie zählen erst in Berichten und Steuern, wenn du sie übernimmst.",
+  "dividendDrafts.confirmDismissAll": "Alle offenen Entwürfe verwerfen? Sie werden nicht erneut vorgeschlagen.",
+  "dividendDrafts.dismissAll": "Alle verwerfen",
+  "dividendDrafts.exDate": "Ex-Tag",
+  "dividendDrafts.grossShort": "brutto",
+  "dividendDrafts.review": "Prüfen",
+  "dividendDrafts.dismiss": "Verwerfen",
+  "dividendDrafts.detect": "Dividenden bei Yahoo suchen",
+  "dividendDrafts.detectFound": "Neue Dividendenentwürfe: {count}. Prüfe und übernimm sie.",
+  "dividendDrafts.detectNone": "Keine neuen Dividenden zu erfassen.",
+  "dividendDrafts.detectError": "Yahoo Finance ist nicht erreichbar. Versuche es später erneut.",
+  "dividendDrafts.accepted": "Dividende erfasst",
+  "dividendDrafts.reviewTitle": "Dividende prüfen",
+  "dividendDrafts.fromYahoo": "Bei Yahoo erkannt: Ex-Tag {date}, {shares} Aktien × {amount} ≈ {gross} brutto.",
+  "dividendDrafts.checkWithTax": "Die Quellensteuer ist anhand deiner bisherigen Dividenden geschätzt. Prüfe Zahltag, Nettobetrag und Quellensteuer mit deinem Broker; Yahoo-Beträge sind in der Kurswährung.",
+  "dividendDrafts.checkNoTax": "Es gibt keine früheren Dividenden, um die Quellensteuer zu schätzen. Prüfe Zahltag, Nettobetrag und Quellensteuer mit deinem Broker; Yahoo-Beträge sind in der Kurswährung.",
+  "dividendDrafts.assetCardTitle": "Dividenden",
+  "dividendDrafts.backfill": "Frühere Dividenden suchen",
+  "dividendDrafts.assetCardHelp": "Die tägliche Suche schlägt nur Dividenden nach der zuletzt erfassten vor. Diese Schaltfläche sucht bei Yahoo alle Dividenden dieses Werts seit deinem ersten Kauf, die dir noch fehlen.",
+  "dividendDrafts.goToDividends": "Zu den Dividenden"
 }

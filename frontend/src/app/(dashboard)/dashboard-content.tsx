@@ -5,6 +5,7 @@ import { api } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoneyCell } from "@/components/app/money-cell";
 import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
+import { PendingDividendsBanner } from "@/components/app/pending-dividends-banner";
 import { PatrimonioEvolutionChart } from "@/components/app/patrimonio-evolution-chart";
 import { RVEvolutionChart } from "@/components/app/rv-evolution-chart";
 import { formatMoney, formatPct } from "@/lib/utils";
@@ -98,6 +99,7 @@ export function DashboardContent() {
       <h1 className="text-lg font-semibold">{t("dashboard.title")}</h1>
 
       <PendingSplitsBanner />
+      <PendingDividendsBanner />
 
       {/* 3 Summary cards */}
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3">

@@ -963,5 +963,27 @@
   "positionHistory.currentShares": "Acciones actuales",
   "positionHistory.event": "Evento",
   "positionHistory.change": "Cambio",
-  "positionHistory.sharesAfter": "Acciones tras el evento"
+  "positionHistory.sharesAfter": "Acciones tras el evento",
+
+  "dividendDrafts.title": "Dividendos pendientes de revisar ({count})",
+  "dividendDrafts.description": "Borradores detectados en Yahoo Finance. Revisa cada uno con tu broker y guárdalo; no cuentan en informes ni en Fiscal hasta que los aceptes.",
+  "dividendDrafts.confirmDismissAll": "¿Descartar todos los borradores pendientes? No se volverán a sugerir.",
+  "dividendDrafts.dismissAll": "Descartar todos",
+  "dividendDrafts.exDate": "ex-dividendo",
+  "dividendDrafts.grossShort": "bruto",
+  "dividendDrafts.review": "Revisar",
+  "dividendDrafts.dismiss": "Descartar",
+  "dividendDrafts.detect": "Buscar dividendos en Yahoo",
+  "dividendDrafts.detectFound": "Borradores de dividendos nuevos: {count}. Revísalos y acéptalos.",
+  "dividendDrafts.detectNone": "No hay dividendos nuevos que registrar.",
+  "dividendDrafts.detectError": "No se pudo consultar Yahoo Finance. Inténtalo más tarde.",
+  "dividendDrafts.accepted": "Dividendo registrado",
+  "dividendDrafts.reviewTitle": "Revisar dividendo",
+  "dividendDrafts.fromYahoo": "Detectado en Yahoo: ex-dividendo el {date}, {shares} acciones × {amount} ≈ {gross} bruto.",
+  "dividendDrafts.checkWithTax": "La retención está estimada con tus dividendos anteriores. Comprueba con tu broker la fecha de cobro, el neto y la retención; los importes de Yahoo van en la moneda de la cotización.",
+  "dividendDrafts.checkNoTax": "No hay dividendos anteriores para estimar la retención. Comprueba con tu broker la fecha de cobro, el neto y la retención; los importes de Yahoo van en la moneda de la cotización.",
+  "dividendDrafts.assetCardTitle": "Dividendos",
+  "dividendDrafts.backfill": "Buscar dividendos anteriores",
+  "dividendDrafts.assetCardHelp": "La búsqueda diaria solo propone dividendos posteriores al último que registraste. Este botón busca en Yahoo todos los de este activo desde tu primera compra que aún no tengas.",
+  "dividendDrafts.goToDividends": "Ir a Dividendos"
 }

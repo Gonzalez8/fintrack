@@ -21,11 +21,28 @@ from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from .client import FintrackClient, FintrackError
+from .insights import investment_flows, payroll_summary
 
 INSTRUCTIONS = """\
-Fintrack is the user's personal investment tracker (stocks, ETFs, funds, crypto, accounts, dividends, interests,
-real estate). Amounts are money in the asset's or account's currency; quantities are shares.
+Fintrack is the user's personal finance tracker: investments (stocks, ETFs, funds, crypto), cash accounts,
+dividends, interests, payslips, savings goals and real estate. Amounts are money in the asset's or account's
+currency (check fintrack_get_settings for the base currency); quantities are shares.
 
+Where to look:
+- Investments now: fintrack_get_portfolio (positions, cost, value, unrealized P&L, weight; realized sales on request).
+  How a position was built: fintrack_get_position_history. Money put in per month / asset / type:
+  fintrack_get_investment_flows (e.g. "how much did I invest in the S&P 500" → group_by="asset", search="S&P").
+- Income: fintrack_get_payroll_summary (per year: gross, net, social security, effective IRPF, bonus and its share
+  of the fixed salary) and fintrack_list_payrolls for single payslips. Payroll types: MONTHLY (regular salary),
+  BONUS (pagas extra, variable, incentives), ATRASOS (back pay / regularizations), OTHER (settlements, severance).
+  Dividends: fintrack_list_dividends; interests: fintrack_list_interests; tax view: fintrack_get_year_summary and
+  fintrack_get_tax_declaration.
+- Savings: fintrack_get_monthly_savings / fintrack_get_annual_savings. Real savings = change in cash + money newly
+  invested (investment cost delta), so investing does not count as spending. Goals: fintrack_list_savings_goals.
+- Accounts and balance history: fintrack_list_accounts, fintrack_list_account_snapshots. Net worth over time:
+  fintrack_get_net_worth_evolution. Real estate and mortgages: fintrack_list_properties.
+
+Rules:
 - Positions, costs and P&L come from Fintrack's own FIFO/LIFO/WAC engine with stock splits applied: report them as
   given rather than recomputing.
 - Assets and accounts can be referenced by ticker, name or id.
@@ -33,7 +50,8 @@ real estate). Amounts are money in the asset's or account's currency; quantities
   confirmation first. Nothing can be deleted through this server; mistakes are fixed by the user in the app.
 - Dividend drafts are suggestions detected from Yahoo Finance: the ex-dividend date is not the payment date and
   amounts are in the quote currency, so ask the user for the figures from their broker before accepting one.
-- This is analysis of the user's own data, not regulated financial advice.
+- For opinions or recommendations, ask for the user's profile first (horizon, risk tolerance, goals, emergency
+  fund) unless already known in the conversation. This is analysis of the user's own data, not regulated advice.
 """
 
 READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
@@ -99,6 +117,19 @@ def create_server(client: FintrackClient) -> MCPServer:
             raise ToolError(f'No asset matches "{ref}". Use fintrack_list_assets to see the available ones.')
         options = ", ".join(f"{a['name']} ({a.get('ticker') or 'no ticker'})" for a in rows[:10])
         raise ToolError(f'"{ref}" matches several assets: {options}. Use the exact ticker or the id.')
+
+    async def fetch_all(path: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        """Every row of a paginated list endpoint."""
+        rows: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            data = await call("get", path, params={**(params or {}), "page": page, "page_size": 1000})
+            if isinstance(data, list):
+                return data
+            rows.extend(data.get("results", []))
+            if not data.get("next"):
+                return rows
+            page += 1
 
     async def resolve_account(ref: str) -> dict[str, Any]:
         ref = ref.strip()
@@ -260,6 +291,156 @@ def create_server(client: FintrackClient) -> MCPServer:
                     )
         mismatches.sort(key=lambda m: (m["asset"] or "", m["dividend_date"]))
         return {"checked_dividends": sum(len(r) for r in by_asset.values()), "mismatches": mismatches}
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_get_settings() -> Any:
+        """User settings: base currency, cost-basis methods (portfolio and fiscal), gift cost mode, rounding and
+        fiscal country."""
+        return await call("get", "settings/")
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_list_payrolls(
+        year: Annotated[int | None, Field(description="Year of the period end.")] = None,
+        month: Annotated[int | None, Field(ge=1, le=12, description="Month of the period end.")] = None,
+        payroll_type: Annotated[
+            Literal["MONTHLY", "BONUS", "ATRASOS", "OTHER"] | None,
+            Field(description="MONTHLY salary, BONUS (extra pays, variable), ATRASOS (back pay), OTHER."),
+        ] = None,
+        limit: Limit = DEFAULT_LIMIT,
+        page: Page = 1,
+    ) -> dict[str, Any]:
+        """List payslips, newest first: period, type, employer, gross, social security, IRPF withheld and rate, net."""
+        params = {
+            "year": year,
+            "month": month,
+            "payroll_type": payroll_type,
+            "page": page,
+            "page_size": limit,
+            "ordering": "-period_end",
+        }
+        return _page(await call("get", "payrolls/", params=params), page, limit)
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_get_payroll_summary(
+        from_year: Annotated[int | None, Field(description="First year to include.")] = None,
+        to_year: Annotated[int | None, Field(description="Last year to include.")] = None,
+    ) -> dict[str, Any]:
+        """Income from payslips per year: gross, net, social security, IRPF withheld and effective rate, totals by
+        type (MONTHLY / BONUS / ATRASOS / OTHER), bonus amount and bonus as % of the fixed monthly salary."""
+        years = payroll_summary(await fetch_all("payrolls/"))
+        years = [
+            y
+            for y in years
+            if (from_year is None or y["year"] >= from_year) and (to_year is None or y["year"] <= to_year)
+        ]
+        return {"years": years}
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_get_monthly_savings(
+        from_month: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}$", description="First month, YYYY-MM.")] = None,
+        to_month: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}$", description="Last month, YYYY-MM.")] = None,
+    ) -> Any:
+        """Month-by-month savings: cash at month end and its change, money newly invested (investment cost delta)
+        and real savings = cash change + invested. Includes stats (average, best and worst month)."""
+        return await call("get", "reports/monthly-savings/", params={"from": from_month, "to": to_month})
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_get_annual_savings() -> Any:
+        """Savings per year: total real savings, cash change, money invested and year-end balances."""
+        return await call("get", "reports/annual-savings/")
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_get_investment_flows(
+        group_by: Annotated[
+            Literal["month", "asset", "type"], Field(description="Group by month, asset or asset type.")
+        ] = "month",
+        from_date: Annotated[str | None, Field(description="From date, YYYY-MM-DD.")] = None,
+        to_date: Annotated[str | None, Field(description="To date, YYYY-MM-DD.")] = None,
+        asset: Annotated[str | None, Field(description="Only this asset (ticker, name or id).")] = None,
+        search: Annotated[
+            str | None, Field(description='Only assets whose name or ticker contains this text, e.g. "S&P 500".')
+        ] = None,
+    ) -> dict[str, Any]:
+        """Money invested over time: bought, sold and net invested per month, asset or asset type, with totals and
+        the average monthly net investment. Answers "how much do I invest each month" or "how much have I put into
+        the S&P 500" (search by name; check the matched assets in the result)."""
+        params: dict[str, Any] = {"from_date": from_date, "to_date": to_date, "search": search}
+        if asset:
+            params["search"] = None
+            asset_id = (await resolve_asset(asset))["id"]
+        else:
+            asset_id = None
+        transactions = await fetch_all("transactions/", params)
+        if asset_id:
+            transactions = [t for t in transactions if t["asset"] == asset_id]
+        assets = {a["id"]: a for a in await fetch_all("assets/")}
+        return investment_flows(transactions, assets, group_by)
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_list_account_snapshots(
+        account: AccountRef,
+        from_date: Annotated[str | None, Field(description="From date, YYYY-MM-DD.")] = None,
+        to_date: Annotated[str | None, Field(description="To date, YYYY-MM-DD.")] = None,
+    ) -> dict[str, Any]:
+        """Balance history of one account (one row per recorded snapshot), newest first."""
+        acc = await resolve_account(account)
+        rows = await fetch_all("account-snapshots/", {"account": acc["id"], "ordering": "-date"})
+        rows = [r for r in rows if (not from_date or r["date"] >= from_date) and (not to_date or r["date"] <= to_date)]
+        return {"account": acc["name"], "snapshots": rows}
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_list_savings_goals(
+        include_projection: Annotated[bool, Field(description="Also project when each goal is reached.")] = True,
+    ) -> dict[str, Any]:
+        """Savings goals (target, deadline, what they are measured against) with conservative / average /
+        optimistic projections of when they are reached."""
+        goals = await fetch_all("savings-goals/")
+        if include_projection:
+            for g in goals:
+                g["projection"] = await call("get", f"savings-goals/{g['id']}/projection/")
+        return {"goals": goals}
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_list_properties() -> dict[str, Any]:
+        """Real estate: current value, purchase price, net equity and mortgage (outstanding balance, rate, monthly
+        payment, months paid, term)."""
+        return {"properties": await fetch_all("properties/")}
+
+    # ---------------------------------------------------------------- prompts
+
+    @mcp.prompt(title="Monthly review")
+    def fintrack_monthly_review(month: str = "") -> str:
+        """Review a month: savings, investments made, income and anything pending."""
+        target = month or "the last complete month"
+        return (
+            f"Do my monthly financial review for {target} using Fintrack. Cover: savings that month and versus my "
+            "average (fintrack_get_monthly_savings), what I invested and in what (fintrack_get_investment_flows), "
+            "payslips received (fintrack_list_payrolls), dividends and interests received, how the portfolio moved, "
+            "and anything waiting for review (fintrack_list_pending_reviews). Finish with three short takeaways."
+        )
+
+    @mcp.prompt(title="Payroll and bonus review")
+    def fintrack_payroll_review(year: str = "") -> str:
+        """Income review from payslips: salary, bonus, IRPF and year-over-year change."""
+        target = f"for {year}" if year else "for the last full year"
+        return (
+            f"Analyse my payslips {target} with Fintrack (fintrack_get_payroll_summary, fintrack_list_payrolls). "
+            "Give gross and net income, fixed salary vs bonus (amount and % of the fixed salary), effective IRPF, "
+            "social security, change versus the previous year, and anything unusual (back pay, settlements, "
+            "missing months)."
+        )
+
+    @mcp.prompt(title="Portfolio analysis")
+    def fintrack_portfolio_analysis() -> str:
+        """Analyse the portfolio and each investment, with recommendations for my profile."""
+        return (
+            "Analyse my investments with Fintrack and give me recommendations. First ask me about my profile "
+            "(age range, investment horizon, risk tolerance, goals, emergency fund, income stability) unless I "
+            "already told you in this conversation. Then review the whole portfolio (fintrack_get_portfolio, "
+            "fintrack_get_investment_flows, fintrack_get_monthly_savings) and each position: weight, concentration, "
+            "diversification by region/sector/currency, overlapping funds, costs, performance and fit with my "
+            "profile. If the fintrack-advisor skill is available, follow it."
+        )
 
     # ----------------------------------------------------------------- write
 

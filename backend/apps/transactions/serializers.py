@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import Dividend, Interest, Transaction
+from .models import Dividend, Interest, StockSplit, Transaction
 
 
 class _OwnershipValidationMixin:
@@ -137,3 +137,44 @@ class InterestSerializer(_OwnershipValidationMixin, serializers.ModelSerializer)
         if date_start and date_end and date_end < date_start:
             raise serializers.ValidationError({"date_end": "date_end must be on or after date_start."})
         return data
+
+
+class StockSplitSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
+    asset_name = serializers.CharField(source="asset.name", read_only=True)
+    asset_ticker = serializers.CharField(source="asset.ticker", read_only=True)
+
+    class Meta:
+        model = StockSplit
+        fields = [
+            "id",
+            "date",
+            "asset",
+            "asset_name",
+            "asset_ticker",
+            "ratio_from",
+            "ratio_to",
+            "status",
+            "source",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "source", "created_at", "updated_at"]
+
+    def validate_asset(self, value):
+        return self._validate_owned_fk(value, "asset")
+
+    def validate(self, attrs):
+        asset = attrs.get("asset", getattr(self.instance, "asset", None))
+        date = attrs.get("date", getattr(self.instance, "date", None))
+        request = self.context.get("request")
+        if request and asset and date:
+            duplicates = StockSplit.objects.filter(owner=request.user, asset=asset, date=date)
+            if self.instance:
+                duplicates = duplicates.exclude(pk=self.instance.pk)
+            if duplicates.exists():
+                raise serializers.ValidationError({"date": "A split for this asset and date already exists."})
+        ratio_from = attrs.get("ratio_from", getattr(self.instance, "ratio_from", None))
+        ratio_to = attrs.get("ratio_to", getattr(self.instance, "ratio_to", None))
+        if ratio_from is not None and ratio_to is not None and ratio_from == ratio_to:
+            raise serializers.ValidationError({"ratio_to": "Ratio must change the number of shares."})
+        return attrs

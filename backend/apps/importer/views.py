@@ -12,7 +12,7 @@ from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapsho
 from apps.assets.serializers import SettingsSerializer
 from apps.realestate.models import Amortization, Property
 from apps.reports.models import SavingsGoal
-from apps.transactions.models import Dividend, Interest, Transaction
+from apps.transactions.models import Dividend, Interest, StockSplit, Transaction
 
 from .serializers import (
     BackupAccountSerializer,
@@ -25,6 +25,7 @@ from .serializers import (
     BackupPropertySerializer,
     BackupSavingsGoalSerializer,
     BackupSettingsSerializer,
+    BackupStockSplitSerializer,
     BackupTransactionSerializer,
 )
 
@@ -45,6 +46,7 @@ class BackupExportView(APIView):
                 PortfolioSnapshot.objects.filter(owner=user), many=True
             ).data,
             "transactions": BackupTransactionSerializer(Transaction.objects.filter(owner=user), many=True).data,
+            "stock_splits": BackupStockSplitSerializer(StockSplit.objects.filter(owner=user), many=True).data,
             "dividends": BackupDividendSerializer(Dividend.objects.filter(owner=user), many=True).data,
             "interests": BackupInterestSerializer(Interest.objects.filter(owner=user), many=True).data,
             "savings_goals": BackupSavingsGoalSerializer(SavingsGoal.objects.filter(owner=user), many=True).data,
@@ -91,6 +93,7 @@ class BackupImportView(APIView):
             "account_snapshots": 0,
             "portfolio_snapshots": 0,
             "transactions": 0,
+            "stock_splits": 0,
             "dividends": 0,
             "interests": 0,
             "savings_goals": 0,
@@ -156,6 +159,14 @@ class BackupImportView(APIView):
                         defaults=to_defaults(item, fk_fields=("asset", "account")),
                     )
                     counts["transactions"] += 1
+
+                for item in payload.get("stock_splits", []):
+                    StockSplit.objects.update_or_create(
+                        id=item["id"],
+                        owner=user,
+                        defaults=to_defaults(item, fk_fields=("asset",)),
+                    )
+                    counts["stock_splits"] += 1
 
                 for item in payload.get("dividends", []):
                     item.pop("withholding_rate", None)

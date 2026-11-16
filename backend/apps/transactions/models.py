@@ -108,3 +108,52 @@ class Interest(UserOwnedModel):
 
     def __str__(self):
         return f"{self.date_start}→{self.date_end} Interest {self.account.name} {self.net}"
+
+
+class StockSplit(UserOwnedModel):
+    """Stock split (or reverse split) of an asset.
+
+    From ``date`` on, every open share becomes ``ratio_to / ratio_from`` shares
+    and its unit cost is divided by the same factor. Total cost is unchanged and
+    no gain is realized. Only APPLIED splits affect the portfolio engine;
+    PENDING ones are auto-detected suggestions waiting for the user.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        APPLIED = "APPLIED", "Applied"
+        DISMISSED = "DISMISSED", "Dismissed"
+
+    class Source(models.TextChoices):
+        MANUAL = "MANUAL", "Manual"
+        AUTO = "AUTO", "Auto-detected"
+
+    date = models.DateField()
+    asset = models.ForeignKey("assets.Asset", on_delete=models.CASCADE, related_name="splits")
+    ratio_from = models.DecimalField(
+        max_digits=12,
+        decimal_places=6,
+        validators=[MinValueValidator(Decimal("0.000001"))],
+        help_text="Shares before the split (1 in a 4:1 split).",
+    )
+    ratio_to = models.DecimalField(
+        max_digits=12,
+        decimal_places=6,
+        validators=[MinValueValidator(Decimal("0.000001"))],
+        help_text="Shares after the split (4 in a 4:1 split).",
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.APPLIED)
+    source = models.CharField(max_length=10, choices=Source.choices, default=Source.MANUAL)
+
+    class Meta:
+        ordering = ["-date", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["owner", "asset", "date"], name="unique_split_owner_asset_date"),
+        ]
+
+    @property
+    def factor(self) -> Decimal:
+        return self.ratio_to / self.ratio_from
+
+    def __str__(self):
+        return f"{self.date} Split {self.asset.name} {self.ratio_to}:{self.ratio_from} ({self.status})"

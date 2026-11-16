@@ -943,5 +943,23 @@
   "splits.saved": "Split gespeichert",
   "splits.saveError": "Der Split konnte nicht gespeichert werden.",
   "splits.duplicateError": "Für diesen Wert gibt es an diesem Datum bereits einen Split.",
-  "splits.confirmDelete": "Diesen Split löschen? Stückzahlen und Kosten werden ohne ihn neu berechnet."
+  "splits.confirmDelete": "Diesen Split löschen? Stückzahlen und Kosten werden ohne ihn neu berechnet.",
+  "splits.badge": "Split",
+  "splits.splitOn": "Split {ratio} am {date}",
+  "splits.includes": "Enthält {detail}",
+  "splits.viewHistory": "Positionsverlauf anzeigen",
+  "splits.notApplied": "nicht übernommen",
+  "splits.adjustedQty": "→ heute {qty}, nach Split",
+  "splits.adjustedQtyShort": "→ heute {qty}",
+  "splits.adjustedHint": "In der Transaktion erfasste Stückzahl. Der Pfeil zeigt, wie vielen Aktien sie heute nach späteren Splits entspricht.",
+  "splits.sharesToday": "Aktien heute (nach Splits)",
+  "splits.rowHint": "Vervielfacht frühere Aktien",
+
+  "positionHistory.title": "Positionsverlauf",
+  "positionHistory.help": "Deine Transaktionen in diesem Wert mit dem Bestand nach jeder einzelnen.",
+  "positionHistory.helpWithSplits": "Deine Transaktionen und die Splits dieses Werts mit dem Bestand nach jedem Schritt, damit du die aktuelle Stückzahl mit deinem Broker abgleichen kannst.",
+  "positionHistory.currentShares": "Aktueller Bestand",
+  "positionHistory.event": "Ereignis",
+  "positionHistory.change": "Änderung",
+  "positionHistory.sharesAfter": "Bestand danach"
 }

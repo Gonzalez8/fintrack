@@ -943,5 +943,23 @@
   "splits.saved": "Split guardado",
   "splits.saveError": "No se pudo guardar el split.",
   "splits.duplicateError": "Ya existe un split para este activo en esa fecha.",
-  "splits.confirmDelete": "¿Eliminar este split? Las cantidades y los costes se recalcularán sin él."
+  "splits.confirmDelete": "¿Eliminar este split? Las cantidades y los costes se recalcularán sin él.",
+  "splits.badge": "Split",
+  "splits.splitOn": "split {ratio} del {date}",
+  "splits.includes": "Incluye {detail}",
+  "splits.viewHistory": "Ver historial de la posición",
+  "splits.notApplied": "no aplicado",
+  "splits.adjustedQty": "→ {qty} hoy, tras split",
+  "splits.adjustedQtyShort": "→ {qty} hoy",
+  "splits.adjustedHint": "Cantidad registrada en la operación. La flecha indica las acciones que representa hoy tras los splits posteriores.",
+  "splits.sharesToday": "Acciones hoy (tras splits)",
+  "splits.rowHint": "Multiplica las acciones anteriores",
+
+  "positionHistory.title": "Historial de la posición",
+  "positionHistory.help": "Tus operaciones de este activo con las acciones que tenías tras cada una.",
+  "positionHistory.helpWithSplits": "Tus operaciones y los splits de este activo, con las acciones que tenías tras cada paso. Así puedes cuadrar la cantidad actual con tu broker.",
+  "positionHistory.currentShares": "Acciones actuales",
+  "positionHistory.event": "Evento",
+  "positionHistory.change": "Cambio",
+  "positionHistory.sharesAfter": "Acciones tras el evento"
 }

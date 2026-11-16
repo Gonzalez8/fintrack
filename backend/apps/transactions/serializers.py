@@ -19,6 +19,7 @@ class TransactionSerializer(_OwnershipValidationMixin, serializers.ModelSerializ
     asset_name = serializers.CharField(source="asset.name", read_only=True)
     asset_ticker = serializers.CharField(source="asset.ticker", read_only=True)
     account_name = serializers.CharField(source="account.name", read_only=True)
+    split_factor = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
@@ -36,10 +37,27 @@ class TransactionSerializer(_OwnershipValidationMixin, serializers.ModelSerializ
             "commission",
             "tax",
             "notes",
+            "split_factor",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "split_factor", "created_at", "updated_at"]
+
+    def get_split_factor(self, obj):
+        """Product of APPLIED splits after this trade: shares now = quantity × factor.
+
+        A split on the trade date is excluded (that trade is already post-split).
+        Needs ``split_factors`` in the context ({asset_id: [(date, factor)]});
+        returns None when it is not provided.
+        """
+        factors = self.context.get("split_factors")
+        if factors is None:
+            return None
+        factor = Decimal("1")
+        for split_date, split_factor in factors.get(obj.asset_id, ()):
+            if split_date > obj.date:
+                factor *= split_factor
+        return str(factor.normalize())
 
     def validate_asset(self, value):
         return self._validate_owned_fk(value, "asset")

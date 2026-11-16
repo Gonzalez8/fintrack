@@ -454,3 +454,92 @@ def test_daily_task_runs_detection_per_user(user, user2):
         detect_splits_all_users_task()
     # One failing user must not stop the others
     assert detect.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# Visibility: position history, per-transaction factor, splits on positions
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestPositionHistory:
+    def test_running_quantity_with_split(self, client, user, asset, account):
+        _tx(user, asset, account, "BUY", datetime.date(2021, 5, 10), 28, 100)
+        _split(user, asset, ratio_from="1", ratio_to="2")
+        _tx(user, asset, account, "BUY", datetime.date(2026, 8, 1), 7, 120)
+        _tx(user, asset, account, "SELL", datetime.date(2026, 9, 1), 3, 130)
+
+        res = client.get(f"/api/assets/{asset.id}/position-history/")
+        assert res.status_code == 200
+        events = res.data["events"]
+        assert [e["kind"] for e in events] == ["BUY", "SPLIT", "BUY", "SELL"]
+        assert [Decimal(e["quantity_after"]) for e in events] == [Decimal(q) for q in ("28", "56", "63", "60")]
+        assert events[1]["ratio_to"].startswith("2") and events[1]["status"] == "APPLIED"
+        assert events[0]["account_name"] == "Broker"
+        assert Decimal(res.data["quantity"]) == Decimal("60")
+        # Matches the portfolio engine
+        assert Decimal(_pos(calculate_portfolio(user))["quantity"]) == Decimal("60")
+
+    def test_pending_split_is_listed_but_not_applied(self, client, user, asset, account):
+        _tx(user, asset, account, "BUY", datetime.date(2021, 5, 10), 1, 800)
+        _split(user, asset, status=StockSplit.Status.PENDING)
+
+        events = client.get(f"/api/assets/{asset.id}/position-history/").data["events"]
+        assert events[1]["kind"] == "SPLIT" and events[1]["status"] == "PENDING"
+        assert Decimal(events[1]["quantity_after"]) == Decimal("1")
+
+    def test_dismissed_split_is_hidden(self, client, user, asset, account):
+        _tx(user, asset, account, "BUY", datetime.date(2021, 5, 10), 1, 800)
+        _split(user, asset, status=StockSplit.Status.DISMISSED)
+
+        events = client.get(f"/api/assets/{asset.id}/position-history/").data["events"]
+        assert [e["kind"] for e in events] == ["BUY"]
+
+    def test_oversell_stops_at_zero(self, client, user, asset, account):
+        _tx(user, asset, account, "BUY", datetime.date(2021, 5, 10), 1, 800)
+        _tx(user, asset, account, "SELL", datetime.date(2022, 5, 10), 3, 900)
+
+        data = client.get(f"/api/assets/{asset.id}/position-history/").data
+        assert Decimal(data["quantity"]) == Decimal("0")
+
+    def test_other_users_asset_is_not_found(self, user2, asset):
+        c = APIClient()
+        c.force_authenticate(user=user2)
+        assert c.get(f"/api/assets/{asset.id}/position-history/").status_code == 404
+
+
+@pytest.mark.django_db
+class TestTransactionSplitFactor:
+    def test_factor_only_counts_later_applied_splits(self, client, user, asset, account):
+        before = _tx(user, asset, account, "BUY", datetime.date(2021, 5, 10), 28, 100)
+        same_day = _tx(user, asset, account, "BUY", SPLIT_DATE, 1, 50)
+        after = _tx(user, asset, account, "BUY", datetime.date(2026, 8, 1), 7, 120)
+        _split(user, asset)  # 4:1 on SPLIT_DATE
+        _split(user, asset, date=datetime.date(2026, 10, 1), status=StockSplit.Status.PENDING)
+
+        res = client.get("/api/transactions/")
+        factors = {r["id"]: r["split_factor"] for r in res.data["results"]}
+        assert Decimal(factors[str(before.id)]) == Decimal("4")
+        assert Decimal(factors[str(same_day.id)]) == Decimal("1")
+        assert Decimal(factors[str(after.id)]) == Decimal("1")
+
+    def test_multiple_splits_multiply(self, client, user, asset, account):
+        tx = _tx(user, asset, account, "BUY", datetime.date(2020, 1, 10), 1, 500)
+        _split(user, asset, date=datetime.date(2021, 7, 20))
+        _split(user, asset, date=datetime.date(2024, 6, 10), ratio_to="10")
+
+        res = client.get(f"/api/transactions/{tx.id}/")
+        assert Decimal(res.data["split_factor"]) == Decimal("40")
+
+
+@pytest.mark.django_db
+def test_positions_list_their_applied_splits(user, asset, account):
+    _set_method(user, "FIFO")
+    _tx(user, asset, account, "BUY", datetime.date(2021, 5, 10), 1, 800)
+    _split(user, asset)
+    _split(user, asset, date=datetime.date(2026, 10, 1), status=StockSplit.Status.PENDING)
+
+    splits = _pos(calculate_portfolio(user))["splits"]
+    assert len(splits) == 1
+    assert splits[0]["date"] == "2026-07-02"
+    assert Decimal(splits[0]["ratio_to"]) == Decimal("4")

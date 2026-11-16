@@ -278,6 +278,11 @@ const proxyHandlers = [
     return new HttpResponse(null, { status: 204 });
   }),
 
+  http.get("/api/proxy/assets/:id/position-history/", async () => {
+    await delay(200);
+    return HttpResponse.json({ quantity: "0", events: [] });
+  }),
+
   // ---- Stock splits ----
   http.get("/api/proxy/splits/", async () => {
     await delay(200);

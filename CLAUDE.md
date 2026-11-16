@@ -72,6 +72,7 @@ frontend/         Next.js 16 App Router
 - **Accounts:** Checking, savings, investment, deposits, alternatives with balance snapshots
 - **Transactions:** Buy/Sell/Gift with commission and tax tracking
 - **Stock splits:** `StockSplit` per asset (date + `ratio_to:ratio_from`, e.g. 4:1 or reverse 1:10). The FIFO/LIFO/WAC engine applies APPLIED splits chronologically (before same-day trades): open lots get `qty × factor` and `unit cost ÷ factor`, total cost unchanged, nothing realized. Auto-detection reads Yahoo Finance splits for AUTO-priced assets (daily Celery task + `POST /api/splits/detect/`) and creates PENDING suggestions only when the split is after the first purchase and shares were held; the user applies or dismisses them from the dashboard/portfolio banner or the asset detail card. Dismissed splits are never suggested again. Included in JSON backup/restore.
+- **Split visibility:** `GET /api/assets/{id}/position-history/` replays trades + splits with the shares held after each step ("Historial de la posición" card, anchor `#position-history`). Transactions expose `split_factor` (product of later APPLIED splits) so the operations list shows "28 → 112 hoy" and interleaves applied splits as rows (`interleaveSplits()` in `lib/splits.ts`). Portfolio positions carry `splits` and show a "Split" badge.
 - **Dividends:** Per-asset tracking with withholding tax by country
 - **Interests:** Account interest income with date ranges
 

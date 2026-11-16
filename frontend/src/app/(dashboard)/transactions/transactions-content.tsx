@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
@@ -19,19 +20,14 @@ import { SwipeCard } from "@/components/app/swipe-card";
 import { DetailDrawer } from "@/components/app/detail-drawer";
 import { ShoppingCart, TrendingDown, Gift, Search, Pencil, Trash2, Download, Info, SlidersHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
-import { TRANSACTION_TYPE_KEYS } from "@/lib/constants";
+import { TRANSACTION_TYPE_KEYS, TX_TYPE_BADGE_COLORS } from "@/lib/constants";
 import { formatMoney, formatQty } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
-import type { Transaction, TransactionFormData, Asset, Account, PaginatedResponse, PortfolioData } from "@/types";
+import type { Transaction, TransactionFormData, Asset, Account, PaginatedResponse, PortfolioData, StockSplit } from "@/types";
+import { formatSplitRatio, interleaveSplits, splitAdjustedQuantity, type SplitRow } from "@/lib/splits";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const PAGE_SIZE = 25;
-
-const TX_TYPE_BADGE_COLORS: Record<string, string> = {
-  BUY: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  SELL: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  GIFT: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-};
 
 export function TransactionsContent() {
   const router = useRouter();
@@ -79,6 +75,29 @@ export function TransactionsContent() {
     queryFn: () => api.get<Account[]>("/accounts/"),
   });
   const accountList = Array.isArray(accounts) ? accounts : (accounts as PaginatedResponse<Account> | undefined)?.results ?? [];
+
+  // Applied splits are shown inline so quantities can be reconciled. They are
+  // per asset (not per account or type), so hide them when those filters are on.
+  const { data: splitsData } = useQuery({
+    queryKey: ["splits", "APPLIED"],
+    queryFn: () => api.get<PaginatedResponse<StockSplit>>("/splits/?status=APPLIED"),
+  });
+  const searchLower = search.toLowerCase();
+  const visibleSplits =
+    typeFilter || accountFilter
+      ? []
+      : (splitsData?.results ?? []).filter(
+          (s) =>
+            (!dateFrom || s.date >= dateFrom) &&
+            (!dateTo || s.date <= dateTo) &&
+            (!searchLower ||
+              s.asset_name.toLowerCase().includes(searchLower) ||
+              (s.asset_ticker ?? "").toLowerCase().includes(searchLower)),
+        );
+  const rows = interleaveSplits(data?.results ?? [], visibleSplits, {
+    isFirstPage: !data?.previous,
+    isLastPage: !data?.next,
+  });
 
   const handleExportCsv = async () => {
     try {
@@ -136,7 +155,7 @@ export function TransactionsContent() {
     setDialogOpen(true);
   };
 
-  const columns: Column<Transaction>[] = [
+  const txColumns: Column<Transaction>[] = [
     { key: "date", header: t("common.date"), render: (tx) => <span className="text-sm">{tx.date}</span> },
     {
       key: "type",
@@ -158,7 +177,24 @@ export function TransactionsContent() {
       ),
     },
     { key: "account", header: t("common.account"), render: (tx) => <span className="text-sm">{tx.account_name}</span> },
-    { key: "qty", header: t("portfolio.quantity"), className: "text-right", render: (tx) => <span className="font-mono text-sm tabular-nums">{formatQty(tx.quantity)}</span> },
+    {
+      key: "qty",
+      header: t("portfolio.quantity"),
+      className: "text-right",
+      render: (tx) => {
+        const adjusted = splitAdjustedQuantity(tx);
+        return (
+          <div>
+            <span className="font-mono text-sm tabular-nums">{formatQty(tx.quantity)}</span>
+            {adjusted != null && (
+              <div className="whitespace-nowrap text-[11px] text-amber-600 dark:text-amber-400" title={t("splits.adjustedHint")}>
+                {t("splits.adjustedQtyShort", { qty: formatQty(adjusted) })}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
     { key: "price", header: t("transactions.price"), className: "text-right", render: (tx) => <MoneyCell value={tx.price} /> },
     { key: "commission", header: t("transactions.commission"), className: "text-right", render: (tx) => <MoneyCell value={tx.commission} /> },
     { key: "tax", header: t("transactions.taxes"), className: "text-right", render: (tx) => <MoneyCell value={tx.tax} /> },
@@ -187,6 +223,36 @@ export function TransactionsContent() {
       ),
     },
   ];
+
+  const splitCell = (sp: StockSplit, key: string) => {
+    switch (key) {
+      case "date":
+        return <span className="text-sm">{sp.date}</span>;
+      case "type":
+        return (
+          <Badge className={TX_TYPE_BADGE_COLORS.SPLIT} variant="secondary">
+            {t("splits.badge")}
+          </Badge>
+        );
+      case "asset":
+        return (
+          <Link href={`/assets/${sp.asset}#position-history`} className="block hover:underline">
+            <span className="font-medium">{sp.asset_name}</span>
+            {sp.asset_ticker && <span className="ml-1 text-xs text-muted-foreground">{sp.asset_ticker}</span>}
+            <span className="block text-xs text-muted-foreground">{t("splits.rowHint")}</span>
+          </Link>
+        );
+      case "qty":
+        return <span className="font-mono text-sm font-semibold tabular-nums">{formatSplitRatio(sp)}</span>;
+      default:
+        return null;
+    }
+  };
+
+  const columns: Column<SplitRow<Transaction>>[] = txColumns.map((col) => ({
+    ...col,
+    render: (row) => (row.kind === "tx" ? col.render(row.tx) : splitCell(row.split, col.key)),
+  }));
 
   return (
     <div className="space-y-4">
@@ -309,10 +375,34 @@ export function TransactionsContent() {
       <div className="sm:hidden space-y-2">
         {isLoading ? (
           <div className="py-12 text-center text-muted-foreground text-sm">{t("common.loading")}</div>
-        ) : (data?.results ?? []).length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground text-sm">{t("transactions.noTransactions")}</div>
         ) : (
-          (data?.results ?? []).map((tx) => {
+          rows.map((row) => {
+            if (row.kind === "split") {
+              const sp = row.split;
+              return (
+                <Link
+                  key={`split-${sp.id}`}
+                  href={`/assets/${sp.asset}#position-history`}
+                  className="block rounded-lg border border-l-4 border-l-amber-500 bg-amber-500/5 p-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge className={TX_TYPE_BADGE_COLORS.SPLIT} variant="secondary">
+                      {t("splits.badge")}
+                    </Badge>
+                    <span className="font-medium text-sm truncate">{sp.asset_name}</span>
+                    {sp.asset_ticker && <span className="text-xs text-muted-foreground">{sp.asset_ticker}</span>}
+                    <span className="ml-auto font-mono text-sm font-semibold">{formatSplitRatio(sp)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {sp.date} · {t("splits.rowHint")}
+                  </p>
+                </Link>
+              );
+            }
+            const tx = row.tx;
+            const adjusted = splitAdjustedQuantity(tx);
             const total = tx.price ? parseFloat(tx.quantity) * parseFloat(tx.price) : null;
             const accent = tx.type === "BUY" ? "border-l-green-500" : tx.type === "SELL" ? "border-l-red-500" : "border-l-purple-500";
             return (
@@ -335,6 +425,11 @@ export function TransactionsContent() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {tx.date} · {tx.account_name} · {formatQty(tx.quantity)} × {tx.price ? formatMoney(tx.price) : "—"}
                     </p>
+                    {adjusted != null && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                        {t("splits.adjustedQty", { qty: formatQty(adjusted) })}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right shrink-0">
                     {total != null && (
@@ -352,8 +447,8 @@ export function TransactionsContent() {
       <div className="hidden sm:block">
         <DataTable
           columns={columns}
-          data={data?.results ?? []}
-          keyFn={(t) => t.id}
+          data={rows}
+          keyFn={(row) => (row.kind === "tx" ? row.tx.id : `split-${row.split.id}`)}
           page={page}
           pageSize={PAGE_SIZE}
           total={data?.count}
@@ -376,6 +471,9 @@ export function TransactionsContent() {
             rows={[
               { label: t("common.account"), value: tx.account_name ?? "" },
               { label: t("common.quantity"), value: formatQty(tx.quantity) },
+              ...(splitAdjustedQuantity(tx) != null
+                ? [{ label: t("splits.sharesToday"), value: <span className="text-amber-600 dark:text-amber-400">{formatQty(splitAdjustedQuantity(tx))}</span> }]
+                : []),
               ...(tx.price ? [{ label: t("transactions.price"), value: formatMoney(tx.price) }] : []),
               ...(total != null ? [{ label: "Total", value: <span className="font-semibold">{formatMoney(total)}</span> }] : []),
               ...(tx.commission && parseFloat(tx.commission) > 0 ? [{ label: t("transactions.commission"), value: formatMoney(tx.commission) }] : []),

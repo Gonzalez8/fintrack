@@ -16,6 +16,17 @@ class TransactionViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
     filterset_class = TransactionFilter
     ordering_fields = ["date", "type", "quantity", "price"]
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.request and self.request.user.is_authenticated:
+            factors = {}
+            for asset_id, split_date, ratio_from, ratio_to in StockSplit.objects.filter(
+                owner=self.request.user, status=StockSplit.Status.APPLIED
+            ).values_list("asset_id", "date", "ratio_from", "ratio_to"):
+                factors.setdefault(asset_id, []).append((split_date, ratio_to / ratio_from))
+            context["split_factors"] = factors
+        return context
+
 
 class DividendViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
     queryset = Dividend.objects.select_related("asset").all()

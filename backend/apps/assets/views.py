@@ -40,6 +40,13 @@ class AssetViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+    @action(detail=True, methods=["get"], url_path="position-history")
+    def position_history(self, request, pk=None):
+        """Operations and splits of this asset with the shares held after each one."""
+        from apps.portfolio.services import position_history
+
+        return Response(position_history(request.user, self.get_object()))
+
     @action(detail=True, methods=["get"], url_path="price-history")
     def price_history(self, request, pk=None):
         import yfinance as yf

@@ -32,6 +32,8 @@ ALLOWED_HOSTS=your-domain.com,192.168.1.10
 docker compose -f docker-compose.prod.yml up -d
 ```
 
+Behind a reverse proxy (Nginx Proxy Manager, Traefik, Caddy…), give the backend its own host (e.g. `fintrack-api.example.com` → port `8001`), add it to `ALLOWED_HOSTS` and use it as `FINTRACK_URL`. With a wildcard certificate use a one-level subdomain: `*.example.com` does not cover `api.fintrack.example.com`.
+
 ### 3. Install `uv`
 
 ```bash

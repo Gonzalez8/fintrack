@@ -262,6 +262,8 @@
   "transactions.sell": "Vendita",
   "transactions.gift": "Regalo",
   "transactions.searchPlaceholder": "Cerca nome o ticker...",
+  "transactions.searchAsset": "Digita per cercare un titolo…",
+  "transactions.noAssetMatch": "Nessun titolo corrispondente",
   "transactions.fromDate": "Da data",
   "transactions.toDate": "A data",
   "transactions.allTypes": "Tutti",

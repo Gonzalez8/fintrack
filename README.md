@@ -279,6 +279,10 @@ Browser
 
 ---
 
+## AI Access (MCP)
+
+Fintrack ships an [MCP](https://modelcontextprotocol.io) server so an AI assistant (Claude Desktop, Claude Code…) can review your portfolio, operations, dividends and reports and, with a write-enabled token, add records. It runs locally on your computer and talks to your Fintrack over your own network — no need to expose Fintrack to the internet. Create a token in **Settings → AI access (MCP)**; tokens can be read-only, can never delete data or touch your account, and can be revoked at any time. Setup and the list of tools: [`mcp/README.md`](mcp/README.md).
+
 ## Tech Stack
 
 | Layer | Technology |

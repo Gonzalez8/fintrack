@@ -30,6 +30,8 @@ backend/          Django 5.1 + DRF (API pura)
     celery.py     Celery app
     urls.py       Root URL conf
 
+mcp/              MCP server (Python, stdio) — AI assistants read/add records via the API with a personal token
+
 frontend/         Next.js 16 App Router
   src/
     app/
@@ -111,6 +113,12 @@ frontend/         Next.js 16 App Router
 - **Demo mode:** MSW-based mock data, fake JWT tokens, works without backend
 - **Mobile-first:** SwipeCard for list items, FAB for new items, stacked card layouts, responsive charts
 - **Dark/Light theme:** System-aware with manual toggle
+
+## AI Access (MCP)
+
+- **Personal access tokens** (`core.ApiToken`): created/revoked in Settings → AI access (`/api/auth/api-tokens/`, session only). Only the SHA-256 of the key is stored; the key (`ft_…`) is shown once. Scopes `READ` / `WRITE`.
+- **`ApiTokenAuthentication`** (first in `DEFAULT_AUTHENTICATION_CLASSES`, before the cookie JWT) enforces every rule itself because several views override `permission_classes`: tokens can never reach `/api/auth/` or `/api/backup/import/`, never `DELETE`, and READ tokens only use safe methods.
+- **`mcp/`** (`fintrack_mcp`, MCP Python SDK 2.x `MCPServer`, stdio): thin client of the REST API — 12 read tools + 7 write tools prefixed `fintrack_`, assets/accounts referenced by ticker or name. Runs on the user's computer (`uvx --from "git+…#subdirectory=mcp" fintrack-mcp`) with `FINTRACK_URL` (backend, port 8001 in prod; must be in `ALLOWED_HOSTS`) and `FINTRACK_TOKEN`. Tests use the in-process MCP `Client` against a `respx`-mocked API; CI job `mcp`.
 
 ## Key Conventions
 

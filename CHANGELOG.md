@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] - 2026-11-16
+
+### Added
+
+- **Dividend drafts from Yahoo Finance.** Fintrack now detects your dividends on Yahoo and prepares drafts with the shares you held on the ex-dividend date (splits included), the estimated gross amount and an estimated withholding based on your previous dividends of that asset. A "Dividends awaiting review" banner on the dashboard and on Dividends lets you **Review** each one — the dividend dialog opens pre-filled so you only check it against your broker, set the payment date and save — or **Dismiss** it (one or all; dismissed drafts are never suggested again). Drafts don't count in reports or tax until accepted. (#114)
+  - To avoid duplicating dividends you already track, drafts only cover ex-dates after the latest dividend recorded for each asset (one year back for assets with none), and events already matched by a recorded dividend — usually dated on payment — are skipped.
+  - Detection runs daily and on demand (button on Dividends). "Search earlier dividends" on each asset's page looks back to your first purchase.
+  - Yahoo amounts are in the quote currency and Yahoo gives the ex-dividend date, not the payment date: both are flagged in the review dialog.
+
+### Migration notes
+
+- New `transactions.DividendSuggestion` table (migration `0008_dividendsuggestion`, additive only), applied automatically on container start. Existing dividends are untouched.
+
 ## [2.12.1] - 2026-11-16
 
 ### Fixed

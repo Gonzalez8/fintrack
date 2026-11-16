@@ -230,7 +230,10 @@ export function AssetsContent() {
   }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data, isLoading } = useQuery({
-    queryKey: ["assets", page, debouncedSearch, typeFilter],
+    // Key on the URL "search" param the request uses, not the debounced input:
+    // otherwise the query runs with the stale URL value and caches it as the new
+    // text's result, so a search only applied after typing another key.
+    queryKey: ["assets", page, search, typeFilter],
     queryFn: () => {
       const params = new URLSearchParams();
       params.set("page", String(page));

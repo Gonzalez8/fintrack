@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.1] - 2026-11-16
+
+### Fixed
+
+- **Lists showed phantom empty pages.** The API ignored the requested page size and always returned 50 rows while Operations, Dividends, Interests and Assets paginated in 25s, so half of the pages offered were empty. Lists now get exactly the 25 rows they paginate. (#113)
+- **Totals and pickers stopped at 50 rows.** For the same reason, the tax financial analysis (dividends and interests per year), the payroll analytics and the asset pickers only received the first 50 records. They now receive every row (up to 1,000), so **tax figures for years with more than 50 dividends or interests may change** after updating — they are now complete. (#113)
+- **Dividends and Interests search did nothing.** The API had no search filter for them; dividends now search by asset name or ticker and interests by account name. (#112)
+- **Searches applied one keystroke late** in Dividends, Interests and Assets (same issue fixed for Operations in 2.12.0). (#112)
+
+### Changed
+
+- The dividend dialog uses the type-to-search asset picker, like Buy / Sell / Gift. (#112)
+
 ## [2.12.0] - 2026-11-16
 
 ### Added

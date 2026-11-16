@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.0] - 2026-11-16
+
+### Added
+
+- **The AI assistant now covers your whole financial picture.** Nine new MCP tools: payslips and a yearly income summary (gross, net, social security, effective IRPF, bonus and its share of the fixed salary), monthly and yearly savings, money invested per month, per fund or per asset type (e.g. "how much have I put into the S&P 500"), account balance history, savings goals with projections, real estate and mortgages, and your settings. (#116)
+- **Ready-made analyses** as MCP prompts: monthly review, payroll and bonus review, and portfolio analysis. (#116)
+- **`fintrack-advisor` skill** (attached to this release as `fintrack-advisor.zip`): teaches the assistant how to answer financial questions with Fintrack and how to review each investment — concentration, overlapping funds, costs, currency, emergency fund, savings rate, bonus dependence, Spanish tax, mortgage vs investing — with Keep / Review / Watch verdicts. It **asks for your investor profile before giving opinions** and doesn't store it. (#116)
+- Payslips can be filtered by type (monthly, bonus, back pay, other) in the API. (#116)
+
+### MCP update
+
+- **Update your MCP command to `v2.15.0`** to get the new tools and prompts: copy it again from Settings → *AI access (MCP)* (Claude Code: `claude mcp remove fintrack` and add it again; Claude Desktop: change the version in the config and restart). Install the skill from `fintrack-advisor.zip` — see README → *AI Access (MCP)* → *Advisor skill*.
+
 ## [2.14.0] - 2026-11-16
 
 ### Added

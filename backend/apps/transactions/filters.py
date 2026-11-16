@@ -1,7 +1,7 @@
 import django_filters
 from django.db.models import Q
 
-from .models import Dividend, Interest, Transaction
+from .models import Dividend, Interest, StockSplit, Transaction
 
 
 class TransactionFilter(django_filters.FilterSet):
@@ -35,4 +35,13 @@ class InterestFilter(django_filters.FilterSet):
 
     class Meta:
         model = Interest
+        fields = []
+
+
+class StockSplitFilter(django_filters.FilterSet):
+    asset_id = django_filters.UUIDFilter(field_name="asset_id")
+    status = django_filters.CharFilter(field_name="status")
+
+    class Meta:
+        model = StockSplit
         fields = []

@@ -208,6 +208,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.assets.tasks.purge_old_snapshots_task",
         "schedule": 86400.0,  # daily
     },
+    "detect-splits": {
+        "task": "apps.transactions.tasks.detect_splits_all_users_task",
+        "schedule": 86400.0,  # daily
+    },
 }
 
 # ---------------------------------------------------------------------------

@@ -3,13 +3,52 @@ from collections import deque
 from decimal import ROUND_HALF_UP, Decimal
 
 from apps.assets.models import Account, Settings
-from apps.transactions.models import Transaction
+from apps.transactions.models import StockSplit, Transaction
 
 logger = logging.getLogger(__name__)
 
 
 def _fetch_transactions(user):
     return Transaction.objects.filter(owner=user).select_related("asset").order_by("date", "created_at")
+
+
+def _applied_splits(user):
+    """APPLIED splits as plain dicts, oldest first."""
+    return [
+        {"date": sp.date, "asset_id": sp.asset_id, "factor": sp.factor}
+        for sp in StockSplit.objects.filter(owner=user, status=StockSplit.Status.APPLIED).order_by("date")
+    ]
+
+
+def _with_splits(transactions, splits, get_date):
+    """Interleave transactions and splits chronologically.
+
+    Yields ``("split", split)`` or ``("tx", tx)``. A split is yielded before any
+    transaction on its own date, since trades on the split date already happen
+    at post-split prices.
+    """
+    i = 0
+    for tx in transactions:
+        while i < len(splits) and splits[i]["date"] <= get_date(tx):
+            yield "split", splits[i]
+            i += 1
+        yield "tx", tx
+    for split in splits[i:]:
+        yield "split", split
+
+
+def _split_lots(asset_lots, factor, price_key="price_per_unit"):
+    """Scale open lots by a split factor: more shares, same total cost."""
+    for lot in asset_lots:
+        lot["qty"] *= factor
+        lot[price_key] /= factor
+
+
+def _split_wac(state, factor):
+    """Scale a WAC state by a split factor: more shares, same total cost."""
+    state["total_qty"] *= factor
+    for acct_id in state.get("acct_qty", {}):
+        state["acct_qty"][acct_id] *= factor
 
 
 def compute_investment_cost_by_month(user):
@@ -29,11 +68,20 @@ def compute_investment_cost_by_month(user):
     running_cost = Decimal("0")
     cost_by_month: dict[str, Decimal] = {}
 
-    for tx in (
+    transactions = (
         Transaction.objects.filter(owner=user)
         .order_by("date", "created_at")
         .values("date", "type", "asset_id", "quantity", "price", "commission", "tax")
-    ):
+    )
+    for kind, tx in _with_splits(transactions, _applied_splits(user), lambda t: t["date"]):
+        if kind == "split":
+            if use_wac:
+                if tx["asset_id"] in wac_state:
+                    _split_wac(wac_state[tx["asset_id"]], tx["factor"])
+            else:
+                _split_lots(lots.get(tx["asset_id"], ()), tx["factor"], price_key="ppu")
+            continue
+
         month_key = tx["date"].strftime("%Y-%m")
         aid = tx["asset_id"]
         qty = tx["quantity"] or Decimal("0")
@@ -104,7 +152,11 @@ def _process_lot_based(user, lifo=False):
     asset_map = {}
     realized_sales = []
 
-    for tx in _fetch_transactions(user):
+    for kind, tx in _with_splits(_fetch_transactions(user), _applied_splits(user), lambda t: t.date):
+        if kind == "split":
+            _split_lots(lots.get(tx["asset_id"], ()), tx["factor"])
+            continue
+
         aid = tx.asset_id
         if aid not in lots:
             lots[aid] = deque()
@@ -172,7 +224,12 @@ def _process_wac(user):
     asset_map = {}
     realized_sales = []
 
-    for tx in _fetch_transactions(user):
+    for kind, tx in _with_splits(_fetch_transactions(user), _applied_splits(user), lambda t: t.date):
+        if kind == "split":
+            if tx["asset_id"] in wac_state:
+                _split_wac(wac_state[tx["asset_id"]], tx["factor"])
+            continue
+
         aid = tx.asset_id
         if aid not in wac_state:
             wac_state[aid] = {"total_qty": Decimal("0"), "total_cost": Decimal("0"), "acct_qty": {}}

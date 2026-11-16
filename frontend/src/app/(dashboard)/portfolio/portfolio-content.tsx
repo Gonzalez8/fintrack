@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell, PctCell } from "@/components/app/money-cell";
+import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
 import { RefreshCw } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -173,6 +174,8 @@ export function PortfolioContent() {
           </span>
         </Button>
       </div>
+
+      <PendingSplitsBanner />
 
       {priceResult && (
         <p className="text-sm text-muted-foreground">

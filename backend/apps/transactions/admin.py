@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Dividend, Interest, Transaction
+from .models import Dividend, Interest, StockSplit, Transaction
 
 
 @admin.register(Transaction)
@@ -24,4 +24,12 @@ class InterestAdmin(admin.ModelAdmin):
     list_display = ("date_start", "date_end", "account", "gross", "net", "owner")
     list_filter = ("date_end",)
     search_fields = ("account__name",)
+    readonly_fields = ("id", "created_at", "updated_at")
+
+
+@admin.register(StockSplit)
+class StockSplitAdmin(admin.ModelAdmin):
+    list_display = ("date", "asset", "ratio_to", "ratio_from", "status", "source", "owner")
+    list_filter = ("status", "source", "date")
+    search_fields = ("asset__name", "asset__ticker")
     readonly_fields = ("id", "created_at", "updated_at")

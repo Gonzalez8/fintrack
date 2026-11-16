@@ -278,6 +278,37 @@ const proxyHandlers = [
     return new HttpResponse(null, { status: 204 });
   }),
 
+  // ---- Stock splits ----
+  http.get("/api/proxy/splits/", async () => {
+    await delay(200);
+    return HttpResponse.json(paginated([]));
+  }),
+
+  http.post("/api/proxy/splits/detect/", async () => {
+    await delay(400);
+    return HttpResponse.json({ created: [] });
+  }),
+
+  http.post("/api/proxy/splits/:id/:action/", async () => {
+    await delay(200);
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.post("/api/proxy/splits/", async () => {
+    await delay(200);
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.patch("/api/proxy/splits/:id/", async () => {
+    await delay(200);
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.delete("/api/proxy/splits/:id/", async () => {
+    await delay(200);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   // ---- Employers ----
   http.get("/api/proxy/employers/", async () => {
     await delay(150);

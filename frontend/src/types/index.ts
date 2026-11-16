@@ -330,6 +330,23 @@ export interface TaskResult {
   error?: string;
 }
 
+// ── Stock splits ─────────────────────────────────────────────────
+export type StockSplitStatus = "PENDING" | "APPLIED" | "DISMISSED";
+
+export interface StockSplit {
+  id: string;
+  date: string;
+  asset: string;
+  asset_name: string;
+  asset_ticker: string | null;
+  ratio_from: string;
+  ratio_to: string;
+  status: StockSplitStatus;
+  source: "MANUAL" | "AUTO";
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Pagination ───────────────────────────────────────────────────
 export interface PaginatedResponse<T> {
   count: number;

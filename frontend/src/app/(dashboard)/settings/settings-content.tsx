@@ -32,6 +32,7 @@ const TABLE_TOOLTIP_KEYS: Record<string, string> = {
   transactions_transaction: "settings.tableTooltipTransactionsTransaction",
   transactions_dividend: "settings.tableTooltipTransactionsDividend",
   transactions_interest: "settings.tableTooltipTransactionsInterest",
+  transactions_stocksplit: "settings.tableTooltipTransactionsStocksplit",
 };
 
 function useNow(intervalMs = 60_000) {
@@ -608,6 +609,7 @@ export function SettingsContent() {
                 <li>{t("settings.backupPortfolioHistory")}: {importResult.portfolio_snapshots}</li>
                 <li>{t("settings.backupPositionHistory")}: {importResult.position_snapshots}</li>
                 <li>{t("settings.backupTransactions")}: {importResult.transactions}</li>
+                <li>{t("settings.backupStockSplits")}: {importResult.stock_splits ?? 0}</li>
                 <li>{t("settings.backupDividends")}: {importResult.dividends}</li>
                 <li>{t("settings.backupInterests")}: {importResult.interests}</li>
               </ul>

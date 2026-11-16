@@ -14,7 +14,11 @@ import { useTranslations } from "@/i18n/use-translations";
 import { uiLocale } from "@/lib/utils";
 import type { ApiToken, ApiTokenScope, PaginatedResponse } from "@/types";
 
-const MCP_PACKAGE = "git+https://github.com/Gonzalez8/fintrack#subdirectory=mcp";
+/** MCP package pinned to this Fintrack release, so the installed tools match the deployed API. */
+export function mcpPackage(version = process.env.NEXT_PUBLIC_APP_VERSION): string {
+  const ref = version ? `@v${version}` : "";
+  return `git+https://github.com/Gonzalez8/fintrack${ref}#subdirectory=mcp`;
+}
 const TOKENS_KEY = ["api-tokens"];
 
 /** Backend URL the MCP should call: same host as the app, backend port of docker-compose.prod.yml. */
@@ -28,7 +32,7 @@ export function claudeCodeCommand(url: string, key: string): string {
     "claude mcp add fintrack \\",
     `  --env FINTRACK_URL=${url} \\`,
     `  --env FINTRACK_TOKEN=${key} \\`,
-    `  -- uvx --from "${MCP_PACKAGE}" fintrack-mcp`,
+    `  -- uvx --from "${mcpPackage()}" fintrack-mcp`,
   ].join("\n");
 }
 
@@ -37,7 +41,7 @@ export function claudeDesktopConfig(url: string, key: string): string {
     mcpServers: {
       fintrack: {
         command: "uvx",
-        args: ["--from", MCP_PACKAGE, "fintrack-mcp"],
+        args: ["--from", mcpPackage(), "fintrack-mcp"],
         env: { FINTRACK_URL: url, FINTRACK_TOKEN: key },
       },
     },

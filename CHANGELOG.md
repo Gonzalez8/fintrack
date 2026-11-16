@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2026-11-16
+
+### Added
+
+- **Type-to-search asset picker when adding a trade.** The asset field of the Buy / Sell / Gift dialog used to be a long list of every asset. You can now type part of the name or ticker and the list narrows to the matching assets (case- and accent-insensitive, keyboard friendly). Sells still list only assets you hold, with the shares next to each one, and editing a trade shows its asset already selected. (#111)
+
+### Fixed
+
+- **Operations search filters on the first try.** Typing a search such as "BID" often kept showing every operation until another key was pressed, because the list was fetched with the previous search text and cached as the result of the new one. (#110)
+
 ## [2.11.0] - 2026-11-16
 
 ### Added

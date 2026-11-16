@@ -58,7 +58,10 @@ export function TransactionsContent() {
   }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data, isLoading } = useQuery({
-    queryKey: ["transactions", page, debouncedSearch, typeFilter, dateFrom, dateTo, accountFilter],
+    // Key on the URL params the request actually uses: keying on the debounced
+    // input fetched with the previous (stale) URL search and cached it as the
+    // result for the new text, so "BID" only worked after typing another key.
+    queryKey: ["transactions", page, search, typeFilter, dateFrom, dateTo, accountFilter],
     queryFn: () => {
       const query = buildTransactionsQuery({
         page,

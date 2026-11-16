@@ -496,6 +496,21 @@ class TestDividendFilters:
         assert len(results) == 1
         assert results[0]["asset_name"] == "Another Fund"
 
+    @pytest.mark.parametrize("query", ["another", "AFN", "afn"])
+    def test_search_by_asset_name_or_ticker(self, client, user, asset, asset2, query):
+        for a in (asset, asset2):
+            Dividend.objects.create(
+                owner=user,
+                date=datetime.date(2025, 3, 1),
+                asset=a,
+                gross=Decimal("10"),
+                tax=Decimal("1"),
+                net=Decimal("9"),
+            )
+        res = client.get("/api/dividends/", {"search": query})
+        results = res.data.get("results", res.data)
+        assert [r["asset_name"] for r in results] == ["Another Fund"]
+
 
 # ===========================================================================
 # Dividend Validation
@@ -696,6 +711,20 @@ class TestInterestFilters:
         results = res.data.get("results", res.data)
         assert len(results) == 1
         assert results[0]["account_name"] == "Savings Account"
+
+    def test_search_by_account_name(self, client, user, account, account2):
+        for acc in (account, account2):
+            Interest.objects.create(
+                owner=user,
+                date_start=datetime.date(2025, 1, 1),
+                date_end=datetime.date(2025, 3, 31),
+                account=acc,
+                gross=Decimal("10"),
+                net=Decimal("8"),
+            )
+        res = client.get("/api/interests/", {"search": "saving"})
+        results = res.data.get("results", res.data)
+        assert [r["account_name"] for r in results] == ["Savings Account"]
 
 
 # ===========================================================================

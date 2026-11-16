@@ -168,6 +168,46 @@ class TestEngine:
         assert Decimal(pos["cost_basis"]) == Decimal("150.00")
         assert Decimal(pos["avg_cost"]) == Decimal("100.00")
 
+    @pytest.mark.parametrize(
+        "method,cost_basis,pnl,remaining_qty,remaining_cost",
+        [
+            # After split: lot A = 4 @ 200, lot B = 2 @ 220. Sell 3 @ 250.
+            ("FIFO", "600.00", "150.00", "3", "640.00"),  # 3 from A
+            ("LIFO", "640.00", "110.00", "3", "600.00"),  # 2 from B + 1 from A
+            ("WAC", "620.00", "130.00", "3", "620.00"),  # avg 1240 / 6
+        ],
+    )
+    def test_buy_before_and_trades_after_split(
+        self, user, asset, account, method, cost_basis, pnl, remaining_qty, remaining_cost
+    ):
+        _set_method(user, method)
+        asset.current_price = Decimal("250.00")
+        asset.save()
+        _tx(user, asset, account, "BUY", datetime.date(2021, 5, 10), 1, 800)  # pre-split shares
+        _split(user, asset)
+        _tx(user, asset, account, "BUY", datetime.date(2026, 8, 1), 2, 220)  # post-split shares
+        _tx(user, asset, account, "SELL", datetime.date(2026, 9, 1), 3, 250)
+
+        data = calculate_portfolio_full(user)
+        sale = data["realized_sales"][0]
+        assert Decimal(sale["cost_basis"]) == Decimal(cost_basis)
+        assert Decimal(sale["realized_pnl"]) == Decimal(pnl)
+        pos = _pos(data)
+        assert Decimal(pos["quantity"]) == Decimal(remaining_qty)
+        assert Decimal(pos["cost_basis"]) == Decimal(remaining_cost)
+
+    def test_sale_before_split_is_not_scaled(self, user, asset, account):
+        _set_method(user, "FIFO")
+        _tx(user, asset, account, "BUY", datetime.date(2021, 5, 10), 2, 800)
+        _tx(user, asset, account, "SELL", datetime.date(2022, 5, 10), 1, 900)  # pre-split shares and price
+        _split(user, asset)
+
+        data = calculate_portfolio_full(user)
+        assert Decimal(data["realized_sales"][0]["realized_pnl"]) == Decimal("100.00")
+        pos = _pos(data)
+        assert Decimal(pos["quantity"]) == Decimal("4")
+        assert Decimal(pos["cost_basis"]) == Decimal("800.00")
+
     def test_buy_on_split_date_is_not_scaled(self, user, asset, account):
         """Trades on the split date already happen at post-split prices."""
         _set_method(user, "FIFO")
@@ -269,6 +309,15 @@ class TestDetection:
         _tx(user, asset, account, "SELL", datetime.date(2022, 5, 10), 1, 900)
         with patch(FETCH, return_value=[(SPLIT_DATE, 4.0)]):
             assert detect_splits(user) == []
+
+    def test_held_quantity_accounts_for_earlier_splits(self, user, asset, account):
+        """Sale in post-split shares between two splits must not hide the second one."""
+        _tx(user, asset, account, "BUY", datetime.date(2020, 1, 10), 1, 500)
+        _tx(user, asset, account, "SELL", datetime.date(2022, 1, 10), 2, 200)  # 4 shares after 4:1, sells 2
+        yahoo = [(datetime.date(2021, 7, 20), 4.0), (datetime.date(2024, 6, 10), 10.0)]
+        with patch(FETCH, return_value=yahoo):
+            created = detect_splits(user)
+        assert sorted(s.date for s in created) == [datetime.date(2021, 7, 20), datetime.date(2024, 6, 10)]
 
     def test_skips_manual_priced_assets(self, user, asset, account):
         asset.price_mode = Asset.PriceMode.MANUAL

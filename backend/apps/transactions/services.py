@@ -30,12 +30,23 @@ def ratio_parts(ratio):
     return Decimal(str(1 / ratio)).quantize(RATIO_Q, rounding=ROUND_HALF_UP), Decimal("1")
 
 
-def _held_quantity(user, asset, before):
-    """Net shares of `asset` held before `before` (BUY + GIFT − SELL), ignoring splits."""
+def _held_quantity(user, asset, before, yahoo_splits):
+    """Shares of `asset` held just before `before`.
+
+    Replays BUY/GIFT/SELL in order and applies every earlier Yahoo split, so a
+    sale entered in post-split shares is not compared against pre-split buys.
+    """
+    splits = sorted((d, Decimal(str(r))) for d, r in yahoo_splits if d < before)
     qty = Decimal("0")
-    for tx_type, quantity in Transaction.objects.filter(owner=user, asset=asset, date__lt=before).values_list(
-        "type", "quantity"
+    i = 0
+    for tx_date, tx_type, quantity in (
+        Transaction.objects.filter(owner=user, asset=asset, date__lt=before)
+        .order_by("date", "created_at")
+        .values_list("date", "type", "quantity")
     ):
+        while i < len(splits) and splits[i][0] <= tx_date:
+            qty *= splits[i][1]
+            i += 1
         qty += -quantity if tx_type == Transaction.TransactionType.SELL else quantity
     return qty
 
@@ -72,7 +83,7 @@ def detect_splits(user):
         for split_date, ratio in yahoo_splits:
             if split_date <= first_dates[asset.id] or (asset.id, split_date) in known:
                 continue
-            if _held_quantity(user, asset, split_date) <= 0:
+            if _held_quantity(user, asset, split_date, yahoo_splits) <= 0:
                 continue
             ratio_from, ratio_to = ratio_parts(ratio)
             created.append(

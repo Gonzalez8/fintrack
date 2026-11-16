@@ -18,6 +18,7 @@ import {
 import { MoneyCell } from "@/components/app/money-cell";
 import { AssetSplitsCard } from "@/components/app/asset-splits-card";
 import { PositionHistoryCard } from "@/components/app/position-history-card";
+import { AssetDividendsCard } from "@/components/app/asset-dividends-card";
 import { ArrowLeft, Pencil, X, Check } from "lucide-react";
 import { ASSET_TYPE_KEYS, ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import { useTranslations } from "@/i18n/use-translations";
@@ -370,6 +371,8 @@ export default function AssetDetailPage({
           <PositionHistoryCard assetId={asset.id} />
 
           <AssetSplitsCard asset={asset} />
+
+          <AssetDividendsCard asset={asset} />
         </div>
       )}
 

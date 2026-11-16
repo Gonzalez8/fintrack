@@ -17,11 +17,13 @@ import { MoneyCell } from "@/components/app/money-cell";
 import { SwipeCard } from "@/components/app/swipe-card";
 import { DetailDrawer } from "@/components/app/detail-drawer";
 import { AssetCombobox } from "@/components/app/asset-combobox";
-import { Plus, Search, Pencil, Trash2, Download } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Download, RefreshCw, HandCoins } from "lucide-react";
 import { toast } from "sonner";
-import { formatMoney } from "@/lib/utils";
+import { formatMoney, formatQty } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
-import type { Dividend, DividendFormData, Asset, PaginatedResponse, PortfolioData } from "@/types";
+import type { Dividend, DividendFormData, DividendSuggestion, Asset, PaginatedResponse, PortfolioData } from "@/types";
+import { DIVIDEND_SUGGESTIONS_KEY, PendingDividendsBanner, formatDraftAmount } from "@/components/app/pending-dividends-banner";
+import { formatSplitDate } from "@/lib/splits";
 import { useDebounce } from "@/hooks/use-debounce";
 
 const PAGE_SIZE = 25;
@@ -35,7 +37,39 @@ export function DividendsContent() {
   const t = useTranslations();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Dividend | null>(null);
+  const [reviewing, setReviewing] = useState<DividendSuggestion | null>(null);
   const [detailItem, setDetailItem] = useState<Dividend | null>(null);
+
+  const openDialog = (dividend: Dividend | null, suggestion: DividendSuggestion | null = null) => {
+    setEditing(dividend);
+    setReviewing(suggestion);
+    setDialogOpen(true);
+  };
+
+  // Drafts from Yahoo: shared with the banner; "?review=<id>" (dashboard link) opens one
+  const { data: suggestions } = useQuery({
+    queryKey: DIVIDEND_SUGGESTIONS_KEY,
+    queryFn: () =>
+      api.get<PaginatedResponse<DividendSuggestion>>("/dividend-suggestions/?status=PENDING&page_size=1000"),
+  });
+  const reviewId = searchParams.get("review");
+  useEffect(() => {
+    const target = reviewId && suggestions?.results.find((s) => s.id === reviewId);
+    if (target) {
+      openDialog(null, target);
+      router.replace("/dividends");
+    }
+  }, [reviewId, suggestions]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const detectMut = useMutation({
+    mutationFn: () => api.post<{ created: DividendSuggestion[] }>("/dividend-suggestions/detect/"),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["dividend-suggestions"] });
+      if (res.created.length > 0) toast.success(t("dividendDrafts.detectFound", { count: res.created.length }));
+      else toast(t("dividendDrafts.detectNone"));
+    },
+    onError: () => toast.error(t("dividendDrafts.detectError")),
+  });
 
   const page = Number(searchParams.get("page") || "1");
   const search = searchParams.get("search") || "";
@@ -126,7 +160,7 @@ export function DividendsContent() {
       className: "text-right",
       render: (d) => (
         <div className="flex gap-1 justify-end">
-          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditing(d); setDialogOpen(true); }}>
+          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openDialog(d); }}>
             <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); if (confirm("Eliminar?")) deleteMutation.mutate(d.id); }}>
@@ -158,13 +192,27 @@ export function DividendsContent() {
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="icon" onClick={handleExportCsv} title="CSV">
-          <Download className="h-4 w-4" />
-        </Button>
-        <Button className="hidden sm:flex" onClick={() => { setEditing(null); setDialogOpen(true); }} onMouseEnter={prefetchDialogData}>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => detectMut.mutate()}
+            disabled={detectMut.isPending}
+            title={t("dividendDrafts.detect")}
+            aria-label={t("dividendDrafts.detect")}
+          >
+            <RefreshCw className={`h-4 w-4 ${detectMut.isPending ? "animate-spin" : ""}`} />
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleExportCsv} title="CSV">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
+        <Button className="hidden sm:flex" onClick={() => { openDialog(null); }} onMouseEnter={prefetchDialogData}>
           <Plus className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">{t("common.new")}</span>
         </Button>
       </div>
+
+      <PendingDividendsBanner onReview={(s) => openDialog(null, s)} />
 
       {/* Mobile cards */}
       <div className="sm:hidden space-y-2">
@@ -172,7 +220,7 @@ export function DividendsContent() {
           <SwipeCard
             key={d.id}
             onTap={() => setDetailItem(d)}
-            onEdit={() => { setEditing(d); setDialogOpen(true); }}
+            onEdit={() => { openDialog(d); }}
             onDelete={() => { if (confirm("Eliminar?")) deleteMutation.mutate(d.id); }}
             accentColor="border-l-blue-500"
           >
@@ -229,13 +277,13 @@ export function DividendsContent() {
       {/* FAB mobile */}
       <button
         className="fixed bottom-24 right-5 z-40 sm:hidden flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
-        onClick={() => { setEditing(null); setDialogOpen(true); }}
+        onClick={() => { openDialog(null); }}
         aria-label={t("common.new")}
       >
         <Plus className="h-6 w-6" />
       </button>
 
-      <DividendDialog open={dialogOpen} onOpenChange={setDialogOpen} dividend={editing} />
+      <DividendDialog open={dialogOpen} onOpenChange={setDialogOpen} dividend={editing} suggestion={reviewing} />
 
       <DetailDrawer
         open={!!detailItem}
@@ -262,10 +310,13 @@ function DividendDialog({
   open,
   onOpenChange,
   dividend,
+  suggestion = null,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   dividend: Dividend | null;
+  /** Yahoo draft to review: pre-fills the form and saving accepts it. */
+  suggestion?: DividendSuggestion | null;
 }) {
   const queryClient = useQueryClient();
   const t = useTranslations();
@@ -307,6 +358,21 @@ function DividendDialog({
         withholding_rate: dividend.withholding_rate || undefined,
       });
       setAdvancedOpen(parseFloat(dividend.commission || "0") > 0);
+    } else if (suggestion) {
+      const gross = parseFloat(suggestion.gross) || 0;
+      const tax = parseFloat(suggestion.tax ?? "0") || 0;
+      setForm({
+        // Yahoo only knows the ex-date: the user replaces it with the payment date
+        date: suggestion.ex_date,
+        asset: suggestion.asset,
+        shares: String(Number(suggestion.shares)),
+        gross: gross.toFixed(2),
+        tax: tax.toFixed(2),
+        commission: "0",
+        net: (gross - tax).toFixed(2),
+        withholding_rate: gross > 0 ? ((tax / gross) * 100).toFixed(2) : undefined,
+      });
+      setAdvancedOpen(false);
     } else {
       setForm({
         date: new Date().toISOString().split("T")[0],
@@ -318,7 +384,7 @@ function DividendDialog({
       });
       setAdvancedOpen(false);
     }
-  }, [open, dividend]);
+  }, [open, dividend, suggestion]);
 
   // Auto-calculate: gross = net + tax + commission, rate = tax / gross
   const recalcGross = (net: number, tax: number, commission: number) => {
@@ -373,6 +439,10 @@ function DividendDialog({
       if (dividend) {
         await api.put(`/dividends/${dividend.id}/`, payload);
         toast.success(t("common.success"));
+      } else if (suggestion) {
+        await api.post(`/dividend-suggestions/${suggestion.id}/accept/`, payload);
+        queryClient.invalidateQueries({ queryKey: ["dividend-suggestions"] });
+        toast.success(t("dividendDrafts.accepted"));
       } else {
         await api.post("/dividends/", payload);
         toast.success(t("common.success"));
@@ -398,8 +468,28 @@ function DividendDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{dividend ? t("dividends.edit") : t("dividends.new")}</DialogTitle>
+          <DialogTitle>
+            {dividend ? t("dividends.edit") : suggestion ? t("dividendDrafts.reviewTitle") : t("dividends.new")}
+          </DialogTitle>
         </DialogHeader>
+        {suggestion && (
+          <div className="flex gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs">
+            <HandCoins className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+            <div className="space-y-1">
+              <p>
+                {t("dividendDrafts.fromYahoo", {
+                  date: formatSplitDate(suggestion.ex_date),
+                  shares: formatQty(suggestion.shares),
+                  amount: formatDraftAmount(suggestion.amount_per_share, suggestion.currency, true),
+                  gross: formatDraftAmount(suggestion.gross, suggestion.currency),
+                })}
+              </p>
+              <p className="text-muted-foreground">
+                {suggestion.tax == null ? t("dividendDrafts.checkNoTax") : t("dividendDrafts.checkWithTax")}
+              </p>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Fecha */}
           <div className="space-y-1.5">

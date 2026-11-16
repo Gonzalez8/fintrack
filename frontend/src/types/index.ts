@@ -382,6 +382,29 @@ export interface PositionHistory {
   events: PositionHistoryEvent[];
 }
 
+// ── Dividend drafts ──────────────────────────────────────────────
+export interface DividendSuggestion {
+  id: string;
+  asset: string;
+  asset_name: string;
+  asset_ticker: string | null;
+  asset_currency: string;
+  /** Ex-dividend date from Yahoo; the payment usually comes days later. */
+  ex_date: string;
+  amount_per_share: string;
+  /** Currency of the Yahoo quote the amounts are in. */
+  currency: string;
+  shares: string;
+  gross: string;
+  /** Estimated from past dividends of the asset; null when unknown. */
+  tax: string | null;
+  net: string;
+  status: "PENDING" | "ACCEPTED" | "DISMISSED";
+  dividend: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── Pagination ───────────────────────────────────────────────────
 export interface PaginatedResponse<T> {
   count: number;

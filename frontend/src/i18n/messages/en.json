@@ -963,5 +963,27 @@
   "positionHistory.currentShares": "Current shares",
   "positionHistory.event": "Event",
   "positionHistory.change": "Change",
-  "positionHistory.sharesAfter": "Shares after"
+  "positionHistory.sharesAfter": "Shares after",
+
+  "dividendDrafts.title": "Dividends awaiting review ({count})",
+  "dividendDrafts.description": "Drafts detected from Yahoo Finance. Check each one against your broker and save it; they don't count in reports or tax until you accept them.",
+  "dividendDrafts.confirmDismissAll": "Dismiss all pending drafts? They won't be suggested again.",
+  "dividendDrafts.dismissAll": "Dismiss all",
+  "dividendDrafts.exDate": "ex-dividend",
+  "dividendDrafts.grossShort": "gross",
+  "dividendDrafts.review": "Review",
+  "dividendDrafts.dismiss": "Dismiss",
+  "dividendDrafts.detect": "Search Yahoo for dividends",
+  "dividendDrafts.detectFound": "New dividend drafts: {count}. Review and accept them.",
+  "dividendDrafts.detectNone": "No new dividends to record.",
+  "dividendDrafts.detectError": "Could not reach Yahoo Finance. Try again later.",
+  "dividendDrafts.accepted": "Dividend recorded",
+  "dividendDrafts.reviewTitle": "Review dividend",
+  "dividendDrafts.fromYahoo": "Detected on Yahoo: ex-dividend on {date}, {shares} shares × {amount} ≈ {gross} gross.",
+  "dividendDrafts.checkWithTax": "Withholding is estimated from your previous dividends. Check the payment date, net amount and withholding with your broker; Yahoo amounts are in the quote currency.",
+  "dividendDrafts.checkNoTax": "There are no previous dividends to estimate withholding. Check the payment date, net amount and withholding with your broker; Yahoo amounts are in the quote currency.",
+  "dividendDrafts.assetCardTitle": "Dividends",
+  "dividendDrafts.backfill": "Search earlier dividends",
+  "dividendDrafts.assetCardHelp": "The daily search only suggests dividends after the last one you recorded. This button searches Yahoo for every dividend of this asset since your first purchase that you don't have yet.",
+  "dividendDrafts.goToDividends": "Go to Dividends"
 }

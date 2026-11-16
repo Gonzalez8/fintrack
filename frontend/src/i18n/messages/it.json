@@ -963,5 +963,27 @@
   "positionHistory.currentShares": "Azioni attuali",
   "positionHistory.event": "Evento",
   "positionHistory.change": "Variazione",
-  "positionHistory.sharesAfter": "Azioni dopo"
+  "positionHistory.sharesAfter": "Azioni dopo",
+
+  "dividendDrafts.title": "Dividendi da verificare ({count})",
+  "dividendDrafts.description": "Bozze rilevate da Yahoo Finance. Verifica ciascuna con il tuo broker e salvala; non contano nei report né nel fisco finché non le accetti.",
+  "dividendDrafts.confirmDismissAll": "Ignorare tutte le bozze in sospeso? Non verranno più proposte.",
+  "dividendDrafts.dismissAll": "Ignora tutte",
+  "dividendDrafts.exDate": "ex-dividendo",
+  "dividendDrafts.grossShort": "lordo",
+  "dividendDrafts.review": "Verifica",
+  "dividendDrafts.dismiss": "Ignora",
+  "dividendDrafts.detect": "Cerca dividendi su Yahoo",
+  "dividendDrafts.detectFound": "Nuove bozze di dividendi: {count}. Verificale e accettale.",
+  "dividendDrafts.detectNone": "Nessun nuovo dividendo da registrare.",
+  "dividendDrafts.detectError": "Impossibile contattare Yahoo Finance. Riprova più tardi.",
+  "dividendDrafts.accepted": "Dividendo registrato",
+  "dividendDrafts.reviewTitle": "Verifica dividendo",
+  "dividendDrafts.fromYahoo": "Rilevato su Yahoo: ex-dividendo il {date}, {shares} azioni × {amount} ≈ {gross} lordo.",
+  "dividendDrafts.checkWithTax": "La ritenuta è stimata dai tuoi dividendi precedenti. Verifica con il tuo broker la data di pagamento, il netto e la ritenuta; gli importi di Yahoo sono nella valuta della quotazione.",
+  "dividendDrafts.checkNoTax": "Non ci sono dividendi precedenti per stimare la ritenuta. Verifica con il tuo broker la data di pagamento, il netto e la ritenuta; gli importi di Yahoo sono nella valuta della quotazione.",
+  "dividendDrafts.assetCardTitle": "Dividendi",
+  "dividendDrafts.backfill": "Cerca dividendi precedenti",
+  "dividendDrafts.assetCardHelp": "La ricerca giornaliera propone solo dividendi successivi all'ultimo registrato. Questo pulsante cerca su Yahoo tutti i dividendi di questo titolo dal tuo primo acquisto che ancora non hai.",
+  "dividendDrafts.goToDividends": "Vai ai dividendi"
 }

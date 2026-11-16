@@ -12,7 +12,7 @@ from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapsho
 from apps.assets.serializers import SettingsSerializer
 from apps.realestate.models import Amortization, Property
 from apps.reports.models import SavingsGoal
-from apps.transactions.models import Dividend, Interest, StockSplit, Transaction
+from apps.transactions.models import Dividend, DividendSuggestion, Interest, StockSplit, Transaction
 
 from .serializers import (
     BackupAccountSerializer,
@@ -20,6 +20,7 @@ from .serializers import (
     BackupAmortizationSerializer,
     BackupAssetSerializer,
     BackupDividendSerializer,
+    BackupDividendSuggestionSerializer,
     BackupInterestSerializer,
     BackupPortfolioSnapshotSerializer,
     BackupPropertySerializer,
@@ -48,6 +49,9 @@ class BackupExportView(APIView):
             "transactions": BackupTransactionSerializer(Transaction.objects.filter(owner=user), many=True).data,
             "stock_splits": BackupStockSplitSerializer(StockSplit.objects.filter(owner=user), many=True).data,
             "dividends": BackupDividendSerializer(Dividend.objects.filter(owner=user), many=True).data,
+            "dividend_suggestions": BackupDividendSuggestionSerializer(
+                DividendSuggestion.objects.filter(owner=user), many=True
+            ).data,
             "interests": BackupInterestSerializer(Interest.objects.filter(owner=user), many=True).data,
             "savings_goals": BackupSavingsGoalSerializer(SavingsGoal.objects.filter(owner=user), many=True).data,
             "properties": BackupPropertySerializer(Property.objects.filter(owner=user), many=True).data,
@@ -95,6 +99,7 @@ class BackupImportView(APIView):
             "transactions": 0,
             "stock_splits": 0,
             "dividends": 0,
+            "dividend_suggestions": 0,
             "interests": 0,
             "savings_goals": 0,
             "properties": 0,
@@ -176,6 +181,14 @@ class BackupImportView(APIView):
                         defaults=to_defaults(item, fk_fields=("asset",)),
                     )
                     counts["dividends"] += 1
+
+                for item in payload.get("dividend_suggestions", []):
+                    DividendSuggestion.objects.update_or_create(
+                        id=item["id"],
+                        owner=user,
+                        defaults=to_defaults(item, fk_fields=("asset", "dividend")),
+                    )
+                    counts["dividend_suggestions"] += 1
 
                 for item in payload.get("interests", []):
                     # Backward compat: old backups have "date" instead of "date_start"/"date_end"

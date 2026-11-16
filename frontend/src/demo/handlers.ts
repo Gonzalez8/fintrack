@@ -283,6 +283,27 @@ const proxyHandlers = [
     return HttpResponse.json({ quantity: "0", events: [] });
   }),
 
+  // ---- Dividend drafts ----
+  http.get("/api/proxy/dividend-suggestions/", async () => {
+    await delay(200);
+    return HttpResponse.json(paginated([]));
+  }),
+
+  http.post("/api/proxy/dividend-suggestions/detect/", async () => {
+    await delay(400);
+    return HttpResponse.json({ created: [] });
+  }),
+
+  http.post("/api/proxy/dividend-suggestions/dismiss-all/", async () => {
+    await delay(200);
+    return HttpResponse.json({ dismissed: 0 });
+  }),
+
+  http.post("/api/proxy/dividend-suggestions/:id/:action/", async () => {
+    await delay(200);
+    return HttpResponse.json({ ok: true });
+  }),
+
   // ---- Stock splits ----
   http.get("/api/proxy/splits/", async () => {
     await delay(200);

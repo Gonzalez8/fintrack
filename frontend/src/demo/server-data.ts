@@ -30,6 +30,8 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/dividends": paginatedResponse(data.demoDividends),
     "/api/interests": paginatedResponse(data.demoInterests),
     "/api/splits": paginatedResponse([]),
+    "/api/dividend-suggestions": paginatedResponse([]),
+    "/api/dividend-suggestions/detect": { created: [] },
     "/api/splits/detect": { created: [] },
 
     "/api/portfolio": data.demoPortfolio,

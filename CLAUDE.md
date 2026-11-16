@@ -18,7 +18,7 @@ backend/          Django 5.1 + DRF (API pura)
   apps/
     core/         JWT auth (cookies httpOnly), base models, health, tasks
     assets/       Asset, Account, Settings, Snapshots + Yahoo Finance
-    transactions/ Transaction (BUY/SELL/GIFT), Dividend, Interest
+    transactions/ Transaction (BUY/SELL/GIFT), Dividend, Interest, StockSplit
     portfolio/    FIFO/LIFO/WAC engine
     reports/      Net worth, savings, evolution, savings goals
       tax_adapters/  Per-country tax-declaration adapters (registry + base + es.py)
@@ -71,6 +71,7 @@ frontend/         Next.js 16 App Router
 - **Assets:** Stock, ETF, Fund, Crypto with Yahoo Finance price sync
 - **Accounts:** Checking, savings, investment, deposits, alternatives with balance snapshots
 - **Transactions:** Buy/Sell/Gift with commission and tax tracking
+- **Stock splits:** `StockSplit` per asset (date + `ratio_to:ratio_from`, e.g. 4:1 or reverse 1:10). The FIFO/LIFO/WAC engine applies APPLIED splits chronologically (before same-day trades): open lots get `qty × factor` and `unit cost ÷ factor`, total cost unchanged, nothing realized. Auto-detection reads Yahoo Finance splits for AUTO-priced assets (daily Celery task + `POST /api/splits/detect/`) and creates PENDING suggestions only when the split is after the first purchase and shares were held; the user applies or dismisses them from the dashboard/portfolio banner or the asset detail card. Dismissed splits are never suggested again. Included in JSON backup/restore.
 - **Dividends:** Per-asset tracking with withholding tax by country
 - **Interests:** Account interest income with date ranges
 

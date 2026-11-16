@@ -262,6 +262,8 @@
   "transactions.sell": "Vente",
   "transactions.gift": "Don",
   "transactions.searchPlaceholder": "Rechercher nom ou ticker...",
+  "transactions.searchAsset": "Tapez pour rechercher un actif…",
+  "transactions.noAssetMatch": "Aucun actif ne correspond",
   "transactions.fromDate": "Depuis la date",
   "transactions.toDate": "Jusqu'à la date",
   "transactions.allTypes": "Tous",

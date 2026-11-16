@@ -18,6 +18,7 @@ import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell } from "@/components/app/money-cell";
 import { SwipeCard } from "@/components/app/swipe-card";
 import { DetailDrawer } from "@/components/app/detail-drawer";
+import { AssetCombobox } from "@/components/app/asset-combobox";
 import { ShoppingCart, TrendingDown, Gift, Search, Pencil, Trash2, Download, Info, SlidersHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
 import { TRANSACTION_TYPE_KEYS, TX_TYPE_BADGE_COLORS } from "@/lib/constants";
@@ -618,13 +619,6 @@ function TransactionDialog({
   const selectedPosition = isSell && form.asset ? positionMap.get(form.asset) : null;
 
   // Compute display labels (Base UI Portal unmounts items when closed, losing label resolution)
-  const selectedAssetLabel = (() => {
-    if (!form.asset) return "";
-    const asset = assetList.find((a) => a.id === form.asset);
-    if (!asset) return "";
-    return `${asset.name}${asset.ticker ? ` (${asset.ticker})` : ""}`;
-  })();
-
   const selectedAccountLabel = (() => {
     if (!form.account) return "";
     const account = dialogAccountList.find((a) => a.id === form.account);
@@ -709,24 +703,21 @@ function TransactionDialog({
 
           <div>
             <label className="text-sm font-medium">{t("common.name")} *</label>
-            <Select value={form.asset} onValueChange={(v) => v && handleAssetChange(v)}>
-              <SelectTrigger className="w-full">
-                <span className="flex flex-1 text-left truncate" data-slot="select-value">
-                  {selectedAssetLabel || <span className="text-muted-foreground">{t("common.select")}</span>}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                {assetOptions.map((a) => {
-                  const pos = positionMap.get(a.id);
-                  const suffix = isSell && pos ? ` — ${formatQty(pos.quantity)} ${t("transactions.units")}` : "";
-                  return (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name} {a.ticker ? `(${a.ticker})` : ""}{suffix}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            <AssetCombobox
+              options={assetOptions.map((a) => {
+                const pos = positionMap.get(a.id);
+                return {
+                  id: a.id,
+                  name: a.name,
+                  ticker: a.ticker,
+                  hint: isSell && pos ? `${formatQty(pos.quantity)} ${t("transactions.units")}` : undefined,
+                };
+              })}
+              value={form.asset}
+              onChange={handleAssetChange}
+              placeholder={t("transactions.searchAsset")}
+              emptyText={t("transactions.noAssetMatch")}
+            />
           </div>
 
           <div>

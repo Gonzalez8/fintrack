@@ -15,7 +15,13 @@ def _fetch_transactions(user):
 def _applied_splits(user):
     """APPLIED splits as plain dicts, oldest first."""
     return [
-        {"date": sp.date, "asset_id": sp.asset_id, "factor": sp.factor}
+        {
+            "date": sp.date,
+            "asset_id": sp.asset_id,
+            "factor": sp.factor,
+            "ratio_from": sp.ratio_from,
+            "ratio_to": sp.ratio_to,
+        }
         for sp in StockSplit.objects.filter(owner=user, status=StockSplit.Status.APPLIED).order_by("date")
     ]
 
@@ -49,6 +55,65 @@ def _split_wac(state, factor):
     state["total_qty"] *= factor
     for acct_id in state.get("acct_qty", {}):
         state["acct_qty"][acct_id] *= factor
+
+
+def position_history(user, asset):
+    """Chronological operations and splits of `asset` with the running share count.
+
+    The share count does not depend on the cost method (FIFO/LIFO/WAC hold the
+    same shares). A sale larger than the position stops at zero, as the engine
+    does with oversells. PENDING splits are listed for context but only APPLIED
+    ones change the quantity; DISMISSED ones are left out.
+    """
+    settings = Settings.load(user)
+    qty_exp = Decimal(10) ** -settings.rounding_qty
+
+    transactions = (
+        Transaction.objects.filter(owner=user, asset=asset).select_related("account").order_by("date", "created_at")
+    )
+    splits = [
+        {"date": sp.date, "asset_id": sp.asset_id, "factor": sp.factor, "split": sp}
+        for sp in StockSplit.objects.filter(owner=user, asset=asset)
+        .exclude(status=StockSplit.Status.DISMISSED)
+        .order_by("date")
+    ]
+
+    qty = Decimal("0")
+    events = []
+    for kind, item in _with_splits(transactions, splits, lambda t: t.date):
+        if kind == "split":
+            sp = item["split"]
+            if sp.status == StockSplit.Status.APPLIED:
+                qty *= item["factor"]
+            events.append(
+                {
+                    "kind": "SPLIT",
+                    "id": str(sp.id),
+                    "date": sp.date.isoformat(),
+                    "status": sp.status,
+                    "ratio_from": str(sp.ratio_from),
+                    "ratio_to": str(sp.ratio_to),
+                    "quantity_after": str(qty.quantize(qty_exp, rounding=ROUND_HALF_UP)),
+                }
+            )
+            continue
+
+        tx = item
+        change = -tx.quantity if tx.type == Transaction.TransactionType.SELL else tx.quantity
+        qty = max(qty + change, Decimal("0"))
+        events.append(
+            {
+                "kind": tx.type,
+                "id": str(tx.id),
+                "date": tx.date.isoformat(),
+                "account_name": tx.account.name,
+                "quantity": str(tx.quantity),
+                "price": str(tx.price) if tx.price is not None else None,
+                "quantity_after": str(qty.quantize(qty_exp, rounding=ROUND_HALF_UP)),
+            }
+        )
+
+    return {"quantity": str(qty.quantize(qty_exp, rounding=ROUND_HALF_UP)), "events": events}
 
 
 def compute_investment_cost_by_month(user):
@@ -344,6 +409,10 @@ def _build_portfolio(lots, asset_map, money_exp, qty_exp, user):
     positions = []
     total_market_value = Decimal("0")
 
+    splits_by_asset = {}
+    for sp in _applied_splits(user):
+        splits_by_asset.setdefault(sp["asset_id"], []).append(sp)
+
     for aid, asset_lots in lots.items():
         qty = sum((lot["qty"] for lot in asset_lots), Decimal("0"))
         cost_total = sum((lot["qty"] * lot["price_per_unit"] for lot in asset_lots), Decimal("0"))
@@ -389,6 +458,14 @@ def _build_portfolio(lots, asset_map, money_exp, qty_exp, user):
                 "unrealized_pnl": str(unrealized_pnl),
                 "unrealized_pnl_pct": str(unrealized_pnl_pct),
                 "weight": "0",
+                "splits": [
+                    {
+                        "date": sp["date"].isoformat(),
+                        "ratio_from": str(sp["ratio_from"]),
+                        "ratio_to": str(sp["ratio_to"]),
+                    }
+                    for sp in splits_by_asset.get(aid, [])
+                ],
             }
         )
 

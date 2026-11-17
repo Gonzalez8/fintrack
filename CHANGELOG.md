@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.0] - 2026-11-17
+
+### Added
+
+- **Withholding at source and domestic withholding are now separate.** Foreign dividends paid through a Spanish broker carry two withholdings: the one of the issuer's country (e.g. 15 % US) and the Spanish 19 % retention the broker applies on top. The dividend dialog now has **"Retención en origen"** and **"Retención en destino"**; the list, the detail sheet, CSV export and backups show both. Dividend drafts from Yahoo also estimate the domestic withholding from your previous dividends of the asset. (#122)
+
+### Fixed
+
+- **Modo Renta: Spanish retentions on foreign dividends were missing.** With both withholdings lumped together, the Spanish 19 % was treated as foreign tax: "Retenciones españolas" left it out (so it would be paid twice) and it inflated the double-taxation input. The Spanish retention now adds to "Retenciones españolas" and only the withholding at source feeds the double-taxation deduction; the dividends table shows both columns per entity. The yearly summary reports the total withheld and the domestic part apart. (#122)
+- **Backups lost the dividend commission**; they now keep it. (#122)
+
+### Migration notes
+
+- `transactions/0009_dividend_domestic_tax`: adds `domestic_tax` (default 0) to dividends and dividend drafts — additive, applied automatically on start.
+- **Action needed if your broker applies the Spanish 19 %:** existing dividends keep everything in "Retención". Edit those dividends and move the Spanish part to "Retención en destino" so the Modo Renta declares it.
+
+### MCP update
+
+- `fintrack_create_dividend` and `fintrack_accept_dividend_draft` accept `domestic_tax`. Update your MCP command to `v2.17.0` (Settings → *AI access (MCP)*); the updated `fintrack-advisor.zip` is attached to this release.
+
 ## [2.16.0] - 2026-11-17
 
 ### Added

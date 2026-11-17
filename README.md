@@ -371,7 +371,7 @@ Replace `vX.Y.Z` with **your Fintrack version** (e.g. `v2.14.0`): the MCP is pin
 - *"How much bonus did I get in 2025 and what share of my fixed salary is it? What was my effective IRPF?"*
 - *"How much have I saved per year, and how much do I invest each month on average?"*
 - *"How much have I put into the S&P 500 in total?"*
-- *"Review each of my investments for my profile and tell me what you'd keep, review or watch."* (asks for your profile first)
+- *"Review each of my investments for my profile and tell me what you'd keep, review or watch."* (uses your saved profile; asks only what is missing)
 - *"Check whether any dividend's share count doesn't match my operations and tell me what could be missing."*
 - *"Show me the position history of BYD and explain how I got to 65 shares."*
 - *"How much did I receive in dividends in 2025, by country and with the withholding?"*
@@ -386,7 +386,7 @@ It can also cover payslips (salary, bonus, IRPF), monthly and yearly savings, mo
 
 ### Advisor skill (recommended)
 
-The repository ships a **`fintrack-advisor`** skill that teaches the assistant *how* to answer: which tool fits each question, the definitions Fintrack uses, and a portfolio-review method (concentration, overlapping funds, costs, currency, emergency fund, savings rate, bonus dependence, Spanish tax, mortgage vs investing). Before any opinion or recommendation **it asks for your investor profile** (horizon, risk tolerance, goals, emergency fund, income stability, preferences) and doesn't store it.
+The repository ships a **`fintrack-advisor`** skill that teaches the assistant *how* to answer: which tool fits each question, the definitions Fintrack uses, and a portfolio-review method (concentration, overlapping funds, costs, currency, emergency fund, savings rate, bonus dependence, Spanish tax, mortgage vs investing). Before any opinion or recommendation it uses **your investor profile** — the personal context Fintrack doesn't have (age, housing, horizon and real goals, risk tolerance, emergency fund, preferences and limits, how you want things recorded, topics to avoid). In Claude Code it keeps that profile in its local persistent memory (`perfil-financiero`), asks only for what is missing and updates it when you mention a change; it never stores figures Fintrack already has, and never saves the profile in Fintrack or external services. In clients without that memory it asks in the conversation.
 
 Each release attaches it as `fintrack-advisor.zip`:
 

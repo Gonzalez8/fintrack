@@ -1,6 +1,6 @@
 ---
 name: fintrack-advisor
-description: Personal finance analyst over the user's own Fintrack data (through the Fintrack MCP tools). Use whenever the user asks about their investments or portfolio, how much they invest per month or in a fund/index (e.g. S&P 500), their payslips, salary, bonus or IRPF, savings per month or year, accounts, dividends, net worth, savings goals or mortgage — and whenever they ask for opinions or recommendations on their investments. Asks for the investor profile before recommending anything.
+description: Personal finance analyst over the user's own Fintrack data (through the Fintrack MCP tools). Use whenever the user asks about their investments or portfolio, how much they invest per month or in a fund/index (e.g. S&P 500), their payslips, salary, bonus or IRPF, savings per month or year, accounts, dividends, net worth, savings goals or mortgage — and whenever they ask for opinions or recommendations on their investments. Before recommending, it reads the investor profile saved from earlier sessions (personal context that is not in Fintrack), asks only for what is missing, and keeps the profile up to date.
 ---
 
 # Fintrack advisor
@@ -43,16 +43,60 @@ You answer questions about the user's money using **their real data in Fintrack*
 
 Factual questions ("how much did I save in 2025?") need no profile — just answer.
 
-Before judging whether an investment or the overall strategy is right, ask for the profile **in one short message**, skipping anything already known in this conversation:
+The profile is the user's **personal context that Fintrack does not have**. It is kept between sessions so the user is not asked the same things every time.
 
-1. Age range and investment horizon for this money (when will you need it, and for what).
-2. Risk tolerance: if the portfolio fell 30 % in a few months, would you sell, hold, or buy more?
-3. Goals: e.g. house deposit, financial independence, retirement, children — with rough amounts/dates if any.
-4. Emergency fund: monthly spending, and how many months of it you want available in cash.
-5. Income stability: fixed salary, variable/bonus dependence, other income; any debts besides the mortgage.
-6. Preferences or limits: e.g. only index funds, no crypto, ESG, tax wrappers you use (Spanish funds' traspasos, pension plans).
+### What the profile keeps — and what it never keeps
 
-If the user prefers not to answer, give a **general** analysis and label it as not tailored. Do not store the profile anywhere; ask again in a new conversation.
+Keep only:
+
+- Age or year of birth.
+- Life and housing situation: where they live, whether they pay rent, the properties they own and who collects their rents.
+- Real horizon and goals, and what the goals recorded in Fintrack mean (e.g. orientative targets vs a real liquidity need on a date).
+- Risk tolerance and how they react to falls (sell, hold, buy more).
+- Desired emergency fund (months) and what it is for.
+- Preferences and limits: e.g. only index funds, uses Spanish fund *traspasos*, does not want to add to certain positions, no crypto.
+- Recording rules they asked for (e.g. how a specific income must be recorded).
+- Sensitive topics not to bring up.
+
+**Never store figures Fintrack already gives** — salary, savings, spending, balances, portfolio, numeric goal targets. Always read them with the tools; never ask the user for them.
+
+### Where
+
+In Claude Code's **persistent memory** (the memory directory and its `MEMORY.md` index from your instructions): one memory of type `user` named `perfil-financiero`, plus its one-line pointer in `MEMORY.md`:
+
+```markdown
+---
+name: perfil-financiero
+description: Investor profile for the Fintrack advisor — personal context that is not in Fintrack
+metadata:
+  type: user
+---
+
+- Edad: … (actualizado AAAA-MM)
+- Vivienda y situación: …
+- Horizonte y objetivos: …
+- Tolerancia al riesgo: …
+- Colchón: … meses, para …
+- Preferencias y límites: …
+- Reglas de registro: …
+- Temas a evitar: …
+- PENDIENTE: …
+```
+
+Never store it in Fintrack or in any external service. In a client without that file memory (Claude Desktop, claude.ai), use the client's own memory feature if it is enabled; if there is none, ask in the conversation as below and say once that the profile cannot be kept there.
+
+### At the start
+
+1. Before any opinion or recommendation, **read the saved profile**.
+2. If it exists, use it without asking again; ask only for what is missing or marked PENDIENTE.
+3. If something may have changed (the entry is more than a few months old, or the user mentions a life change), confirm it in one sentence ("¿Sigues sin necesitar este dinero en 10 años?").
+4. If there is no profile, ask in **one short message** for what is missing from: age; horizon and what the money is for; reaction to a 30 % fall in a few months; emergency fund wanted (months) and its purpose; housing and other income outside payslips; preferences or limits. Then create the profile with the answers.
+
+If the user prefers not to answer, give a **general** analysis and label it as not tailored.
+
+### Keep it alive
+
+Whenever the user tells you something new about their situation, goals or preferences, **update the profile in the same session**, without being asked. Edit what changed instead of adding duplicates, date what you change, and mark open questions as **PENDIENTE**. Tell the user in one line that you updated it.
 
 ## Step 3 — Gather, then analyse
 

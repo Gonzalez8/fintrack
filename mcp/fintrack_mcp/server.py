@@ -61,8 +61,10 @@ Rules:
   date (replacing one already there) and returns the previous balance of each so you can show the change.
 - Dividend drafts are suggestions detected from Yahoo Finance: the ex-dividend date is not the payment date and
   amounts are in the quote currency, so ask the user for the figures from their broker before accepting one.
-- For opinions or recommendations, ask for the user's profile first (horizon, risk tolerance, goals, emergency
-  fund) unless already known in the conversation. This is analysis of the user's own data, not regulated advice.
+- For opinions or recommendations you need the user's profile (horizon, risk tolerance, goals, emergency fund,
+  preferences): use the one saved from earlier sessions if your client keeps memory, and ask only for what is
+  missing. Never ask for figures Fintrack has (salary, savings, balances). This is analysis of the user's own data,
+  not regulated advice.
 """
 
 READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
@@ -566,9 +568,9 @@ def create_server(client: FintrackClient) -> MCPServer:
     def fintrack_portfolio_analysis() -> str:
         """Analyse the portfolio and each investment, with recommendations for my profile."""
         return (
-            "Analyse my investments with Fintrack and give me recommendations. First ask me about my profile "
-            "(age range, investment horizon, risk tolerance, goals, emergency fund, income stability) unless I "
-            "already told you in this conversation. Then review the whole portfolio (fintrack_get_portfolio, "
+            "Analyse my investments with Fintrack and give me recommendations. Use my saved investor profile if you "
+            "keep one (age, horizon, risk tolerance, goals, emergency fund, preferences) and ask me only for what is "
+            "missing. Then review the whole portfolio (fintrack_get_portfolio, "
             "fintrack_get_investment_flows, fintrack_get_monthly_savings) and each position: weight, concentration, "
             "diversification by region/sector/currency, overlapping funds, costs, performance and fit with my "
             "profile. If the fintrack-advisor skill is available, follow it."

@@ -62,6 +62,8 @@ class BackupDividendSerializer(serializers.ModelSerializer):
             "shares",
             "gross",
             "tax",
+            "domestic_tax",
+            "commission",
             "net",
             "import_hash",
         ]
@@ -152,6 +154,7 @@ class BackupDividendSuggestionSerializer(serializers.ModelSerializer):
             "shares",
             "gross",
             "tax",
+            "domestic_tax",
             "status",
             "dividend",
         ]

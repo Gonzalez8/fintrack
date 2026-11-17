@@ -51,6 +51,16 @@ class Dividend(UserOwnedModel):
         default=0,
         help_text="Impuestos retenidos en origen sobre el dividendo (withholding tax).",
     )
+    domestic_tax = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        default=0,
+        help_text=(
+            "Retención practicada en el país de residencia fiscal por el pagador o broker local "
+            "(p. ej. el 19 % español sobre un dividendo extranjero). Se declara como retención, "
+            "no como doble imposición."
+        ),
+    )
     commission = models.DecimalField(
         max_digits=20,
         decimal_places=2,
@@ -184,6 +194,13 @@ class DividendSuggestion(UserOwnedModel):
         null=True,
         blank=True,
         help_text="Estimated withholding from the user's past dividends of this asset; null when unknown.",
+    )
+    domestic_tax = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Estimated domestic withholding from the user's past dividends of this asset; null when none.",
     )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     dividend = models.ForeignKey(

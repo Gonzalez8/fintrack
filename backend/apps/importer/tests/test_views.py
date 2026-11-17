@@ -2,6 +2,7 @@
 Tests for backup export/import: roundtrip integrity, validation.
 """
 
+import datetime
 import json
 from decimal import Decimal
 
@@ -188,3 +189,27 @@ def test_backup_keeps_fiscal_country_and_mcp_url(client, user):
     assert client.post("/api/backup/import/", {"file": file}, format="multipart").status_code == 200
     s = Settings.load(user)
     assert (s.tax_country, s.mcp_backend_url) == ("DE", "https://fintrack-api.example.com")
+
+
+@pytest.mark.django_db
+def test_backup_keeps_dividend_retentions_and_commission(client, user):
+    asset = Asset.objects.create(owner=user, name="US Stock", ticker="USS", currency="USD")
+    Dividend.objects.create(
+        owner=user,
+        asset=asset,
+        date=datetime.date(2025, 6, 1),
+        gross=Decimal("100"),
+        tax=Decimal("15"),
+        domestic_tax=Decimal("19"),
+        commission=Decimal("1"),
+        net=Decimal("65"),
+    )
+    exported = client.get("/api/backup/export/").json()
+    row = exported["dividends"][0]
+    assert (row["domestic_tax"], row["commission"]) == ("19.00", "1.00")
+
+    Dividend.objects.all().delete()
+    file = SimpleUploadedFile("b.json", json.dumps(exported).encode(), content_type="application/json")
+    assert client.post("/api/backup/import/", {"file": file}, format="multipart").status_code == 200
+    d = Dividend.objects.get(owner=user)
+    assert (d.domestic_tax, d.commission) == (Decimal("19.00"), Decimal("1.00"))

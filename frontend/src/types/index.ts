@@ -153,7 +153,10 @@ export interface Dividend {
   asset_issuer_country?: string;
   shares: string | null;
   gross: string;
+  /** Withheld at source (abroad for foreign assets). */
   tax: string;
+  /** Retention of the fiscal-residence country added by a local payer/broker (e.g. Spanish 19 %). */
+  domestic_tax: string;
   commission: string;
   net: string;
   withholding_rate: string | null;
@@ -168,6 +171,7 @@ export interface DividendFormData {
   shares?: string;
   gross: string;
   tax?: string;
+  domestic_tax?: string;
   commission?: string;
   net: string;
   withholding_rate?: string;
@@ -278,7 +282,9 @@ export interface Settings {
 export interface YearSummary {
   year: number;
   dividends_gross: string;
+  /** Everything withheld: at source + domestic retention. */
   dividends_tax: string;
+  dividends_tax_domestic: string;
   dividends_net: string;
   interests_gross: string;
   interests_net: string;
@@ -400,6 +406,8 @@ export interface DividendSuggestion {
   gross: string;
   /** Estimated from past dividends of the asset; null when unknown. */
   tax: string | null;
+  /** Estimated domestic retention from past dividends; null when none. */
+  domestic_tax: string | null;
   net: string;
   status: "PENDING" | "ACCEPTED" | "DISMISSED";
   dividend: string | null;

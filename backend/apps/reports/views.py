@@ -193,7 +193,9 @@ class ExportDividendsCSV(APIView):
 
         def rows():
             writer = csv.writer(writer_buffer)
-            yield writer.writerow(["Date", "Asset", "Shares", "Gross", "Tax", "Net", "Withholding Rate"])
+            yield writer.writerow(
+                ["Date", "Asset", "Shares", "Gross", "Tax", "Domestic Tax", "Commission", "Net", "Withholding Rate"]
+            )
             for d in qs.iterator():
                 rate = (d.tax / d.gross * 100).quantize(Decimal("0.01")) if d.gross and d.gross > 0 else ""
                 yield writer.writerow(
@@ -203,6 +205,8 @@ class ExportDividendsCSV(APIView):
                         d.shares or "",
                         d.gross,
                         d.tax,
+                        d.domestic_tax,
+                        d.commission,
                         d.net,
                         rate,
                     ]

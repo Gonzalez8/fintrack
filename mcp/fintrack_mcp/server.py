@@ -220,7 +220,8 @@ def create_server(client: FintrackClient) -> MCPServer:
         limit: Limit = DEFAULT_LIMIT,
         page: Page = 1,
     ) -> dict[str, Any]:
-        """List recorded dividends, newest first: date, asset, shares, gross, withholding, net and rate."""
+        """List recorded dividends, newest first: date, asset, shares, gross, withholding at source (tax), domestic
+        retention (domestic_tax, e.g. the Spanish 19 %), net and rate (tax over gross)."""
         params = {"year": year, "search": search, "page": page, "page_size": limit}
         return _page(await call("get", "dividends/", params=params), page, limit)
 
@@ -517,24 +518,39 @@ def create_server(client: FintrackClient) -> MCPServer:
         asset: AssetRef,
         date: Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}$", description="Payment date, YYYY-MM-DD.")],
         gross: Money,
-        tax: Annotated[str, Field(description="Withholding tax.")] = "0",
+        tax: Annotated[str, Field(description="Withholding tax at source (abroad for foreign assets).")] = "0",
+        domestic_tax: Annotated[
+            str,
+            Field(
+                description="Retention added by a bank/broker of the user's country of residence (in Spain the 19 % "
+                "on top of the foreign withholding). Declared as a domestic withholding, not as double taxation."
+            ),
+        ] = "0",
         commission: Money = "0",
-        net: Annotated[str | None, Field(description="Net received; defaults to gross − tax − commission.")] = None,
+        net: Annotated[
+            str | None, Field(description="Net received; defaults to gross − tax − domestic_tax − commission.")
+        ] = None,
         shares: Annotated[str | None, Field(description="Shares that received the dividend.")] = None,
     ) -> dict[str, Any]:
         """Record a dividend payment. Confirm the details with the user before calling."""
         a = await resolve_asset(asset)
-        g, t, c = (
+        g, t, dt, c = (
             Decimal(_decimal(v, f))
-            for v, f in ((gross, "gross"), (tax or "0", "tax"), (commission or "0", "commission"))
+            for v, f in (
+                (gross, "gross"),
+                (tax or "0", "tax"),
+                (domestic_tax or "0", "domestic_tax"),
+                (commission or "0", "commission"),
+            )
         )
         payload = {
             "asset": a["id"],
             "date": date,
             "gross": str(g),
             "tax": str(t),
+            "domestic_tax": str(dt),
             "commission": str(c),
-            "net": _decimal(net, "net") or str(g - t - c),
+            "net": _decimal(net, "net") or str(g - t - dt - c),
             "shares": _decimal(shares, "shares"),
         }
         return await call("post", "dividends/", json=payload)
@@ -583,22 +599,37 @@ def create_server(client: FintrackClient) -> MCPServer:
         draft_id: Annotated[str, Field(description="Id of the dividend draft (fintrack_list_pending_reviews).")],
         date: Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}$", description="Payment date from the broker.")],
         gross: Money,
-        tax: Annotated[str, Field(description="Withholding tax from the broker.")] = "0",
+        tax: Annotated[str, Field(description="Withholding tax at source from the broker.")] = "0",
+        domestic_tax: Annotated[
+            str,
+            Field(
+                description="Retention added by a bank/broker of the user's country of residence (in Spain the 19 % "
+                "on top of the foreign withholding). Declared as a domestic withholding, not as double taxation."
+            ),
+        ] = "0",
         commission: Money = "0",
-        net: Annotated[str | None, Field(description="Net received; defaults to gross − tax − commission.")] = None,
+        net: Annotated[
+            str | None, Field(description="Net received; defaults to gross − tax − domestic_tax − commission.")
+        ] = None,
         shares: Annotated[str | None, Field(description="Shares; defaults to the draft's.")] = None,
     ) -> dict[str, Any]:
         """Turn a dividend draft into a recorded dividend with the figures confirmed by the user's broker."""
-        g, t, c = (
+        g, t, dt, c = (
             Decimal(_decimal(v, f))
-            for v, f in ((gross, "gross"), (tax or "0", "tax"), (commission or "0", "commission"))
+            for v, f in (
+                (gross, "gross"),
+                (tax or "0", "tax"),
+                (domestic_tax or "0", "domestic_tax"),
+                (commission or "0", "commission"),
+            )
         )
         body = {
             "date": date,
             "gross": str(g),
             "tax": str(t),
+            "domestic_tax": str(dt),
             "commission": str(c),
-            "net": _decimal(net, "net") or str(g - t - c),
+            "net": _decimal(net, "net") or str(g - t - dt - c),
         }
         if shares:
             body["shares"] = _decimal(shares, "shares")

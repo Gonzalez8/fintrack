@@ -39,6 +39,7 @@ Use with the investor profile. For each point: what the data says → why it mat
 
 - Realized gains and losses of the year (`fintrack_get_year_summary`) — offsetting gains with losses before year end; the two-month rule (losses are not deductible if the same securities are repurchased within two months).
 - Foreign dividend withholding above the treaty rate is not recovered through the double-taxation deduction (e.g. Switzerland, Germany); note where withholding is high.
+- Dividends keep two withholdings apart: `tax` (at source, abroad) feeds the double-taxation deduction; `domestic_tax` (the Spanish 19 % a Spanish broker adds) is a Spanish retention credited in full. If a foreign dividend's net doesn't add up, the Spanish 19 % may be missing or lumped into `tax`.
 - Spanish investment funds can be switched (traspaso) without taxing gains; ETFs cannot.
 
 ## 8. Mortgage and debt

@@ -2,7 +2,7 @@ import logging
 from decimal import Decimal
 
 from django.db.models import F, Sum
-from django.db.models.functions import Coalesce, ExtractYear, TruncMonth
+from django.db.models.functions import Coalesce, ExtractYear
 from django.utils import timezone
 
 from apps.payroll.models import Payroll
@@ -269,33 +269,53 @@ def _compute_savings_stats(months_data):
 INCOME_KINDS = ("payroll", "other", "investment")
 
 
-def _income_by_month(user):
-    """Money received per month (YYYY-MM): net payslips (by period end), other income, net dividends and interests."""
+def _income_events(user):
+    """Money received, summed per day and kind: net payslips (paid at period end), other income, net dividends and
+    interests (at period end). Sorted by date."""
     sources = (
         ("payroll", Payroll.objects.filter(owner=user), "period_end", "net"),
         ("other", OtherIncome.objects.filter(owner=user), "date", "amount"),
         ("investment", Dividend.objects.filter(owner=user), "date", "net"),
         ("investment", Interest.objects.filter(owner=user), "date_end", "net"),
     )
-    months: dict[str, dict[str, Decimal]] = {}
+    events = []
     for kind, queryset, date_field, amount_field in sources:
-        rows = queryset.annotate(m=TruncMonth(date_field)).values("m").annotate(total=Sum(amount_field))
-        for row in rows:
-            entry = months.setdefault(row["m"].strftime("%Y-%m"), dict.fromkeys(INCOME_KINDS, Decimal("0")))
-            entry[kind] += row["total"] or Decimal("0")
-    return months
+        for row in queryset.values(date_field).annotate(total=Sum(amount_field)):
+            events.append((row[date_field], kind, row["total"] or Decimal("0")))
+    return sorted(events, key=lambda e: e[0])
+
+
+def _income_by_snapshot_period(events, month_end_dates):
+    """Income of each savings month: what was received between the previous month's last snapshot (excluded) and
+    this month's last snapshot (included) — the same span the cash change measures. Snapshots taken on the 1st of
+    a month therefore collect the previous month's payslip, as the balance they record already includes it."""
+    periods: dict[str, dict[str, Decimal]] = {}
+    idx = 0
+    prev_end = None
+    for month in sorted(month_end_dates):
+        end = month_end_dates[month]
+        totals = dict.fromkeys(INCOME_KINDS, Decimal("0"))
+        while idx < len(events) and events[idx][0] <= end:
+            day, kind, amount = events[idx]
+            if prev_end is not None and day > prev_end:
+                totals[kind] += amount
+            idx += 1
+        periods[month] = totals
+        prev_end = end
+    return periods
 
 
 def _income_fields(income, real_savings):
     """Income of a month and the spending it implies: what came in minus what was saved."""
     total = sum(income.values(), Decimal("0"))
     spending = total - real_savings if real_savings is not None and total > 0 else None
+    cents = Decimal("0.01")
     return {
-        "income_payroll": str(income["payroll"]),
-        "income_other": str(income["other"]),
-        "income_investment": str(income["investment"]),
-        "income_total": str(total),
-        "estimated_spending": str(spending) if spending is not None else None,
+        "income_payroll": str(income["payroll"].quantize(cents)),
+        "income_other": str(income["other"].quantize(cents)),
+        "income_investment": str(income["investment"].quantize(cents)),
+        "income_total": str(total.quantize(cents)),
+        "estimated_spending": str(spending.quantize(cents)) if spending is not None else None,
     }
 
 
@@ -304,11 +324,13 @@ def monthly_savings(user, start_date=None, end_date=None):
 
     account_balances = {}
     monthly_cash = {}
+    month_end_dates = {}
 
     for snap in AccountSnapshot.objects.filter(owner=user).order_by("date").values("account_id", "date", "balance"):
         month_key = snap["date"].strftime("%Y-%m")
         account_balances[snap["account_id"]] = snap["balance"]
         monthly_cash[month_key] = sum(account_balances.values(), Decimal("0"))
+        month_end_dates[month_key] = snap["date"]
 
     if not monthly_cash:
         return {"months": [], "stats": None}
@@ -334,8 +356,7 @@ def monthly_savings(user, start_date=None, end_date=None):
     from apps.portfolio.services import compute_investment_cost_by_month
 
     inv_cost_by_month = compute_investment_cost_by_month(user)
-    income_by_month = _income_by_month(user)
-    no_income = dict.fromkeys(INCOME_KINDS, Decimal("0"))
+    income_by_month = _income_by_snapshot_period(_income_events(user), month_end_dates)
 
     sorted_tx_months = sorted(inv_cost_by_month.keys())
     tx_idx = 0
@@ -371,7 +392,7 @@ def monthly_savings(user, start_date=None, end_date=None):
                 "investment_cost_end": str(inv_cost_end),
                 "investment_cost_delta": str(inv_cost_delta) if inv_cost_delta is not None else None,
                 "real_savings": str(real_savings) if real_savings is not None else None,
-                **_income_fields(income_by_month.get(month, no_income), real_savings),
+                **_income_fields(income_by_month[month], real_savings),
                 "comments": monthly_comments.get(month, []),
             }
         )

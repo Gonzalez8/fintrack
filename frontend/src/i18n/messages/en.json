@@ -406,7 +406,7 @@
   "savings.incomeOther": "Other income",
   "savings.incomeInvestment": "Dividends and interest",
   "savings.estimatedSpending": "Estimated spending",
-  "savings.estimatedSpendingHelp": "Income of the month (net pay, other income, dividends and interest) minus real savings. It is approximate: sales at a gain, loans or accounts without snapshots skew it.",
+  "savings.estimatedSpendingHelp": "Income received between the previous snapshot and this month's (net pay, other income, dividends and interest) minus real savings. It is approximate: sales at a gain, loans or accounts without snapshots skew it.",
 
   "savings.goals": "Savings goals",
   "savings.createGoal": "Create goal",

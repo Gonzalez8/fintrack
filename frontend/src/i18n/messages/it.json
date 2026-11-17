@@ -406,7 +406,7 @@
   "savings.incomeOther": "Altre entrate",
   "savings.incomeInvestment": "Dividendi e interessi",
   "savings.estimatedSpending": "Spesa stimata",
-  "savings.estimatedSpendingHelp": "Entrate del mese (stipendio netto, altre entrate, dividendi e interessi) meno il risparmio reale. È approssimativa: vendite in guadagno, prestiti o conti senza snapshot la alterano.",
+  "savings.estimatedSpendingHelp": "Entrate incassate tra lo snapshot precedente e quello del mese (stipendio netto, altre entrate, dividendi e interessi) meno il risparmio reale. È approssimativa: vendite in guadagno, prestiti o conti senza snapshot la alterano.",
 
   "savings.goals": "Obiettivi di risparmio",
   "savings.createGoal": "Crea obiettivo",

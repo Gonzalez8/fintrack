@@ -168,3 +168,23 @@ class TestImportValidation:
         res = client.post("/api/backup/import/", {"file": file}, format="multipart")
         assert res.status_code == 200
         assert Dividend.objects.filter(owner=user, gross=Decimal("100")).exists()
+
+
+@pytest.mark.django_db
+def test_backup_keeps_fiscal_country_and_mcp_url(client, user):
+    from apps.assets.models import Settings
+
+    s = Settings.load(user)
+    s.tax_country = "DE"
+    s.mcp_backend_url = "https://fintrack-api.example.com"
+    s.save()
+    exported = json.loads(client.get("/api/backup/export/").content)
+    assert exported["settings"]["tax_country"] == "DE"
+    assert exported["settings"]["mcp_backend_url"] == "https://fintrack-api.example.com"
+
+    s.tax_country, s.mcp_backend_url = "ES", ""
+    s.save()
+    file = SimpleUploadedFile("backup.json", json.dumps(exported).encode(), content_type="application/json")
+    assert client.post("/api/backup/import/", {"file": file}, format="multipart").status_code == 200
+    s = Settings.load(user)
+    assert (s.tax_country, s.mcp_backend_url) == ("DE", "https://fintrack-api.example.com")

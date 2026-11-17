@@ -173,4 +173,7 @@ class BackupSettingsSerializer(serializers.ModelSerializer):
             "snapshot_frequency",
             "data_retention_days",
             "purge_portfolio_snapshots",
+            "tax_treaty_limits",
+            "tax_country",
+            "mcp_backend_url",
         ]

@@ -104,3 +104,17 @@ class TestSettingsView:
         client.get("/api/settings/")
         resp = client.patch("/api/settings/", {"tax_country": "ESP"}, format="json")
         assert resp.status_code == 400
+
+    def test_mcp_backend_url_defaults_to_empty(self, client, user):
+        assert client.get("/api/settings/").data["mcp_backend_url"] == ""
+
+    def test_mcp_backend_url_is_saved_without_trailing_slash(self, client, user):
+        client.get("/api/settings/")
+        resp = client.patch("/api/settings/", {"mcp_backend_url": " https://fintrack-api.example.com/ "}, format="json")
+        assert resp.status_code == 200
+        assert resp.data["mcp_backend_url"] == "https://fintrack-api.example.com"
+
+    def test_mcp_backend_url_requires_a_scheme(self, client, user):
+        client.get("/api/settings/")
+        resp = client.patch("/api/settings/", {"mcp_backend_url": "fintrack-api.example.com"}, format="json")
+        assert resp.status_code == 400

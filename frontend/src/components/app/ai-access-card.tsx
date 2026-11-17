@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { useTranslations } from "@/i18n/use-translations";
 import { uiLocale } from "@/lib/utils";
-import type { ApiToken, ApiTokenScope, PaginatedResponse } from "@/types";
+import type { ApiToken, ApiTokenScope, PaginatedResponse, Settings } from "@/types";
 
 /** MCP package pinned to this Fintrack release, so the installed tools match the deployed API. */
 export function mcpPackage(version = process.env.NEXT_PUBLIC_APP_VERSION): string {
@@ -88,7 +88,41 @@ export function AiAccessCard() {
   const [name, setName] = useState("Claude");
   const [scope, setScope] = useState<ApiTokenScope>("READ");
   const [created, setCreated] = useState<ApiToken | null>(null);
-  const [backendUrl, setBackendUrl] = useState(defaultBackendUrl);
+  const [urlDraft, setUrlDraft] = useState<string | null>(null);
+  const [check, setCheck] = useState<"idle" | "testing" | "ok" | "fail">("idle");
+
+  // The backend URL is saved in the user's settings: the app can't infer a reverse-proxy host
+  const { data: settings } = useQuery({
+    queryKey: ["settings"],
+    queryFn: () => api.get<Settings>("/settings/"),
+  });
+  const savedUrl = settings?.mcp_backend_url ?? "";
+  const backendUrl = urlDraft ?? (savedUrl || defaultBackendUrl());
+  const urlDirty = urlDraft !== null && urlDraft.trim().replace(/\/+$/, "") !== savedUrl;
+
+  const saveUrlMut = useMutation({
+    mutationFn: () => api.put("/settings/", { ...settings, mcp_backend_url: backendUrl.trim() }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      setUrlDraft(null);
+      toast.success(t("aiAccess.urlSaved"));
+    },
+    onError: () => toast.error(t("aiAccess.urlInvalid")),
+  });
+
+  /** Reachability from this browser (same network as the computer running the MCP). */
+  const testConnection = async () => {
+    setCheck("testing");
+    try {
+      await fetch(`${backendUrl.trim().replace(/\/+$/, "")}/api/health/`, {
+        mode: "no-cors",
+        signal: AbortSignal.timeout(6000),
+      });
+      setCheck("ok");
+    } catch {
+      setCheck("fail");
+    }
+  };
 
   const { data } = useQuery({
     queryKey: TOKENS_KEY,
@@ -128,6 +162,49 @@ export function AiAccessCard() {
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">{t("aiAccess.description")}</p>
 
+        <div className="space-y-2 rounded-md border border-border p-3">
+          <p className="text-sm font-medium">{t("aiAccess.connectionTitle")}</p>
+          <label className="text-xs font-medium" htmlFor="mcp-backend-url">
+            {t("aiAccess.backendUrl")}
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="mcp-backend-url"
+              value={backendUrl}
+              onChange={(e) => {
+                setUrlDraft(e.target.value);
+                setCheck("idle");
+              }}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="h-8"
+                disabled={!urlDirty || saveUrlMut.isPending}
+                onClick={() => saveUrlMut.mutate()}
+              >
+                {t("aiAccess.saveUrl")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                disabled={check === "testing"}
+                onClick={testConnection}
+              >
+                {check === "testing" ? t("aiAccess.testing") : t("aiAccess.testConnection")}
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {savedUrl ? t("aiAccess.backendUrlHelp") : t("aiAccess.suggestedUrl")}
+          </p>
+          {check === "ok" && (
+            <p className="text-xs text-emerald-600 dark:text-emerald-400">{t("aiAccess.reachable")}</p>
+          )}
+          {check === "fail" && <p className="text-xs text-destructive">{t("aiAccess.unreachable")}</p>}
+        </div>
+
         {tokens.length > 0 && (
           <ul className="divide-y divide-border rounded-md border border-border">
             {tokens.map((tk) => (
@@ -165,11 +242,6 @@ export function AiAccessCard() {
           <div className="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
             <p className="text-sm font-medium">{t("aiAccess.keyOnce")}</p>
             <CopyBlock label={t("aiAccess.token")} text={created.key} />
-            <div className="space-y-1">
-              <label className="text-xs font-medium">{t("aiAccess.backendUrl")}</label>
-              <Input value={backendUrl} onChange={(e) => setBackendUrl(e.target.value)} />
-              <p className="text-xs text-muted-foreground">{t("aiAccess.backendUrlHelp")}</p>
-            </div>
             <CopyBlock label="Claude Code" text={claudeCodeCommand(backendUrl, created.key)} />
             <CopyBlock
               label="Claude Desktop (claude_desktop_config.json)"

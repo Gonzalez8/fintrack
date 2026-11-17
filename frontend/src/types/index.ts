@@ -270,6 +270,8 @@ export interface Settings {
   data_retention_days: number | null;
   purge_portfolio_snapshots: boolean;
   tax_country: string;
+  /** Backend URL the MCP calls; empty = suggest the web host on port 8001. */
+  mcp_backend_url?: string;
 }
 
 // ── Reports ──────────────────────────────────────────────────────

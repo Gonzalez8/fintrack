@@ -213,3 +213,46 @@ def test_backup_keeps_dividend_retentions_and_commission(client, user):
     assert client.post("/api/backup/import/", {"file": file}, format="multipart").status_code == 200
     d = Dividend.objects.get(owner=user)
     assert (d.domestic_tax, d.commission) == (Decimal("19.00"), Decimal("1.00"))
+
+
+@pytest.mark.django_db
+def test_backup_round_trips_other_income_and_interest_retention(client, user):
+    from apps.transactions.models import Interest, OtherIncome
+
+    account = Account.objects.create(owner=user, name="Bank")
+    OtherIncome.objects.create(
+        owner=user,
+        date=datetime.date(2026, 10, 1),
+        category=OtherIncome.Category.RENTAL,
+        description="Rent flat",
+        amount=Decimal("390"),
+        account=account,
+        notes="October",
+    )
+    Interest.objects.create(
+        owner=user,
+        account=account,
+        date_start=datetime.date(2026, 9, 1),
+        date_end=datetime.date(2026, 9, 30),
+        gross=Decimal("10"),
+        tax=Decimal("1.90"),
+        commission=Decimal("0.10"),
+        net=Decimal("8"),
+    )
+    exported = client.get("/api/backup/export/").json()
+    assert exported["other_incomes"][0]["description"] == "Rent flat"
+
+    OtherIncome.objects.all().delete()
+    Interest.objects.all().delete()
+    file = SimpleUploadedFile("b.json", json.dumps(exported).encode(), content_type="application/json")
+    res = client.post("/api/backup/import/", {"file": file}, format="multipart")
+    assert res.data["counts"]["other_incomes"] == 1
+    income = OtherIncome.objects.get(owner=user)
+    assert (income.category, income.amount, income.account, income.declared) == (
+        "RENTAL",
+        Decimal("390"),
+        account,
+        False,
+    )
+    interest = Interest.objects.get(owner=user)
+    assert (interest.tax, interest.commission) == (Decimal("1.90"), Decimal("0.10"))

@@ -181,3 +181,25 @@ def investment_flows(
         "mixed_currencies": len(currencies) > 1,
         "groups": rows,
     }
+
+
+def other_income_totals(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Totals of other-income rows: overall, declared vs not, per type and per month (YYYY-MM)."""
+    total, declared = Decimal(0), Decimal(0)
+    by_category: dict[str, Decimal] = defaultdict(Decimal)
+    by_month: dict[str, Decimal] = defaultdict(Decimal)
+    for r in rows:
+        amount = _d(r.get("amount"))
+        total += amount
+        if r.get("declared"):
+            declared += amount
+        by_category[r.get("category") or "OTHER"] += amount
+        by_month[(r.get("date") or "")[:7]] += amount
+    return {
+        "total": _money(total),
+        "declared": _money(declared),
+        "not_declared": _money(total - declared),
+        "by_category": {k: _money(v) for k, v in sorted(by_category.items())},
+        "by_month": {k: _money(v) for k, v in sorted(by_month.items())},
+        "average_per_month_with_income": _money(total / len(by_month)) if by_month else "0.00",
+    }

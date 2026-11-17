@@ -132,6 +132,28 @@ function DeltaCell({ value }: { value: string | null }) {
   );
 }
 
+// ── Income cell ─────────────────────────────────────────────────────────────
+
+function IncomeCell({ m }: { m: MonthlySavingsPoint }) {
+  const t = useTranslations();
+  if (parseFloat(m.income_total) === 0) return <span className="text-muted-foreground">—</span>;
+  const breakdown = [
+    `${t("savings.incomePayroll")}: ${formatMoney(m.income_payroll)}`,
+    `${t("savings.incomeOther")}: ${formatMoney(m.income_other)}`,
+    `${t("savings.incomeInvestment")}: ${formatMoney(m.income_investment)}`,
+  ].join("\n");
+  return (
+    <span className="font-mono tabular-nums" title={breakdown}>
+      {formatMoney(m.income_total)}
+    </span>
+  );
+}
+
+function SpendingCell({ value }: { value: string | null }) {
+  if (value === null) return <span className="text-muted-foreground">—</span>;
+  return <span className="font-mono tabular-nums text-amber-600 dark:text-amber-400">{formatMoney(value)}</span>;
+}
+
 // ── Mobile month card ───────────────────────────────────────────────────────
 
 function MobileMonthCard({
@@ -145,6 +167,7 @@ function MobileMonthCard({
   selected?: boolean;
   onSelect?: (month: string) => void;
 }) {
+  const t = useTranslations();
   const hasComments = (m.comments?.length ?? 0) > 0;
   return (
     <div
@@ -185,6 +208,22 @@ function MobileMonthCard({
           <p><DeltaCell value={m.investment_cost_delta} /></p>
         </div>
       </div>
+      {parseFloat(m.income_total) > 0 && (
+        <div className="mt-1.5 grid grid-cols-3 gap-x-2 text-[11px] font-mono">
+          <div>
+            <p className="text-muted-foreground/60 mb-0.5">{t("savings.income")}</p>
+            <p className="tabular-nums text-foreground/80">{formatMoney(m.income_total)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground/60 mb-0.5">{t("savings.incomeOther")}</p>
+            <p className="tabular-nums text-foreground/80">{formatMoney(m.income_other)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground/60 mb-0.5">{t("savings.estimatedSpending")}</p>
+            <p><SpendingCell value={m.estimated_spending} /></p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -244,6 +283,11 @@ export function MonthlySavingsTab() {
   }, [filteredMonths]);
 
   const tableData = useMemo(() => [...filteredMonths].reverse(), [filteredMonths]);
+
+  const avgSpending = useMemo(() => {
+    const values = filteredMonths.filter((m) => m.estimated_spending !== null).map((m) => parseFloat(m.estimated_spending!));
+    return values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2) : null;
+  }, [filteredMonths]);
 
   const currentYear = String(new Date().getFullYear());
   const groupByYear = range === "MAX";
@@ -525,6 +569,10 @@ export function MonthlySavingsTab() {
                       <TableHead className="text-right">Δ Efectivo</TableHead>
                       <TableHead className="text-right">Δ Coste inv.</TableHead>
                       <TableHead className="text-right">Ahorro real</TableHead>
+                      <TableHead className="text-right">{t("savings.income")}</TableHead>
+                      <TableHead className="text-right" title={t("savings.estimatedSpendingHelp")}>
+                        {t("savings.estimatedSpending")}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
 
@@ -541,7 +589,7 @@ export function MonthlySavingsTab() {
                               className="cursor-pointer bg-secondary/30 hover:bg-secondary/50 transition-colors select-none"
                               onClick={() => toggleYear(year)}
                             >
-                              <TableCell colSpan={5} className="py-2 px-4">
+                              <TableCell colSpan={7} className="py-2 px-4">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <ChevronRight
@@ -589,6 +637,12 @@ export function MonthlySavingsTab() {
                                     <TableCell className="text-right text-sm">
                                       <DeltaCell value={m.real_savings} />
                                     </TableCell>
+                                    <TableCell className="text-right text-sm">
+                                      <IncomeCell m={m} />
+                                    </TableCell>
+                                    <TableCell className="text-right text-sm">
+                                      <SpendingCell value={m.estimated_spending} />
+                                    </TableCell>
                                   </TableRow>
                                 );
                               })}
@@ -626,6 +680,12 @@ export function MonthlySavingsTab() {
                             <TableCell className="text-right text-sm">
                               <DeltaCell value={m.real_savings} />
                             </TableCell>
+                            <TableCell className="text-right text-sm">
+                              <IncomeCell m={m} />
+                            </TableCell>
+                            <TableCell className="text-right text-sm">
+                              <SpendingCell value={m.estimated_spending} />
+                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -640,6 +700,10 @@ export function MonthlySavingsTab() {
                       <TableCell className="text-right">—</TableCell>
                       <TableCell className="text-right">
                         <DeltaCell value={stats?.avg_monthly_delta ?? null} />
+                      </TableCell>
+                      <TableCell className="text-right">—</TableCell>
+                      <TableCell className="text-right">
+                        <SpendingCell value={avgSpending} />
                       </TableCell>
                     </TableRow>
                   </TableFooter>

@@ -24,18 +24,19 @@ You answer questions about the user's money using **their real data in Fintrack*
 | How much did I invest in the S&P 500 | `fintrack_get_investment_flows(group_by="asset", search="S&P")` — then check which assets really track it (see below) |
 | Salary, bonus, IRPF, pay rises | `fintrack_get_payroll_summary`, `fintrack_list_payrolls` |
 | How much do I save per month / year | `fintrack_get_monthly_savings`, `fintrack_get_annual_savings` |
+| How much do I spend / where does my money come from | `fintrack_get_monthly_savings` (`income_*`, `estimated_spending`), `fintrack_list_other_income` |
 | Accounts and balance history | `fintrack_list_accounts`, `fintrack_list_account_snapshots` |
 | Net worth over time | `fintrack_get_net_worth_evolution` |
 | Dividends, interests, taxes | `fintrack_list_dividends`, `fintrack_list_interests`, `fintrack_get_year_summary`, `fintrack_get_tax_declaration` |
 | Goals, real estate, mortgage | `fintrack_list_savings_goals`, `fintrack_list_properties` |
 | Data quality / something doesn't add up | `fintrack_check_dividend_shares`, `fintrack_list_pending_reviews` |
-| Record an operation, dividend or interest | `fintrack_create_transaction`, `fintrack_create_dividend`, `fintrack_create_interest`, `fintrack_accept_dividend_draft` |
+| Record an operation, dividend, interest or other income | `fintrack_create_transaction`, `fintrack_create_dividend`, `fintrack_create_interest`, `fintrack_create_other_income`, `fintrack_accept_dividend_draft` |
 | Add or fix an asset (ticker, ISIN, countries, manual price) | `fintrack_create_asset`, `fintrack_update_asset` |
 | "These are my balances today / on the 1st" | `fintrack_record_account_balances` (one snapshot per account; show old → new balance) |
 
 **Identifying index funds.** Names and tickers vary by listing: S&P 500 trackers include e.g. CSPX, SXR8, VUSA, VUAA, IUSA, SPY, VOO, SPXS and names containing "S&P 500" or "Core S&P". MSCI World, Nasdaq-100 and "All-World" funds are **not** S&P 500 even though they are US-heavy. List the assets you counted and ask if any is ambiguous.
 
-**Definitions used by Fintrack** — real savings = change in cash + money newly invested (investing is not spending). Payroll types: MONTHLY (regular salary), BONUS (pagas extra, variable, incentives), ATRASOS (back pay), OTHER (settlements, severance). "Bonus vs fixed" = BONUS gross ÷ MONTHLY gross. Gross salary comes from `fintrack_get_payroll_summary`; `payroll_gross` in `fintrack_get_year_summary` is the IRPF taxable base and can be lower (exempt items, in-kind pay). Mortgages: there is debt only when `mortgage_status` is ACTIVE (`has_active_mortgage`); `has_mortgage` also covers finished ones.
+**Definitions used by Fintrack** — real savings = change in cash + money newly invested (investing is not spending). Income = net payslips + other income (rent, freelance, side jobs, gifts; `fintrack_list_other_income`) + net dividends and interests; estimated spending = income − real savings (approximate: sales at a gain, loans or accounts without snapshots skew it). **Before saying savings and salary don't match, include other income**; if a gap remains, ask about income not recorded yet instead of assuming an error. Other income may be undeclared: treat it as real money for savings and spending, never as a tax figure, and don't lecture about it. Payroll types: MONTHLY (regular salary), BONUS (pagas extra, variable, incentives), ATRASOS (back pay), OTHER (settlements, severance). "Bonus vs fixed" = BONUS gross ÷ MONTHLY gross. Gross salary comes from `fintrack_get_payroll_summary`; `payroll_gross` in `fintrack_get_year_summary` is the IRPF taxable base and can be lower (exempt items, in-kind pay). Mortgages: there is debt only when `mortgage_status` is ACTIVE (`has_active_mortgage`); `has_mortgage` also covers finished ones.
 
 ## Step 2 — Investor profile (before any opinion or recommendation)
 

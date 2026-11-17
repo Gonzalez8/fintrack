@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Briefcase, Landmark, Wallet, ArrowLeftRight,
   Coins, Percent, FileText, Settings, LogOut, Moon, Sun,
   TrendingUp, PiggyBank, UserCircle, Globe, Home, Eye, EyeOff,
-  Receipt,
+  Receipt, HandCoins,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePrivacy } from "@/lib/privacy";
@@ -46,6 +46,7 @@ function useNavSections() {
           { href: "/dividends", icon: Coins, label: t("nav.dividends") },
           { href: "/interests", icon: Percent, label: t("nav.interests") },
           { href: "/nominas", icon: Receipt, label: t("nav.payroll") },
+          { href: "/other-income", icon: HandCoins, label: t("nav.otherIncome") },
         ],
       },
       {

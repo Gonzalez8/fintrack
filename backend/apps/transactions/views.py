@@ -5,12 +5,20 @@ from rest_framework.response import Response
 
 from apps.core.mixins import OwnedByUserMixin
 
-from .filters import DividendFilter, DividendSuggestionFilter, InterestFilter, StockSplitFilter, TransactionFilter
-from .models import Dividend, DividendSuggestion, Interest, StockSplit, Transaction
+from .filters import (
+    DividendFilter,
+    DividendSuggestionFilter,
+    InterestFilter,
+    OtherIncomeFilter,
+    StockSplitFilter,
+    TransactionFilter,
+)
+from .models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
 from .serializers import (
     DividendSerializer,
     DividendSuggestionSerializer,
     InterestSerializer,
+    OtherIncomeSerializer,
     StockSplitSerializer,
     TransactionSerializer,
 )
@@ -47,6 +55,13 @@ class InterestViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
     serializer_class = InterestSerializer
     filterset_class = InterestFilter
     ordering_fields = ["date_end", "gross", "net"]
+
+
+class OtherIncomeViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
+    queryset = OtherIncome.objects.select_related("account").all()
+    serializer_class = OtherIncomeSerializer
+    filterset_class = OtherIncomeFilter
+    ordering_fields = ["date", "amount", "category"]
 
 
 class StockSplitViewSet(OwnedByUserMixin, viewsets.ModelViewSet):

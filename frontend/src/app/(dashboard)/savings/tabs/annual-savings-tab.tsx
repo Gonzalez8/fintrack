@@ -210,6 +210,24 @@ export function AnnualSavingsTab() {
                     <p className="tabular-nums">{y.months_count}</p>
                   </div>
                 </div>
+                {parseFloat(y.total_income) > 0 && (
+                  <div className="mt-1.5 grid grid-cols-3 gap-x-2 text-[11px] font-mono">
+                    <div>
+                      <p className="text-muted-foreground/60 mb-0.5">{t("savings.income")}</p>
+                      <p className="tabular-nums">{formatMoney(y.total_income)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground/60 mb-0.5">{t("savings.incomeOther")}</p>
+                      <p className="tabular-nums">{formatMoney(y.income_other)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground/60 mb-0.5">{t("savings.estimatedSpending")}</p>
+                      <p className="tabular-nums text-amber-600 dark:text-amber-400">
+                        {y.total_estimated_spending !== null ? formatMoney(y.total_estimated_spending) : "—"}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -225,6 +243,11 @@ export function AnnualSavingsTab() {
                   <TableHead className="text-right">{t("savings.growth")}</TableHead>
                   <TableHead className="text-right">{t("savings.growthPct")}</TableHead>
                   <TableHead className="text-right">{t("savings.months")}</TableHead>
+                  <TableHead className="text-right">{t("savings.income")}</TableHead>
+                  <TableHead className="text-right">{t("savings.incomeOther")}</TableHead>
+                  <TableHead className="text-right" title={t("savings.estimatedSpendingHelp")}>
+                    {t("savings.estimatedSpending")}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -247,6 +270,18 @@ export function AnnualSavingsTab() {
                     </TableCell>
                     <TableCell className="text-right font-mono tabular-nums text-sm">
                       {y.months_count}
+                    </TableCell>
+                    <TableCell
+                      className="text-right font-mono tabular-nums text-sm"
+                      title={`${t("savings.incomePayroll")}: ${formatMoney(y.income_payroll)}\n${t("savings.incomeInvestment")}: ${formatMoney(y.income_investment)}`}
+                    >
+                      {parseFloat(y.total_income) > 0 ? formatMoney(y.total_income) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-sm">
+                      {parseFloat(y.income_other) > 0 ? formatMoney(y.income_other) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums text-sm text-amber-600 dark:text-amber-400">
+                      {y.total_estimated_spending !== null ? formatMoney(y.total_estimated_spending) : "—"}
                     </TableCell>
                   </TableRow>
                 ))}

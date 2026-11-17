@@ -207,6 +207,33 @@ export interface InterestFormData {
   balance?: string;
 }
 
+// ── Other income ─────────────────────────────────────────────────
+export type OtherIncomeCategory = "RENTAL" | "SELF_EMPLOYMENT" | "SIDE_JOB" | "GIFT" | "OTHER";
+
+export interface OtherIncome {
+  id: string;
+  date: string;
+  category: OtherIncomeCategory;
+  description: string;
+  amount: string;
+  account: string | null;
+  account_name: string | null;
+  declared: boolean;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OtherIncomeFormData {
+  date: string;
+  category: OtherIncomeCategory;
+  description: string;
+  amount: string;
+  account: string | null;
+  declared: boolean;
+  notes: string;
+}
+
 // ── Portfolio ────────────────────────────────────────────────────
 export interface Position {
   asset_id: string;
@@ -467,6 +494,12 @@ export interface MonthlySavingsPoint {
   investment_cost_end: string;
   investment_cost_delta: string | null;
   real_savings: string | null;
+  income_payroll: string;
+  income_other: string;
+  income_investment: string;
+  income_total: string;
+  /** income_total − real_savings; null without income or without a previous month */
+  estimated_spending: string | null;
   comments: MonthlySavingsComment[];
 }
 
@@ -490,6 +523,11 @@ export interface AnnualSavingsPoint {
   patrimony_growth: string | null;
   patrimony_growth_pct: string | null;
   months_count: number;
+  income_payroll: string;
+  income_other: string;
+  income_investment: string;
+  total_income: string;
+  total_estimated_spending: string | null;
 }
 
 // ── Savings Goals ───────────────────────────────────────────────

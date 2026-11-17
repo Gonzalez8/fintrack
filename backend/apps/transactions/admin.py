@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Dividend, DividendSuggestion, Interest, StockSplit, Transaction
+from .models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
 
 
 @admin.register(Transaction)
@@ -24,6 +24,14 @@ class InterestAdmin(admin.ModelAdmin):
     list_display = ("date_start", "date_end", "account", "gross", "net", "owner")
     list_filter = ("date_end",)
     search_fields = ("account__name",)
+    readonly_fields = ("id", "created_at", "updated_at")
+
+
+@admin.register(OtherIncome)
+class OtherIncomeAdmin(admin.ModelAdmin):
+    list_display = ("date", "category", "description", "amount", "account", "declared", "owner")
+    list_filter = ("category", "declared", "date")
+    search_fields = ("description", "notes")
     readonly_fields = ("id", "created_at", "updated_at")
 
 

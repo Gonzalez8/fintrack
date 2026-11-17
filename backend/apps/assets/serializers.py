@@ -84,7 +84,14 @@ class SettingsSerializer(serializers.ModelSerializer):
             "purge_portfolio_snapshots",
             "tax_treaty_limits",
             "tax_country",
+            "mcp_backend_url",
         ]
+
+    def validate_mcp_backend_url(self, value):
+        value = (value or "").strip().rstrip("/")
+        if value and not value.startswith(("http://", "https://")):
+            raise serializers.ValidationError("Must start with http:// or https://.")
+        return value
 
     def validate_tax_country(self, value):
         if not value:

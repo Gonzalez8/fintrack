@@ -122,6 +122,15 @@ def compute_investment_cost_by_month(user):
     Uses the user's fiscal_cost_method (FIFO/LIFO/WAC) to track lots.
     Returns dict mapping "YYYY-MM" → Decimal running investment cost.
     """
+    return {day.strftime("%Y-%m"): cost for day, cost in investment_cost_timeline(user)}
+
+
+def investment_cost_timeline(user):
+    """Running investment cost after each day with operations: ``[(date, Decimal), …]`` in date order.
+
+    Uses the user's fiscal_cost_method (FIFO/LIFO/WAC) to track lots, with splits applied. The cost on any date
+    is the last entry on or before it.
+    """
     settings = Settings.load(user)
     method = settings.fiscal_cost_method
     use_wac = method == "WAC"
@@ -131,7 +140,7 @@ def compute_investment_cost_by_month(user):
     lots: dict = {}
     wac_state: dict = {}
     running_cost = Decimal("0")
-    cost_by_month: dict[str, Decimal] = {}
+    cost_by_day: dict = {}
 
     transactions = (
         Transaction.objects.filter(owner=user)
@@ -147,7 +156,6 @@ def compute_investment_cost_by_month(user):
                 _split_lots(lots.get(tx["asset_id"], ()), tx["factor"], price_key="ppu")
             continue
 
-        month_key = tx["date"].strftime("%Y-%m")
         aid = tx["asset_id"]
         qty = tx["quantity"] or Decimal("0")
         price = tx["price"] or Decimal("0")
@@ -204,9 +212,9 @@ def compute_investment_cost_by_month(user):
                     if lot["qty"] <= 0:
                         lots[aid].pop() if use_lifo else lots[aid].popleft()
 
-        cost_by_month[month_key] = running_cost
+        cost_by_day[tx["date"]] = running_cost
 
-    return cost_by_month
+    return sorted(cost_by_day.items())
 
 
 def _process_lot_based(user, lifo=False):

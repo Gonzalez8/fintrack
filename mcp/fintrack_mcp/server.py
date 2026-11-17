@@ -433,11 +433,11 @@ def create_server(client: FintrackClient) -> MCPServer:
         from_month: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}$", description="First month, YYYY-MM.")] = None,
         to_month: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}$", description="Last month, YYYY-MM.")] = None,
     ) -> dict[str, Any]:
-        """Month-by-month savings: cash at month end and its change, money newly invested (investment cost delta)
-        and real savings = cash change + invested. Each month also has the income received since the previous month's
-        snapshot (income_payroll = net payslips,
-        income_other = other income, income_investment = net dividends and interests, income_total) and
-        estimated_spending = income_total − real_savings (null without income or a previous month; approximate).
+        """Month-by-month savings: cash at the month's last snapshot and its change, money newly invested up to that
+        same snapshot date (investment cost delta) and real savings = cash change + invested. Each month also has
+        the income received since the previous month's snapshot (income_payroll = net payslips, income_other = other
+        income, income_investment = net dividends and interests, income_total) and estimated_spending =
+        income_total − real_savings (null without income or a previous month; approximate).
         Includes stats (average, best and worst month)."""
         return await call("get", "reports/monthly-savings/", params={"from": from_month, "to": to_month})
 

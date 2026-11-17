@@ -353,12 +353,13 @@ def monthly_savings(user, start_date=None, end_date=None):
             }
         )
 
-    from apps.portfolio.services import compute_investment_cost_by_month
+    from apps.portfolio.services import investment_cost_timeline
 
-    inv_cost_by_month = compute_investment_cost_by_month(user)
+    # Both the cash and the money invested are measured at the month's last snapshot: an operation made after
+    # that snapshot belongs to the next month, together with the cash it moves
+    cost_timeline = investment_cost_timeline(user)
     income_by_month = _income_by_snapshot_period(_income_events(user), month_end_dates)
 
-    sorted_tx_months = sorted(inv_cost_by_month.keys())
     tx_idx = 0
     last_inv_cost = Decimal("0")
 
@@ -373,8 +374,8 @@ def monthly_savings(user, start_date=None, end_date=None):
         cash_months = [m for m in cash_months if m <= end_date]
 
     for month in cash_months:
-        while tx_idx < len(sorted_tx_months) and sorted_tx_months[tx_idx] <= month:
-            last_inv_cost = inv_cost_by_month[sorted_tx_months[tx_idx]]
+        while tx_idx < len(cost_timeline) and cost_timeline[tx_idx][0] <= month_end_dates[month]:
+            last_inv_cost = cost_timeline[tx_idx][1]
             tx_idx += 1
 
         cash_end = monthly_cash[month]

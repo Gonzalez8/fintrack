@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.20.0] - 2026-11-17
+
+### Added
+
+- **Rental management with the Spanish tax result.** Properties has a new **Rental** tab: the property's tax data (purchase price and costs, total and building cadastral value, furniture, your ownership share), leases (tenant, dates, rent, deposit and the main-home reduction regime — 60 % before 26/05/2023, 50 % general, 70/90 % in stressed areas), rent payments (saved as other income linked to the lease, so they still count for savings; months without a payment are flagged) and expenses (IBI, community, insurance, repairs, interest, utilities, agency, improvements). (#127)
+- **Rental tax result to date and projected, and a simulator.** Net rent for the tax return with the Spanish rules — interest and repairs capped at the income (excess carried forward 4 years), year-round costs prorated by days rented, 3 % depreciation of the building plus improvements, 10 % furniture, the reduction and the imputation of empty days — the extra income tax on top of your payslips (approximate scale) and what is left in cash. Every figure can be changed in the simulator to try scenarios. Mortgage interest of each calendar year comes from the property's mortgage. (#127)
+- **Modo Renta: "Rendimientos del capital inmobiliario"** block with copyable figures per property. (#127)
+
+### Changed
+
+- **Other income has no "declared" flag any more**: it had no tax effect and suggested otherwise. Rent is declared through the new rental feature. (#126)
+
+### Fixed
+
+- **Backups now include employers and payslips**; restoring a backup lost every payslip. (#125)
+- **Estimated spending followed calendar months instead of the snapshot periods**: with snapshots taken on the 1st, the payslip landed one month off and some months showed negative spending. Each month now counts the income received between the previous snapshot and its own. (#129)
+- **Demo:** the Rental tab no longer crashes in demo mode. (#128)
+
+### Migration notes
+
+- `transactions/0011_remove_otherincome_declared` (drops the informational flag added in v2.19.0), `realestate/0003_rental` (property tax fields, leases, rental expenses — additive) and `transactions/0012_otherincome_lease` (additive). Applied automatically on start. Coming from v2.18.0, `transactions/0010_other_income` runs first.
+- Download a new backup after updating: older backups do not contain your payslips.
+
+### MCP update
+
+- New tools `fintrack_get_rental_summary`, `fintrack_record_rent_payment` and `fintrack_create_rental_expense`; other income tools no longer take `declared`. Update your MCP command to `v2.20.0` (Settings → *AI access (MCP)*); the updated `fintrack-advisor.zip` is attached to this release.
+
 ## [2.19.0] - 2026-11-17
 
 ### Added

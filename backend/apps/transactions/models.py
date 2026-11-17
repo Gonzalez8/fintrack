@@ -123,8 +123,8 @@ class Interest(UserOwnedModel):
 class OtherIncome(UserOwnedModel):
     """Money received outside payslips, dividends and interests (rent, freelance work, side jobs, gifts...).
 
-    ``amount`` is what was actually received. ``declared`` records whether the user reports it in their tax
-    return; undeclared income counts for savings and spending but never reaches the tax views.
+    ``amount`` is what was actually received. It counts for savings and estimated spending and never reaches the
+    tax views; declaring a kind of income (e.g. rent) belongs in its own feature with the data the tax form needs.
     """
 
     class Category(models.TextChoices):
@@ -145,7 +145,6 @@ class OtherIncome(UserOwnedModel):
         blank=True,
         related_name="other_incomes",
     )
-    declared = models.BooleanField(default=False)
     notes = models.TextField(blank=True, default="")
 
     class Meta:

@@ -51,7 +51,6 @@ function emptyForm(): OtherIncomeFormData {
     description: "",
     amount: "",
     account: null,
-    declared: false,
     notes: "",
   };
 }
@@ -105,9 +104,8 @@ export function OtherIncomeContent() {
 
   const summary = useMemo(() => {
     const total = rows.reduce((s, r) => s + parseFloat(r.amount), 0);
-    const undeclared = rows.filter((r) => !r.declared).reduce((s, r) => s + parseFloat(r.amount), 0);
     const months = new Set(rows.map((r) => r.date.slice(0, 7))).size;
-    return { total, undeclared, monthlyAvg: months ? total / months : 0 };
+    return { total, monthlyAvg: months ? total / months : 0 };
   }, [rows]);
 
   const deleteMutation = useMutation({
@@ -134,7 +132,6 @@ export function OtherIncomeContent() {
   };
 
   const categoryLabel = (c: OtherIncomeCategory) => t(`otherIncome.category.${c}`);
-  const declaredLabel = (r: OtherIncome) => (r.declared ? t("otherIncome.declaredShort") : t("otherIncome.notDeclared"));
 
   const columns: Column<OtherIncome>[] = [
     { key: "date", header: t("common.date"), render: (r) => <span className="text-sm">{r.date}</span> },
@@ -150,13 +147,6 @@ export function OtherIncomeContent() {
       ),
     },
     { key: "account", header: t("common.account"), render: (r) => <span className="text-sm">{r.account_name ?? "—"}</span> },
-    {
-      key: "declared",
-      header: t("otherIncome.declared"),
-      render: (r) => (
-        <span className={`text-xs ${r.declared ? "text-green-500" : "text-amber-500"}`}>{declaredLabel(r)}</span>
-      ),
-    },
     { key: "amount", header: t("otherIncome.amount"), className: "text-right", render: (r) => <MoneyCell value={r.amount} /> },
     {
       key: "actions",
@@ -229,14 +219,14 @@ export function OtherIncomeContent() {
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
         {[
-          { label: t("otherIncome.totalPeriod"), value: summary.total },
-          { label: t("otherIncome.monthlyAvg"), value: summary.monthlyAvg },
-          { label: t("otherIncome.undeclaredTotal"), value: summary.undeclared },
+          { label: t("otherIncome.totalPeriod"), value: formatMoney(summary.total.toFixed(2)) },
+          { label: t("otherIncome.monthlyAvg"), value: formatMoney(summary.monthlyAvg.toFixed(2)) },
+          { label: t("otherIncome.count"), value: String(rows.length) },
         ].map((card) => (
           <Card key={card.label}>
             <CardContent className="flex items-center justify-between sm:block py-3 sm:py-4">
               <p className="text-sm sm:text-xs text-muted-foreground">{card.label}</p>
-              <p className="font-mono text-base sm:text-xl font-semibold tabular-nums">{formatMoney(card.value.toFixed(2))}</p>
+              <p className="font-mono text-base sm:text-xl font-semibold tabular-nums">{card.value}</p>
             </CardContent>
           </Card>
         ))}
@@ -261,9 +251,7 @@ export function OtherIncomeContent() {
               <div className="flex justify-between items-start gap-2">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{r.description}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {categoryLabel(r.category)} · <span className={r.declared ? "text-green-500" : "text-amber-500"}>{declaredLabel(r)}</span>
-                  </p>
+                  <p className="text-xs text-muted-foreground">{categoryLabel(r.category)}</p>
                 </div>
                 <span className="text-xs text-muted-foreground shrink-0">{r.date}</span>
               </div>
@@ -309,7 +297,6 @@ export function OtherIncomeContent() {
           rows={[
             { label: t("otherIncome.amount"), value: formatMoney(detailItem.amount) },
             { label: t("otherIncome.account"), value: detailItem.account_name ?? t("otherIncome.noAccount") },
-            { label: t("otherIncome.declared"), value: declaredLabel(detailItem) },
             ...(detailItem.notes ? [{ label: t("otherIncome.notes"), value: detailItem.notes }] : []),
           ]}
         />
@@ -355,7 +342,6 @@ function OtherIncomeDialog({
       description: source.description,
       amount: income ? income.amount : "",
       account: source.account,
-      declared: source.declared,
       notes: income ? income.notes : "",
     });
   }, [open, income, template]);
@@ -450,19 +436,6 @@ function OtherIncomeDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.declared}
-                onChange={(e) => setForm((f) => ({ ...f, declared: e.target.checked }))}
-                className="h-4 w-4 cursor-pointer accent-cyan-500"
-              />
-              {t("otherIncome.declared")}
-            </label>
-            <p className="text-[11px] text-muted-foreground leading-tight">{t("otherIncome.declaredHelp")}</p>
           </div>
 
           <div className="space-y-1.5">

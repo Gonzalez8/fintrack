@@ -241,6 +241,7 @@ def test_backup_round_trips_other_income_and_interest_retention(client, user):
     )
     exported = client.get("/api/backup/export/").json()
     assert exported["other_incomes"][0]["description"] == "Rent flat"
+    exported["other_incomes"][0]["declared"] = True  # field of v2.19.0 backups, ignored on import
 
     OtherIncome.objects.all().delete()
     Interest.objects.all().delete()
@@ -248,12 +249,7 @@ def test_backup_round_trips_other_income_and_interest_retention(client, user):
     res = client.post("/api/backup/import/", {"file": file}, format="multipart")
     assert res.data["counts"]["other_incomes"] == 1
     income = OtherIncome.objects.get(owner=user)
-    assert (income.category, income.amount, income.account, income.declared) == (
-        "RENTAL",
-        Decimal("390"),
-        account,
-        False,
-    )
+    assert (income.category, income.amount, income.account) == ("RENTAL", Decimal("390"), account)
     interest = Interest.objects.get(owner=user)
     assert (interest.tax, interest.commission) == (Decimal("1.90"), Decimal("0.10"))
 

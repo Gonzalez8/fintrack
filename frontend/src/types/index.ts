@@ -218,7 +218,6 @@ export interface OtherIncome {
   amount: string;
   account: string | null;
   account_name: string | null;
-  declared: boolean;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -230,7 +229,6 @@ export interface OtherIncomeFormData {
   description: string;
   amount: string;
   account: string | null;
-  declared: boolean;
   notes: string;
 }
 

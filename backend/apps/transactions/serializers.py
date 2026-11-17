@@ -171,7 +171,6 @@ class OtherIncomeSerializer(_OwnershipValidationMixin, serializers.ModelSerializ
             "amount",
             "account",
             "account_name",
-            "declared",
             "notes",
             "created_at",
             "updated_at",

@@ -1049,13 +1049,9 @@
   "otherIncome.amount": "Amount received",
   "otherIncome.account": "Account it goes into",
   "otherIncome.noAccount": "No account / cash",
-  "otherIncome.declared": "Declared in the tax return",
-  "otherIncome.declaredHelp": "Informational for now: undeclared income counts for savings but does not appear in Tax.",
-  "otherIncome.notDeclared": "Not declared",
-  "otherIncome.declaredShort": "Declared",
   "otherIncome.notes": "Notes",
   "otherIncome.totalPeriod": "Total",
   "otherIncome.monthlyAvg": "Monthly average",
-  "otherIncome.undeclaredTotal": "Not declared",
+  "otherIncome.count": "Number of payments",
   "otherIncome.confirmDelete": "Delete this income?"
 }

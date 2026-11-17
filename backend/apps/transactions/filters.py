@@ -48,7 +48,6 @@ class OtherIncomeFilter(django_filters.FilterSet):
     from_date = django_filters.DateFilter(field_name="date", lookup_expr="gte")
     to_date = django_filters.DateFilter(field_name="date", lookup_expr="lte")
     category = django_filters.CharFilter(field_name="category")
-    declared = django_filters.BooleanFilter(field_name="declared")
     account_id = django_filters.UUIDFilter(field_name="account_id")
     search = django_filters.CharFilter(method="filter_search")
 

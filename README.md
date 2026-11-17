@@ -60,7 +60,7 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 - **Dividend drafts** — Dividends detected on Yahoo Finance become pre-filled drafts (shares held on the ex-date, estimated gross and withholding). Review each one against your broker and accept it; drafts never count in reports or tax until accepted, and existing dividends are never duplicated
 - **Type-to-search pickers** — Pick the asset of a trade or dividend by typing part of its name or ticker
 - **Interest income** — Date-range based tracking per account, with optional explicit withholding tax (NULL = inferred from gross/net, 0 = confirmed no withholding) and fees
-- **Other income** — Rent, self-employment, side jobs, gifts or anything outside payslips, dividends and interests, one record per payment with an optional account and a "declared in the tax return" flag. "Repeat last" fills in a new month in two fields. Counts for savings and estimated spending; never for the tax views. See [ADR-011](docs/adr/011-other-income-and-estimated-spending.md)
+- **Other income** — Rent, self-employment, side jobs, gifts or anything outside payslips, dividends and interests, one record per payment with an optional account. "Repeat last" fills in a new month in two fields. Counts for savings and estimated spending; never for the tax views. See [ADR-011](docs/adr/011-other-income-and-estimated-spending.md)
 - **Import deduplication** — Hash-based duplicate detection
 
 ### Accounts & Snapshots
@@ -513,7 +513,7 @@ GET/PUT /api/settings/
 CRUD    /api/transactions/
 CRUD    /api/dividends/
 CRUD    /api/interests/
-CRUD    /api/other-incomes/               Other income (?year=, ?category=, ?declared=, ?account_id=, ?search=)
+CRUD    /api/other-incomes/               Other income (?year=, ?category=, ?account_id=, ?search=)
 GET     /api/portfolio/
 
 CRUD    /api/splits/                      Stock splits (?asset_id=, ?status=PENDING|APPLIED|DISMISSED)

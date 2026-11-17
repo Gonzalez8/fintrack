@@ -1049,13 +1049,9 @@
   "otherIncome.amount": "Importe recibido",
   "otherIncome.account": "Cuenta donde entra",
   "otherIncome.noAccount": "Sin cuenta / efectivo",
-  "otherIncome.declared": "Declarado en la renta",
-  "otherIncome.declaredHelp": "Solo informativo por ahora: los ingresos no declarados cuentan para el ahorro pero no aparecen en Fiscal.",
-  "otherIncome.notDeclared": "No declarado",
-  "otherIncome.declaredShort": "Declarado",
   "otherIncome.notes": "Notas",
   "otherIncome.totalPeriod": "Total",
   "otherIncome.monthlyAvg": "Media mensual",
-  "otherIncome.undeclaredTotal": "No declarado",
+  "otherIncome.count": "Nº de ingresos",
   "otherIncome.confirmDelete": "¿Eliminar este ingreso?"
 }

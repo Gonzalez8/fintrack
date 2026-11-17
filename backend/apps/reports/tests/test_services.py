@@ -378,7 +378,7 @@ class TestMonthlySavings:
             net=Decimal("1600"),
         )
         OtherIncome.objects.create(
-            owner=user, date=datetime.date(2024, 2, 5), description="Rent", amount=Decimal("390"), declared=False
+            owner=user, date=datetime.date(2024, 2, 5), description="Rent", amount=Decimal("390")
         )
         Dividend.objects.create(owner=user, asset=asset, date=datetime.date(2024, 2, 10), gross=12, tax=2, net=10)
 

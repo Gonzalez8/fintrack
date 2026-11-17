@@ -366,7 +366,7 @@ class TestMonthlySavings:
 
     def test_income_and_estimated_spending(self, user, settings_fifo, account, asset):
         _snap(user, account, datetime.date(2024, 1, 31), 1000)
-        _snap(user, account, datetime.date(2024, 2, 28), 1800)
+        _snap(user, account, datetime.date(2024, 2, 29), 1800)
         Payroll.objects.create(
             owner=user,
             employer=Employer.objects.create(owner=user, name="ACME"),
@@ -383,11 +383,11 @@ class TestMonthlySavings:
         Dividend.objects.create(owner=user, asset=asset, date=datetime.date(2024, 2, 10), gross=12, tax=2, net=10)
 
         jan, feb = monthly_savings(user)["months"]
-        assert jan["income_total"] == "0" and jan["estimated_spending"] is None
+        assert jan["income_total"] == "0.00" and jan["estimated_spending"] is None
         assert (feb["income_payroll"], feb["income_other"], feb["income_investment"]) == ("1600.00", "390.00", "10.00")
         assert Decimal(feb["income_total"]) == Decimal("2000")
         # Saved 800 of the 2000 that came in → 1200 spent
-        assert Decimal(feb["estimated_spending"]) == Decimal("1200")
+        assert feb["estimated_spending"] == "1200.00"
 
         year = annual_savings(user)[0]
         assert (year["income_other"], year["total_income"]) == ("390.00", "2000.00")
@@ -397,7 +397,34 @@ class TestMonthlySavings:
         other = User.objects.create_user(username="someone", password="x")
         _snap(user, account, datetime.date(2024, 1, 31), 1000)
         OtherIncome.objects.create(owner=other, date=datetime.date(2024, 1, 5), description="X", amount=Decimal("50"))
-        assert monthly_savings(user)["months"][0]["income_other"] == "0"
+        assert monthly_savings(user)["months"][0]["income_other"] == "0.00"
+
+    def test_income_follows_the_snapshot_dates(self, user, settings_fifo, account):
+        """Snapshots on the 1st record the previous month: its payslip belongs to that savings period."""
+        employer = Employer.objects.create(owner=user, name="ACME")
+        for month, end in ((9, 30), (10, 31)):
+            Payroll.objects.create(
+                owner=user,
+                employer=employer,
+                period_start=datetime.date(2026, month, 1),
+                period_end=datetime.date(2026, month, end),
+                gross=Decimal("4000"),
+                ss_employee=Decimal("200"),
+                irpf_withholding=Decimal("800"),
+                net=Decimal("3000"),
+            )
+        _snap(user, account, datetime.date(2026, 10, 1), 10000)
+        _snap(user, account, datetime.date(2026, 11, 2), 12500)
+        OtherIncome.objects.create(
+            owner=user, date=datetime.date(2026, 11, 5), description="Rent", amount=Decimal("400")
+        )
+
+        october, november = monthly_savings(user)["months"]
+        # The September payslip (30/09) is before the first snapshot: nothing to compare it with
+        assert october["income_total"] == "0.00"
+        # 02/11 snapshot measures 01/10 → 02/11: October's payslip; the rent of 05/11 waits for the next snapshot
+        assert (november["income_payroll"], november["income_other"]) == ("3000.00", "0.00")
+        assert november["estimated_spending"] == "500.00"
 
 
 # ---------------------------------------------------------------------------

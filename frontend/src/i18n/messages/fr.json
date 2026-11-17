@@ -406,7 +406,7 @@
   "savings.incomeOther": "Autres revenus",
   "savings.incomeInvestment": "Dividendes et intérêts",
   "savings.estimatedSpending": "Dépenses estimées",
-  "savings.estimatedSpendingHelp": "Revenus du mois (salaire net, autres revenus, dividendes et intérêts) moins l'épargne réelle. Valeur approximative : les ventes avec plus-value, les prêts ou les comptes sans relevés la faussent.",
+  "savings.estimatedSpendingHelp": "Revenus perçus entre le relevé précédent et celui du mois (salaire net, autres revenus, dividendes et intérêts) moins l'épargne réelle. Valeur approximative : les ventes avec plus-value, les prêts ou les comptes sans relevés la faussent.",
 
   "savings.goals": "Objectifs d'épargne",
   "savings.createGoal": "Créer un objectif",

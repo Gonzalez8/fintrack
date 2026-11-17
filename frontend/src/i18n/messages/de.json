@@ -406,7 +406,7 @@
   "savings.incomeOther": "Sonstige Einnahmen",
   "savings.incomeInvestment": "Dividenden und Zinsen",
   "savings.estimatedSpending": "Geschätzte Ausgaben",
-  "savings.estimatedSpendingHelp": "Einnahmen des Monats (Nettogehalt, sonstige Einnahmen, Dividenden und Zinsen) minus tatsächliche Ersparnis. Nur ein Richtwert: Verkäufe mit Gewinn, Kredite oder Konten ohne Snapshots verzerren ihn.",
+  "savings.estimatedSpendingHelp": "Einnahmen zwischen dem vorigen und dem aktuellen Snapshot (Nettogehalt, sonstige Einnahmen, Dividenden und Zinsen) minus tatsächliche Ersparnis. Nur ein Richtwert: Verkäufe mit Gewinn, Kredite oder Konten ohne Snapshots verzerren ihn.",
 
   "savings.goals": "Sparziele",
   "savings.createGoal": "Ziel erstellen",

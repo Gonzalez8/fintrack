@@ -406,7 +406,7 @@
   "savings.incomeOther": "Otros ingresos",
   "savings.incomeInvestment": "Dividendos e intereses",
   "savings.estimatedSpending": "Gasto estimado",
-  "savings.estimatedSpendingHelp": "Ingresos del mes (nómina neta, otros ingresos, dividendos e intereses) menos el ahorro real. Es aproximado: ventas con ganancia, préstamos o cuentas sin snapshots lo alteran.",
+  "savings.estimatedSpendingHelp": "Ingresos cobrados entre el snapshot anterior y el de este mes (nómina neta, otros ingresos, dividendos e intereses) menos el ahorro real. Es aproximado: ventas con ganancia, préstamos o cuentas sin snapshots lo alteran.",
 
   "savings.goals": "Objetivos de ahorro",
   "savings.createGoal": "Crear objetivo",

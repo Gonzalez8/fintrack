@@ -404,9 +404,12 @@ def create_server(client: FintrackClient) -> MCPServer:
     async def fintrack_list_properties() -> dict[str, Any]:
         """Real estate: current value, purchase price, net equity and mortgage as of today.
 
-        mortgage_status is NONE, ACTIVE or FINISHED (paid off, early amortizations included). outstanding_balance,
-        months_paid and current_monthly_payment are today's values; monthly_payment is the original payment;
-        mortgage_end_date is when the last payment falls; extra_amortizations is the sum of early repayments."""
+        mortgage_status is NONE, ACTIVE or FINISHED (paid off, early amortizations included); use it or
+        has_active_mortgage to know whether there is debt — has_mortgage only means mortgage data exists.
+        outstanding_balance and current_monthly_payment are today's values; months_paid counts payments made (it
+        stops when the mortgage ends) and months_elapsed the calendar months since the start; monthly_payment is
+        the original payment; mortgage_end_date is when the last payment falls (or fell); extra_amortizations is the
+        sum of early repayments."""
         return {"properties": await fetch_all("properties/")}
 
     # ---------------------------------------------------------------- prompts

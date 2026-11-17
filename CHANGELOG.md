@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.19.0] - 2026-11-17
+
+### Added
+
+- **Other income.** A new *Other income* section records money you receive outside payslips, dividends and interests — rent, self-employment, side jobs, gifts or anything else — one entry per payment, with the account it goes into and a "declared in the tax return" flag. "Repeat last" creates next month's entry with just the date and amount. Undeclared income counts for your savings and spending but never appears in the tax views. (#124)
+- **Income and estimated spending in Savings.** Each month and year now shows what came in (net payslips, other income, dividends and interests) and the **estimated spending** it implies: income − real savings. It is approximate (sales at a gain, loans or accounts without snapshots skew it), but it finally answers "how much do I spend?" without tracking expenses. (#124)
+
+### Fixed
+
+- **Backups lost the withholding and fees of interests**; they now keep them. (#124)
+
+### Migration notes
+
+- `transactions/0010_other_income`: creates the `OtherIncome` table — additive, applied automatically on start.
+
+### MCP update
+
+- New tools `fintrack_list_other_income` and `fintrack_create_other_income`; the savings tools return income and `estimated_spending`, and the assistant is told to include other income before saying savings and salary don't match. The updated `fintrack-advisor.zip` is attached to this release.
+
 ## [2.18.0] - 2026-11-17
 
 ### Added

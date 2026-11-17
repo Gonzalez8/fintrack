@@ -71,7 +71,8 @@ def _months_to_repay(remaining: Decimal, monthly_rate: Decimal, payment: Decimal
 @dataclass(frozen=True)
 class MortgageState:
     status: str  # "NONE" | "ACTIVE" | "FINISHED"
-    months_paid: int | None = None
+    months_paid: int | None = None  # payments actually made: stops when the mortgage ends
+    months_elapsed: int | None = None  # calendar months since the start (capped at the term)
     outstanding_balance: Decimal | None = None
     current_monthly_payment: Decimal | None = None
     end_month: int | None = None  # schedule month of the last payment
@@ -135,27 +136,28 @@ def mortgage_state(prop, amortizations, today: date) -> MortgageState:
     monthly_rate = (prop.annual_interest_rate or ZERO) / 100 / 12
     term = prop.total_term_months
     if prop.purchase_date:
-        months_paid = min(months_elapsed(prop.purchase_date, today), term)
+        elapsed = min(months_elapsed(prop.purchase_date, today), term)
     else:
-        months_paid = min(prop.months_paid or 0, term)
+        elapsed = min(prop.months_paid or 0, term)
     events = list(amortizations)
     extra = sum((e.amount for e in events), ZERO)
 
     if not events:
-        balance = closed_form_balance(principal, monthly_rate, term, months_paid)
+        balance = closed_form_balance(principal, monthly_rate, term, elapsed)
         end_month = term
         next_payment = prop.monthly_payment
     else:
         balances, payments, end_month = _schedule_with_amortizations(
             principal, monthly_rate, term, prop.monthly_payment, events
         )
-        balance = ZERO if months_paid >= end_month else balances[months_paid]
-        next_payment = payments.get(months_paid + 1, ZERO)
+        balance = ZERO if elapsed >= end_month else balances[elapsed]
+        next_payment = payments.get(elapsed + 1, ZERO)
 
     finished = balance <= EPS
     return MortgageState(
         status="FINISHED" if finished else "ACTIVE",
-        months_paid=months_paid,
+        months_paid=min(elapsed, end_month),
+        months_elapsed=elapsed,
         outstanding_balance=ZERO if finished else round2(balance),
         current_monthly_payment=ZERO if finished else round2(next_payment),
         end_month=end_month,

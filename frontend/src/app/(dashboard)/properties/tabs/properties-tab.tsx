@@ -29,7 +29,7 @@ function computeCurrentBalance(p: Property): number {
   const rate = parseFloat(p.annual_interest_rate ?? "0");
   const monthlyRate = rate / 100 / 12;
   const totalMonths = p.total_term_months ?? 0;
-  const monthsPaid = Math.min(p.months_paid ?? 0, totalMonths);
+  const monthsPaid = Math.min(p.months_elapsed ?? p.months_paid ?? 0, totalMonths);
   if (totalMonths <= 0) return 0;
   if (monthsPaid >= totalMonths) return 0;
   if (monthlyRate === 0) {
@@ -101,7 +101,7 @@ export function PropertiesTab() {
       parseFloat(selectedProperty.annual_interest_rate!),
       selectedProperty.total_term_months!,
       parseFloat(selectedProperty.monthly_payment!),
-      selectedProperty.months_paid!,
+      selectedProperty.months_elapsed ?? selectedProperty.months_paid!,
     );
   }, [selectedProperty]);
 
@@ -118,7 +118,7 @@ export function PropertiesTab() {
     return applyMultipleAmortizations(schedule, events, parseFloat(selectedProperty!.annual_interest_rate!));
   }, [schedule, events, selectedProperty]);
 
-  const monthsPaidNum = selectedProperty?.months_paid ?? 0;
+  const monthsPaidNum = selectedProperty?.months_elapsed ?? selectedProperty?.months_paid ?? 0;
 
   // ── Compute real current debt for each property (with amortizations) ──
   const propertyDebts = useMemo(() => {
@@ -132,7 +132,7 @@ export function PropertiesTab() {
       const rate = parseFloat(p.annual_interest_rate ?? "0");
       const term = p.total_term_months ?? 0;
       const payment = parseFloat(p.monthly_payment ?? "0");
-      const mp = p.months_paid ?? 0;
+      const mp = p.months_elapsed ?? p.months_paid ?? 0;
       if (term <= 0 || payment <= 0) {
         debts.set(p.id, 0);
         continue;

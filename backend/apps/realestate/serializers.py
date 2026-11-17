@@ -15,15 +15,20 @@ class PropertySerializer(serializers.ModelSerializer):
     """Property with its mortgage as of today.
 
     ``months_paid`` and ``outstanding_balance`` are stored as a snapshot when the
-    property is saved; on read they are replaced by the current values (elapsed months
-    from the purchase date, early amortizations applied — see ``mortgage.py``), so the
-    API, the MCP and the screen agree and nothing goes stale.
+    property is saved; on read they are replaced by the current values (early
+    amortizations applied — see ``mortgage.py``), so the API, the MCP and the screen
+    agree and nothing goes stale. ``months_paid`` counts payments actually made and
+    stops when the mortgage ends; ``months_elapsed`` counts calendar months since the
+    start. ``has_mortgage`` means mortgage data exists (finished ones too);
+    ``has_active_mortgage`` / ``mortgage_status`` tell whether there is still debt.
     """
 
     net_equity = serializers.SerializerMethodField()
     amortized_capital = serializers.SerializerMethodField()
     has_mortgage = serializers.SerializerMethodField()
+    has_active_mortgage = serializers.SerializerMethodField()
     mortgage_status = serializers.SerializerMethodField()
+    months_elapsed = serializers.SerializerMethodField()
     current_monthly_payment = serializers.SerializerMethodField()
     mortgage_end_date = serializers.SerializerMethodField()
     extra_amortizations = serializers.SerializerMethodField()
@@ -48,7 +53,9 @@ class PropertySerializer(serializers.ModelSerializer):
             "net_equity",
             "amortized_capital",
             "has_mortgage",
+            "has_active_mortgage",
             "mortgage_status",
+            "months_elapsed",
             "current_monthly_payment",
             "mortgage_end_date",
             "extra_amortizations",
@@ -76,7 +83,16 @@ class PropertySerializer(serializers.ModelSerializer):
         return str((obj.original_loan_amount - self._balance(obj)).quantize(Decimal("0.01")))
 
     def get_has_mortgage(self, obj):
+        """Mortgage data exists (also for finished mortgages, whose history the web still shows)."""
         return obj.original_loan_amount is not None
+
+    def get_has_active_mortgage(self, obj):
+        """Debt is still being paid — what any debt calculation should check."""
+        return self._state(obj).status == "ACTIVE"
+
+    def get_months_elapsed(self, obj):
+        """Calendar months since the start (capped at the term): the web's "today" in the schedule."""
+        return self._state(obj).months_elapsed
 
     def get_mortgage_status(self, obj):
         """NONE (no mortgage), ACTIVE or FINISHED (paid off, early amortizations included)."""

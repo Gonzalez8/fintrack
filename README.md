@@ -71,7 +71,7 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 
 ### Reports & Analytics
 - **Year summary** — Dividends, interests, realized P&L, total income by year
-- **Patrimonio evolution** — Total net worth over time (cash + investments)
+- **Patrimonio evolution** — Total net worth over time (cash + investments). Cash is the month's balance photo minus what was moved into investments after it, so a purchase made after the photo is not counted twice
 - **Portfolio evolution** — Market value, cost basis, unrealized P&L charts
 - **Monthly savings** — Cashflow and savings rate analysis, with the month's income (net payslips, other income, dividends and interests) and the **estimated spending** it implies (income − real savings)
 - **Annual savings** — Yearly savings aggregates and breakdown, with yearly income and estimated spending

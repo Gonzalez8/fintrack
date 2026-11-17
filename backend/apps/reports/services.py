@@ -17,6 +17,7 @@ def _default_year(y):
         "year": y,
         "dividends_gross": "0",
         "dividends_tax": "0",
+        "dividends_tax_domestic": "0",
         "dividends_net": "0",
         "interests_gross": "0",
         "interests_net": "0",
@@ -33,7 +34,12 @@ def year_summary(user):
         Dividend.objects.filter(owner=user)
         .annotate(year=ExtractYear("date"))
         .values("year")
-        .annotate(total_gross=Sum("gross"), total_tax=Sum("tax"), total_net=Sum("net"))
+        .annotate(
+            total_gross=Sum("gross"),
+            total_tax=Sum("tax"),
+            total_domestic=Sum("domestic_tax"),
+            total_net=Sum("net"),
+        )
         .order_by("year")
     )
 
@@ -64,7 +70,10 @@ def year_summary(user):
         y = d["year"]
         years.setdefault(y, _default_year(y))
         years[y]["dividends_gross"] = str(d["total_gross"] or Decimal("0"))
-        years[y]["dividends_tax"] = str(d["total_tax"] or Decimal("0"))
+        # dividends_tax is everything withheld (origin + domestic); the domestic part is also reported apart
+        domestic = d["total_domestic"] or Decimal("0")
+        years[y]["dividends_tax"] = str((d["total_tax"] or Decimal("0")) + domestic)
+        years[y]["dividends_tax_domestic"] = str(domestic)
         years[y]["dividends_net"] = str(d["total_net"] or Decimal("0"))
 
     for i in interest_by_year:

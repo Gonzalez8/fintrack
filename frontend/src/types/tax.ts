@@ -21,6 +21,8 @@ export interface TaxDividendRow {
   is_es: boolean;
   gross: string;
   withholding: string;
+  withholding_es: string;
+  withholding_foreign: string;
   commission: string;
   net: string;
 }
@@ -29,6 +31,7 @@ export interface TaxDividendsBlock {
   casilla: string;
   gross_total: string;
   withholding_es: string;
+  withholding_foreign: string;
   withholding_total: string;
   commission: string;
   net_informative: string;

@@ -128,6 +128,20 @@ class TestYearSummary:
         assert Decimal(result[0]["dividends_gross"]) == Decimal("100")
         assert Decimal(result[0]["dividends_net"]) == Decimal("85")
 
+    def test_dividends_tax_includes_domestic_retention(self, user, settings_fifo, asset):
+        Dividend.objects.create(
+            owner=user,
+            asset=asset,
+            date=datetime.date(2025, 6, 15),
+            gross=Decimal("100"),
+            tax=Decimal("15"),
+            domestic_tax=Decimal("19"),
+            net=Decimal("66"),
+        )
+        y = year_summary(user)[0]
+        assert Decimal(y["dividends_tax"]) == Decimal("34")
+        assert Decimal(y["dividends_tax_domestic"]) == Decimal("19")
+
     def test_mixed_data(self, user, settings_fifo, asset, account):
         Dividend.objects.create(
             owner=user,

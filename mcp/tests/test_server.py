@@ -129,6 +129,14 @@ async def test_create_dividend_computes_net(api):
     assert body["net"] == "0.26" and body["commission"] == "0"
 
 
+async def test_create_dividend_subtracts_domestic_retention(api):
+    route = api.post("/dividends/").mock(return_value=httpx.Response(201, json={"id": "d1"}))
+    args = {"asset": "APC.F", "date": "2026-11-16", "gross": "100", "tax": "15", "domestic_tax": "19"}
+    await call("fintrack_create_dividend", args)
+    body = json.loads(route.calls.last.request.content)
+    assert (body["domestic_tax"], body["net"]) == ("19", "66")
+
+
 async def test_invalid_number_is_explained(api):
     message = error_text(
         await call("fintrack_create_dividend", {"asset": "APC.F", "date": "2026-11-16", "gross": "abc"})

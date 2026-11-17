@@ -115,7 +115,7 @@ class SpanishTaxAdapter:
         # ----- DIVIDENDOS ---------------------------------------------------
         dividends_qs = Dividend.objects.filter(owner=user, date__year=year).select_related("asset").order_by("date")
 
-        div_gross = div_tax_es = div_tax_total = div_comm = div_net = Decimal("0")
+        div_gross = div_tax_es = div_tax_foreign = div_comm = div_net = Decimal("0")
         by_country_entity: dict[tuple, dict] = {}
         foreign_by_country: dict[str, dict[str, Decimal]] = {}
         seen_missing_country = False
@@ -124,24 +124,29 @@ class SpanishTaxAdapter:
             is_es = _is_es_dividend(d.asset)
             country = asset_country(d.asset)
             comm = d.commission or Decimal("0")
+            domestic = d.domestic_tax or Decimal("0")
+            # `tax` is withheld at source: Spanish for ES assets, foreign otherwise. `domestic_tax` is the
+            # Spanish retention a local payer/broker adds on top, always a Spanish retention.
+            tax_es = domestic + (d.tax if is_es else Decimal("0"))
+            tax_foreign = Decimal("0") if is_es else d.tax
 
             div_gross += d.gross
-            div_tax_total += d.tax
+            div_tax_es += tax_es
+            div_tax_foreign += tax_foreign
             div_comm += comm
             div_net += d.net
-            if is_es:
-                div_tax_es += d.tax
 
             # Net mismatch (dividends): always check, since fields are non-null.
-            expected = d.gross - d.tax - comm
+            expected = d.gross - d.tax - domestic - comm
             if abs(expected - d.net) > NET_MISMATCH_TOLERANCE:
+                retention = f"retención {d.tax}" + (f" − retención España {domestic}" if domestic else "")
                 warnings.append(
                     {
                         "kind": "net_mismatch",
                         "scope": "dividend",
                         "message": (
                             f"Descuadre en dividendo de '{d.asset.name}' ({d.date}): "
-                            f"bruto {d.gross} − retención {d.tax} − comisión {comm} ≠ neto {d.net}"
+                            f"bruto {d.gross} − {retention} − comisión {comm} ≠ neto {d.net}"
                         ),
                     }
                 )
@@ -157,12 +162,16 @@ class SpanishTaxAdapter:
                     "is_es": is_es,
                     "gross": Decimal("0"),
                     "withholding": Decimal("0"),
+                    "withholding_es": Decimal("0"),
+                    "withholding_foreign": Decimal("0"),
                     "commission": Decimal("0"),
                     "net": Decimal("0"),
                 },
             )
             ce["gross"] += d.gross
-            ce["withholding"] += d.tax
+            ce["withholding"] += tax_es + tax_foreign
+            ce["withholding_es"] += tax_es
+            ce["withholding_foreign"] += tax_foreign
             ce["commission"] += comm
             ce["net"] += d.net
 
@@ -173,13 +182,14 @@ class SpanishTaxAdapter:
             if not is_es and country:
                 fbc = foreign_by_country.setdefault(country, {"gross": Decimal("0"), "withholding": Decimal("0")})
                 fbc["gross"] += d.gross
-                fbc["withholding"] += d.tax
+                fbc["withholding"] += tax_foreign
 
         dividends_block = {
             "casilla": "Rendimientos del capital mobiliario · Dividendos y rendimientos por participación en fondos propios",
             "gross_total": str(q(div_gross)),
             "withholding_es": str(q(div_tax_es)),
-            "withholding_total": str(q(div_tax_total)),
+            "withholding_foreign": str(q(div_tax_foreign)),
+            "withholding_total": str(q(div_tax_es + div_tax_foreign)),
             "commission": str(q(div_comm)),
             "net_informative": str(q(div_net)),
             "by_country_entity": [
@@ -189,6 +199,8 @@ class SpanishTaxAdapter:
                     "is_es": v["is_es"],
                     "gross": str(q(v["gross"])),
                     "withholding": str(q(v["withholding"])),
+                    "withholding_es": str(q(v["withholding_es"])),
+                    "withholding_foreign": str(q(v["withholding_foreign"])),
                     "commission": str(q(v["commission"])),
                     "net": str(q(v["net"])),
                 }

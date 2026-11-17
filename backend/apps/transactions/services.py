@@ -155,13 +155,15 @@ def uncovered_events(events, recorded_dates):
     return uncovered
 
 
-def _withholding_rate(user, asset):
-    """Withholding of the user's latest dividends of `asset` (tax / gross), or None."""
+def _withholding_rates(user, asset):
+    """Origin and domestic withholding of the user's latest dividends of `asset` (over gross), or (None, None)."""
     recent = Dividend.objects.filter(owner=user, asset=asset, gross__gt=0).order_by("-date")[:WITHHOLDING_SAMPLE]
     gross = sum((d.gross for d in recent), Decimal("0"))
     if gross <= 0:
-        return None
-    return sum((d.tax for d in recent), Decimal("0")) / gross
+        return None, None
+    tax = sum((d.tax for d in recent), Decimal("0")) / gross
+    domestic = sum((d.domestic_tax for d in recent), Decimal("0")) / gross
+    return tax, domestic or None
 
 
 def detect_dividends(user, asset=None, backfill=False, today=None):
@@ -223,7 +225,7 @@ def detect_dividends(user, asset=None, backfill=False, today=None):
         else:
             lower = max(first_date, today - FIRST_RUN_LOOKBACK)
         known = set(DividendSuggestion.objects.filter(owner=user, asset=a).values_list("ex_date", flat=True))
-        rate = _withholding_rate(user, a)
+        rate, domestic_rate = _withholding_rates(user, a)
 
         for ex_date, adjusted_amount in missing:
             if ex_date <= lower or ex_date in known:
@@ -247,6 +249,9 @@ def detect_dividends(user, asset=None, backfill=False, today=None):
                     shares=shares,
                     gross=gross,
                     tax=(gross * rate).quantize(MONEY_Q, rounding=ROUND_HALF_UP) if rate is not None else None,
+                    domestic_tax=(
+                        (gross * domestic_rate).quantize(MONEY_Q, rounding=ROUND_HALF_UP) if domestic_rate else None
+                    ),
                 )
             )
     return created

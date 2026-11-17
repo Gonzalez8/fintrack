@@ -164,6 +164,35 @@ def test_dividends_separates_es_vs_foreign(user, asset_es, asset_us):
     assert div["net_informative"] == "151.92"
 
 
+def test_domestic_retention_on_foreign_dividend_is_a_spanish_withholding(user, asset_us):
+    # Spanish broker: 15 % withheld in the US, then 19 % Spanish retention on top
+    d = _div(user, asset_us, datetime.date(YEAR, 6, 1), Decimal("100.00"), Decimal("15.00"), Decimal("66.00"))
+    d.domestic_tax = Decimal("19.00")
+    d.save()
+
+    out = tax_declaration(user, YEAR)
+    div = out["dividends"]
+    assert div["withholding_es"] == "19.00"
+    assert div["withholding_foreign"] == "15.00"
+    assert div["withholding_total"] == "34.00"
+    row = div["by_country_entity"][0]
+    assert (row["withholding_es"], row["withholding_foreign"], row["withholding"]) == ("19.00", "15.00", "34.00")
+
+    # Only the origin withholding goes to the double-taxation deduction
+    us = next(r for r in out["double_taxation"]["by_country"] if r["country"] == "US")
+    assert us["withholding"] == "15.00" and us["deductible"] == "15.00"
+    assert out["summary"]["dividends_withholding_es"] == "19.00"
+    # gross − origin − domestic == net: no mismatch warning
+    assert not [w for w in out["warnings"] if w["kind"] == "net_mismatch"]
+
+
+def test_unrecorded_domestic_retention_shows_net_mismatch(user, asset_us):
+    # The 19 % was withheld but not recorded: the net doesn't add up
+    _div(user, asset_us, datetime.date(YEAR, 6, 1), Decimal("100.00"), Decimal("15.00"), Decimal("66.00"))
+    out = tax_declaration(user, YEAR)
+    assert [w for w in out["warnings"] if w["kind"] == "net_mismatch"]
+
+
 def test_double_taxation_per_country_default_15_pct(user, asset_us, asset_cn):
     # Plan example: US 88.39 → 13.26, CN 7.11 → 0.85
     _div(user, asset_us, datetime.date(YEAR, 7, 1), Decimal("88.39"), Decimal("17.47"), Decimal("70.92"))

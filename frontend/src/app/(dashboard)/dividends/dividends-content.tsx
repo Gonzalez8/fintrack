@@ -143,6 +143,12 @@ export function DividendsContent() {
     },
     { key: "gross", header: t("dividends.gross"), className: "text-right", render: (d) => <MoneyCell value={d.gross} /> },
     { key: "tax", header: t("dividends.withholding"), className: "text-right", render: (d) => <MoneyCell value={d.tax} /> },
+    {
+      key: "domestic_tax",
+      header: t("dividends.domesticWithholding"),
+      className: "text-right",
+      render: (d) => <MoneyCell value={d.domestic_tax ?? "0"} />,
+    },
     { key: "net", header: t("dividends.net"), className: "text-right", render: (d) => <MoneyCell value={d.net} colored /> },
     {
       key: "rate",
@@ -240,6 +246,12 @@ export function DividendsContent() {
                 <span className="text-muted-foreground">{t("dividends.withholding")}</span>
                 <span className="font-mono tabular-nums">{formatMoney(d.tax)}</span>
               </div>
+              {parseFloat(d.domestic_tax ?? "0") > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("dividends.domesticWithholding")}</span>
+                  <span className="font-mono tabular-nums">{formatMoney(d.domestic_tax)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm font-medium">
                 <span>{t("dividends.net")}</span>
                 <span className={`font-mono tabular-nums ${parseFloat(d.net) >= 0 ? "text-green-500" : "text-red-500"}`}>
@@ -293,6 +305,9 @@ export function DividendsContent() {
         rows={detailItem ? [
           { label: t("dividends.gross"), value: formatMoney(detailItem.gross) },
           { label: t("dividends.withholding"), value: formatMoney(detailItem.tax) },
+          ...(parseFloat(detailItem.domestic_tax ?? "0") > 0
+            ? [{ label: t("dividends.domesticWithholding"), value: formatMoney(detailItem.domestic_tax) }]
+            : []),
           ...(parseFloat(detailItem.commission ?? "0") > 0
             ? [{ label: t("dividends.commission"), value: formatMoney(detailItem.commission) }]
             : []),
@@ -325,6 +340,7 @@ function DividendDialog({
     asset: "",
     gross: "",
     tax: "0",
+    domestic_tax: "0",
     commission: "0",
     net: "",
   });
@@ -353,6 +369,7 @@ function DividendDialog({
         shares: dividend.shares || undefined,
         gross: dividend.gross,
         tax: dividend.tax,
+        domestic_tax: dividend.domestic_tax || "0",
         commission: dividend.commission || "0",
         net: dividend.net,
         withholding_rate: dividend.withholding_rate || undefined,
@@ -361,6 +378,7 @@ function DividendDialog({
     } else if (suggestion) {
       const gross = parseFloat(suggestion.gross) || 0;
       const tax = parseFloat(suggestion.tax ?? "0") || 0;
+      const domestic = parseFloat(suggestion.domestic_tax ?? "0") || 0;
       setForm({
         // Yahoo only knows the ex-date: the user replaces it with the payment date
         date: suggestion.ex_date,
@@ -368,8 +386,9 @@ function DividendDialog({
         shares: String(Number(suggestion.shares)),
         gross: gross.toFixed(2),
         tax: tax.toFixed(2),
+        domestic_tax: domestic.toFixed(2),
         commission: "0",
-        net: (gross - tax).toFixed(2),
+        net: (gross - tax - domestic).toFixed(2),
         withholding_rate: gross > 0 ? ((tax / gross) * 100).toFixed(2) : undefined,
       });
       setAdvancedOpen(false);
@@ -379,6 +398,7 @@ function DividendDialog({
         asset: "",
         gross: "",
         tax: "0",
+        domestic_tax: "0",
         commission: "0",
         net: "",
       });
@@ -386,42 +406,21 @@ function DividendDialog({
     }
   }, [open, dividend, suggestion]);
 
-  // Auto-calculate: gross = net + tax + commission, rate = tax / gross
-  const recalcGross = (net: number, tax: number, commission: number) => {
-    const gross = net + tax + commission;
-    const rate = gross > 0 ? ((tax / gross) * 100).toFixed(2) : undefined;
-    return { gross: gross.toFixed(2), withholding_rate: rate };
+  // Auto-calculate: gross = net + tax + domestic_tax + commission, rate = tax / gross (at source)
+  const recalcGross = (f: DividendFormData): DividendFormData => {
+    const num = (v?: string) => parseFloat(v ?? "0") || 0;
+    const tax = num(f.tax);
+    const gross = num(f.net) + tax + num(f.domestic_tax) + num(f.commission);
+    const withholding_rate = gross > 0 ? ((tax / gross) * 100).toFixed(2) : undefined;
+    return { ...f, gross: gross.toFixed(2), withholding_rate };
   };
 
-  const handleNetChange = (value: string) => {
-    setForm((f) => {
-      const net = parseFloat(value) || 0;
-      const tax = parseFloat(f.tax ?? "0") || 0;
-      const commission = parseFloat(f.commission ?? "0") || 0;
-      const { gross, withholding_rate } = recalcGross(net, tax, commission);
-      return { ...f, net: value, gross, withholding_rate };
-    });
-  };
-
-  const handleTaxChange = (value: string) => {
-    setForm((f) => {
-      const net = parseFloat(f.net) || 0;
-      const tax = parseFloat(value) || 0;
-      const commission = parseFloat(f.commission ?? "0") || 0;
-      const { gross, withholding_rate } = recalcGross(net, tax, commission);
-      return { ...f, tax: value, gross, withholding_rate };
-    });
-  };
-
-  const handleCommissionChange = (value: string) => {
-    setForm((f) => {
-      const net = parseFloat(f.net) || 0;
-      const tax = parseFloat(f.tax ?? "0") || 0;
-      const commission = parseFloat(value) || 0;
-      const { gross, withholding_rate } = recalcGross(net, tax, commission);
-      return { ...f, commission: value || "0", gross, withholding_rate };
-    });
-  };
+  const handleNetChange = (value: string) => setForm((f) => recalcGross({ ...f, net: value }));
+  const handleTaxChange = (value: string) => setForm((f) => recalcGross({ ...f, tax: value }));
+  const handleDomesticTaxChange = (value: string) =>
+    setForm((f) => recalcGross({ ...f, domestic_tax: value || "0" }));
+  const handleCommissionChange = (value: string) =>
+    setForm((f) => recalcGross({ ...f, commission: value || "0" }));
 
   // Auto-fill shares from portfolio position when asset changes
   const handleAssetChange = (assetId: string) => {
@@ -521,10 +520,22 @@ function DividendDialog({
             <Input type="number" step="0.01" value={form.net} onChange={(e) => handleNetChange(e.target.value)} required />
           </div>
 
-          {/* Impuestos retenidos */}
+          {/* Impuestos retenidos en origen */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">{t("dividends.withholding")}</label>
+            <label className="text-sm font-medium">{t("dividends.originWithholding")}</label>
             <Input type="number" step="0.01" value={form.tax} onChange={(e) => handleTaxChange(e.target.value)} />
+          </div>
+
+          {/* Retención en destino (país de residencia) */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">{t("dividends.domesticWithholding")}</label>
+            <Input
+              type="number"
+              step="0.01"
+              value={form.domestic_tax ?? "0"}
+              onChange={(e) => handleDomesticTaxChange(e.target.value)}
+            />
+            <p className="text-[11px] text-muted-foreground leading-tight">{t("dividends.domesticWithholdingHelp")}</p>
           </div>
 
           {/* Advanced fields: commission */}

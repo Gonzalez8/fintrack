@@ -84,6 +84,7 @@ class DividendSerializer(_OwnershipValidationMixin, serializers.ModelSerializer)
             "shares",
             "gross",
             "tax",
+            "domestic_tax",
             "commission",
             "net",
             "withholding_rate",
@@ -218,6 +219,7 @@ class DividendSuggestionSerializer(serializers.ModelSerializer):
             "shares",
             "gross",
             "tax",
+            "domestic_tax",
             "net",
             "status",
             "dividend",
@@ -227,4 +229,4 @@ class DividendSuggestionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_net(self, obj):
-        return str(obj.gross - (obj.tax or Decimal("0")))
+        return str(obj.gross - (obj.tax or Decimal("0")) - (obj.domestic_tax or Decimal("0")))

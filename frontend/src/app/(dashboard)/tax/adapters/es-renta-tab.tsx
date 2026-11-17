@@ -430,7 +430,10 @@ function DividendsBlock({
                     {t("fiscal.renta.dividends.grossTotal")}
                   </TableHead>
                   <TableHead className="text-right">
-                    {t("fiscal.renta.dividends.withholding")}
+                    {t("fiscal.renta.dividends.withholdingForeign")}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t("fiscal.renta.dividends.withholdingEs")}
                   </TableHead>
                   <TableHead className="text-right">
                     {t("fiscal.renta.dividends.custody")}
@@ -456,7 +459,10 @@ function DividendsBlock({
                       {formatMoney(row.gross)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatMoney(row.withholding)}
+                      {formatMoney(row.withholding_foreign)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatMoney(row.withholding_es)}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatMoney(row.commission)}
@@ -474,7 +480,10 @@ function DividendsBlock({
                     {formatMoney(block.gross_total)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatMoney(block.withholding_total)}
+                    {formatMoney(block.withholding_foreign)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatMoney(block.withholding_es)}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatMoney(block.commission)}

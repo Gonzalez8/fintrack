@@ -15,6 +15,7 @@ from rest_framework.test import APIClient
 
 from apps.assets.models import Account, Asset
 from apps.transactions.models import Dividend, DividendSuggestion, Transaction
+from apps.transactions.serializers import DividendSuggestionSerializer
 from apps.transactions.services import detect_dividends, uncovered_events
 
 User = get_user_model()
@@ -75,9 +76,11 @@ def _buy(user, asset, account, date, qty, tx_type="BUY"):
     )
 
 
-def _dividend(user, asset, date, gross="10.00", tax="1.50"):
-    gross, tax = Decimal(gross), Decimal(tax)
-    return Dividend.objects.create(owner=user, asset=asset, date=date, gross=gross, tax=tax, net=gross - tax)
+def _dividend(user, asset, date, gross="10.00", tax="1.50", domestic_tax="0"):
+    gross, tax, domestic = Decimal(gross), Decimal(tax), Decimal(domestic_tax)
+    return Dividend.objects.create(
+        owner=user, asset=asset, date=date, gross=gross, tax=tax, domestic_tax=domestic, net=gross - tax - domestic
+    )
 
 
 def _yahoo(dividends, splits=(), currency="USD"):
@@ -206,6 +209,16 @@ class TestDetection:
             s = detect_dividends(user, today=TODAY)[0]
         assert s.gross == Decimal("27.00")
         assert s.tax == Decimal("4.05")  # 15 %
+        assert s.domestic_tax is None
+
+    def test_domestic_retention_is_estimated_from_past_dividends(self, user, asset, account):
+        _buy(user, asset, account, D(2025, 1, 10), 100)
+        _dividend(user, asset, D(2026, 8, 14), gross="20.00", tax="3.00", domestic_tax="3.80")
+        with _yahoo(QUARTERLY):
+            s = detect_dividends(user, today=TODAY)[0]
+        assert (s.tax, s.domestic_tax) == (Decimal("4.05"), Decimal("5.13"))  # 15 % and 19 % of 27.00
+        res = DividendSuggestionSerializer(s).data
+        assert Decimal(res["net"]) == Decimal("17.82")
 
     def test_no_withholding_estimate_without_history(self, user, asset, account):
         _buy(user, asset, account, D(2025, 1, 10), 10)
@@ -284,15 +297,23 @@ class TestSuggestionAPI:
 
     def test_accept_creates_the_reviewed_dividend(self, client, user, asset):
         s = _draft(user, asset)
-        payload = {"date": "2026-11-16", "shares": "10", "gross": "2.30", "tax": "0.35", "net": "1.95"}
+        payload = {
+            "date": "2026-11-16",
+            "shares": "10",
+            "gross": "2.30",
+            "tax": "0.35",
+            "domestic_tax": "0.37",
+            "net": "1.58",
+        }
         res = client.post(f"/api/dividend-suggestions/{s.id}/accept/", payload, format="json")
         assert res.status_code == 201, res.data
         dividend = Dividend.objects.get(owner=user)
         # The user's corrected figures win over the draft's estimate
-        assert (dividend.date, dividend.gross, dividend.net, dividend.asset_id) == (
+        assert (dividend.date, dividend.gross, dividend.domestic_tax, dividend.net, dividend.asset_id) == (
             D(2026, 11, 16),
             Decimal("2.30"),
-            Decimal("1.95"),
+            Decimal("0.37"),
+            Decimal("1.58"),
             asset.id,
         )
         s.refresh_from_db()

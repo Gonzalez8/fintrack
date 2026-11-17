@@ -1,4 +1,7 @@
+import calendar
 import logging
+from bisect import bisect_right
+from datetime import date
 from decimal import Decimal
 
 from django.db.models import F, Sum
@@ -137,11 +140,13 @@ def patrimonio_evolution(user):
 
     account_balances = {}
     monthly_cash = {}
+    photo_dates = {}
 
     for snap in AccountSnapshot.objects.filter(owner=user).order_by("date").values("account_id", "date", "balance"):
         month_key = snap["date"].strftime("%Y-%m")
         account_balances[snap["account_id"]] = snap["balance"]
         monthly_cash[month_key] = sum(account_balances.values(), Decimal("0"))
+        photo_dates[month_key] = snap["date"]
 
     monthly_portfolio = {}
     for snap in (
@@ -157,21 +162,39 @@ def patrimonio_evolution(user):
 
     running_cost = Decimal("0")
     tx_cost_by_month = {}
+    # Cash that operations moved into (+) or out of (−) investments, cumulative per day
+    invested_cash = Decimal("0")
+    flow_dates: list = []
+    flow_totals: list = []
 
     for tx in (
         Transaction.objects.filter(owner=user)
         .order_by("date", "created_at")
-        .values("date", "type", "quantity", "price", "commission")
+        .values("date", "type", "quantity", "price", "commission", "tax")
     ):
         month_key = tx["date"].strftime("%Y-%m")
         qty = tx["quantity"] or Decimal("0")
         price = tx["price"] or Decimal("0")
         commission = tx["commission"] or Decimal("0")
+        tax = tx["tax"] or Decimal("0")
         if tx["type"] in ("BUY", "GIFT"):
             running_cost += qty * price + commission
         elif tx["type"] == "SELL":
             running_cost -= qty * price - commission
         tx_cost_by_month[month_key] = running_cost
+        if tx["type"] == "BUY":
+            invested_cash += qty * price + commission + tax
+        elif tx["type"] == "SELL":
+            invested_cash -= qty * price - commission - tax
+        if flow_dates and flow_dates[-1] == tx["date"]:
+            flow_totals[-1] = invested_cash
+        else:
+            flow_dates.append(tx["date"])
+            flow_totals.append(invested_cash)
+
+    def invested_cash_until(day):
+        idx = bisect_right(flow_dates, day)
+        return flow_totals[idx - 1] if idx else Decimal("0")
 
     live_total = Decimal("0")
     live_pnl = Decimal("0")
@@ -191,7 +214,8 @@ def patrimonio_evolution(user):
         logger.exception("Failed to calculate live portfolio for user %s", user.pk)
         live_total = Decimal("0")
 
-    current_month = timezone.now().strftime("%Y-%m")
+    today = timezone.localdate()
+    current_month = today.strftime("%Y-%m")
 
     all_months_set = set(monthly_cash.keys()) | set(monthly_portfolio.keys()) | set(tx_cost_by_month.keys())
     if monthly_portfolio or live_total > 0:
@@ -199,14 +223,32 @@ def patrimonio_evolution(user):
     all_months = sorted(all_months_set)
 
     last_cash = Decimal("0")
+    last_photo = None
     last_tx_cost = Decimal("0")
     result = []
 
     for month in all_months:
         if month in monthly_cash:
             last_cash = monthly_cash[month]
+            last_photo = photo_dates[month]
         if month in tx_cost_by_month:
             last_tx_cost = tx_cost_by_month[month]
+
+        # Investments are valued later than the cash photo (month end, the portfolio snapshot or today): money
+        # moved into investments after the photo would count twice, still as cash and already as investment
+        if month == current_month:
+            valued_on = today
+        elif month in monthly_portfolio:
+            valued_on = monthly_portfolio[month]["captured_at"].date()
+        else:
+            year, mon = int(month[:4]), int(month[5:])
+            valued_on = date(year, mon, calendar.monthrange(year, mon)[1])
+        moved = (
+            invested_cash_until(valued_on) - invested_cash_until(last_photo)
+            if last_photo is not None and valued_on > last_photo
+            else Decimal("0")
+        )
+        cash = last_cash - moved
 
         if month == current_month:
             total_investments = live_total
@@ -229,7 +271,8 @@ def patrimonio_evolution(user):
         result.append(
             {
                 "month": month,
-                "cash": str(last_cash),
+                "cash": str(cash),
+                "cash_snapshot": str(last_cash),
                 "investments": str(total_investments),
                 "investment_pnl": str(investment_pnl),
                 "renta_variable": str(rv),

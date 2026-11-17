@@ -440,7 +440,10 @@ export interface YearSummary {
 
 export interface PatrimonioPoint {
   month: string;
+  /** Cash of the month's photo minus money moved into investments after it (so nothing counts twice) */
   cash: string;
+  /** Cash exactly as photographed */
+  cash_snapshot?: string;
   investments: string;
   investment_pnl: string;
   renta_variable: string;

@@ -303,8 +303,10 @@ def create_server(client: FintrackClient) -> MCPServer:
 
     @mcp.tool(annotations=READ)
     async def fintrack_get_net_worth_evolution() -> dict[str, Any]:
-        """Monthly net worth split into cash and investments. Cash comes from account balance snapshots: months
-        before the first snapshot show 0 cash, not a real zero."""
+        """Monthly net worth split into cash and investments. Cash comes from account balance snapshots (months
+        before the first snapshot show 0 cash, not a real zero) minus the money moved into investments after the
+        month's photo, so a purchase is never counted as cash and investment at once; cash_snapshot is the raw
+        photo. The current month values investments today."""
         return {"months": await call("get", "reports/patrimonio-evolution/")}
 
     @mcp.tool(annotations=READ)

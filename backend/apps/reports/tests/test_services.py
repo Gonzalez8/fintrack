@@ -296,6 +296,40 @@ class TestPatrimonioEvolution:
         jan = next(m for m in result if m["month"] == "2024-01")
         assert Decimal(jan["cash"]) == Decimal("5000")
 
+    def test_purchase_after_the_photo_is_not_counted_twice(self, user, settings_fifo, account, asset):
+        """1,000 € photographed on 1 March, 500 € invested on the 9th: March shows 500 cash + 500 invested."""
+        _snap(user, account, datetime.date(2024, 3, 1), 1000)
+        _tx(user, asset, account, "BUY", datetime.date(2024, 3, 9), 25, 20)
+        _snap(user, account, datetime.date(2024, 4, 1), 500)
+
+        result = {m["month"]: m for m in patrimonio_evolution(user)}
+        march, april = result["2024-03"], result["2024-04"]
+        assert (Decimal(march["cash_snapshot"]), Decimal(march["cash"])) == (1000, 500)
+        assert Decimal(march["investments"]) == 500
+        # The April photo already reflects the purchase: nothing to adjust
+        assert (Decimal(april["cash"]), Decimal(april["cash_snapshot"])) == (500, 500)
+
+    def test_sale_after_the_photo_returns_cash(self, user, settings_fifo, account, asset):
+        _tx(user, asset, account, "BUY", datetime.date(2024, 2, 10), 25, 20)
+        _snap(user, account, datetime.date(2024, 3, 1), 1000)
+        _tx(user, asset, account, "SELL", datetime.date(2024, 3, 20), 25, 24)
+
+        march = next(m for m in patrimonio_evolution(user) if m["month"] == "2024-03")
+        assert Decimal(march["cash"]) == 1600
+
+    def test_current_month_discounts_operations_after_the_last_photo(self, user, settings_fifo, account, asset):
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        if today.day == 1:
+            pytest.skip("needs a day after the photo in the current month")
+        _snap(user, account, today.replace(day=1), 1000)
+        _tx(user, asset, account, "BUY", today, 10, 20)
+
+        current = patrimonio_evolution(user)[-1]
+        assert current["month"] == today.strftime("%Y-%m")
+        assert Decimal(current["cash"]) == 800
+
 
 # ---------------------------------------------------------------------------
 # monthly_savings

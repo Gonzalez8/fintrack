@@ -22,7 +22,7 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
 from .client import FintrackClient, FintrackError
-from .insights import investment_flows, payroll_summary
+from .insights import investment_flows, other_income_totals, payroll_summary
 
 INSTRUCTIONS = """\
 Fintrack is the user's personal finance tracker: investments (stocks, ETFs, funds, crypto), cash accounts,
@@ -37,9 +37,12 @@ Where to look:
   of the fixed salary) and fintrack_list_payrolls for single payslips. Payroll types: MONTHLY (regular salary),
   BONUS (pagas extra, variable, incentives), ATRASOS (back pay / regularizations), OTHER (settlements, severance).
   Dividends: fintrack_list_dividends; interests: fintrack_list_interests; tax view: fintrack_get_year_summary and
-  fintrack_get_tax_declaration.
+  fintrack_get_tax_declaration. Money received outside payslips (rent, freelance, side jobs, gifts — declared or
+  not): fintrack_list_other_income.
 - Savings: fintrack_get_monthly_savings / fintrack_get_annual_savings. Real savings = change in cash + money newly
-  invested (investment cost delta), so investing does not count as spending. Goals: fintrack_list_savings_goals.
+  invested (investment cost delta), so investing does not count as spending. Each month/year also carries its income
+  (net payslips, other income, net dividends and interests) and estimated_spending = income − real savings.
+  Before saying savings "don't add up" with the salary, add other income. Goals: fintrack_list_savings_goals.
 - Accounts and balance history: fintrack_list_accounts, fintrack_list_account_snapshots. Net worth over time:
   fintrack_get_net_worth_evolution. Real estate and mortgages: fintrack_list_properties.
 
@@ -78,6 +81,7 @@ AssetRef = Annotated[str, Field(description="Asset ticker (e.g. AAPL, BY6.F), na
 AccountRef = Annotated[str, Field(description="Account name or id.")]
 AssetType = Literal["STOCK", "ETF", "FUND", "CRYPTO"]
 PriceMode = Literal["AUTO", "MANUAL"]
+OtherIncomeCategory = Literal["RENTAL", "SELF_EMPLOYMENT", "SIDE_JOB", "GIFT", "OTHER"]
 Country = Annotated[str | None, Field(description="ISO 3166-1 alpha-2 code, e.g. US, ES, IE.")]
 
 
@@ -271,6 +275,19 @@ def create_server(client: FintrackClient) -> MCPServer:
         return _page(await call("get", "interests/", params=params), page, limit)
 
     @mcp.tool(annotations=READ)
+    async def fintrack_list_other_income(
+        year: Annotated[int | None, Field(description="Year of the income date.")] = None,
+        category: Annotated[OtherIncomeCategory | None, Field(description="Only this type.")] = None,
+        search: Annotated[str | None, Field(description="Text in the description or notes.")] = None,
+    ) -> dict[str, Any]:
+        """Money received outside payslips, dividends and interests: rent, self-employment, side jobs, gifts or
+        other. Each row has date, type, description, amount received, account and whether it is declared in the tax
+        return. Returns the rows plus totals per type and per month. Undeclared income is real money for savings
+        and spending; never treat it as a tax figure."""
+        rows = await fetch_all("other-incomes/", {"year": year, "category": category, "search": search})
+        return {"items": rows, **other_income_totals(rows)}
+
+    @mcp.tool(annotations=READ)
     async def fintrack_get_year_summary() -> dict[str, Any]:
         """Year-by-year fiscal summary: dividends, interests, realized gains and payroll totals.
 
@@ -411,12 +428,16 @@ def create_server(client: FintrackClient) -> MCPServer:
         to_month: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}$", description="Last month, YYYY-MM.")] = None,
     ) -> dict[str, Any]:
         """Month-by-month savings: cash at month end and its change, money newly invested (investment cost delta)
-        and real savings = cash change + invested. Includes stats (average, best and worst month)."""
+        and real savings = cash change + invested. Each month also has its income (income_payroll = net payslips,
+        income_other = other income, income_investment = net dividends and interests, income_total) and
+        estimated_spending = income_total − real_savings (null without income or a previous month; approximate).
+        Includes stats (average, best and worst month)."""
         return await call("get", "reports/monthly-savings/", params={"from": from_month, "to": to_month})
 
     @mcp.tool(annotations=READ)
     async def fintrack_get_annual_savings() -> dict[str, Any]:
-        """Savings per year: total real savings, cash change, money invested and year-end balances."""
+        """Savings per year: total real savings, cash change, money invested, year-end balances, income (net
+        payslips, other income, dividends and interests, total_income) and total_estimated_spending."""
         return {"years": await call("get", "reports/annual-savings/")}
 
     @mcp.tool(annotations=READ)
@@ -685,6 +706,32 @@ def create_server(client: FintrackClient) -> MCPServer:
     ) -> dict[str, Any]:
         """Apply a detected stock split: from its date, shares are multiplied and unit costs divided."""
         return await call("post", f"splits/{split_id}/apply/")
+
+    @mcp.tool(annotations=WRITE)
+    async def fintrack_create_other_income(
+        date: DateStr,
+        amount: Annotated[str, Field(description='Amount received, e.g. "390".')],
+        description: Annotated[str, Field(min_length=1, max_length=200, description="e.g. Rent flat Av. Torrente.")],
+        category: Annotated[
+            OtherIncomeCategory, Field(description="RENTAL, SELF_EMPLOYMENT, SIDE_JOB, GIFT or OTHER.")
+        ] = "OTHER",
+        account: Annotated[str | None, Field(description="Account it went into (name or id); none for cash.")] = None,
+        declared: Annotated[bool, Field(description="Whether the user declares it in the tax return.")] = False,
+        notes: str = "",
+    ) -> dict[str, Any]:
+        """Record money received outside payslips, dividends and interests (e.g. this month's rent). Confirm the
+        details with the user before calling; for recurring income reuse the description and type of the previous
+        one (fintrack_list_other_income)."""
+        payload = {
+            "date": date,
+            "amount": _decimal(amount, "amount"),
+            "description": description.strip(),
+            "category": category,
+            "account": (await resolve_account(account))["id"] if account else None,
+            "declared": declared,
+            "notes": notes,
+        }
+        return await call("post", "other-incomes/", json=payload)
 
     @mcp.tool(annotations=WRITE)
     async def fintrack_create_asset(

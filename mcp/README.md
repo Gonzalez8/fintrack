@@ -83,6 +83,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_list_transactions` | read | Buy/sell/gift operations (filters: search, type, dates, account) |
 | `fintrack_list_dividends` | read | Recorded dividends (filters: year, search) |
 | `fintrack_list_interests` | read | Interest income (filters: year, account) |
+| `fintrack_list_other_income` | read | Rent, freelance, side jobs, gifts… with totals per type and month, declared vs not |
 | `fintrack_get_year_summary` | read | Year-by-year fiscal summary |
 | `fintrack_get_net_worth_evolution` | read | Monthly net worth (cash + investments) |
 | `fintrack_get_tax_declaration` | read | Tax-declaration helper for your fiscal country |
@@ -91,8 +92,8 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_get_settings` | read | Base currency, cost methods, fiscal country |
 | `fintrack_list_payrolls` | read | Payslips (filters: year, month, type MONTHLY/BONUS/ATRASOS/OTHER) |
 | `fintrack_get_payroll_summary` | read | Income per year: gross, net, social security, effective IRPF, bonus and bonus % of fixed salary |
-| `fintrack_get_monthly_savings` | read | Savings per month: cash change + money invested = real savings |
-| `fintrack_get_annual_savings` | read | Savings per year |
+| `fintrack_get_monthly_savings` | read | Savings per month: cash change + money invested = real savings, plus income and estimated spending |
+| `fintrack_get_annual_savings` | read | Savings, income and estimated spending per year |
 | `fintrack_get_investment_flows` | read | Money invested per month, asset or asset type (e.g. "how much in the S&P 500") |
 | `fintrack_list_account_snapshots` | read | Balance history of an account |
 | `fintrack_list_savings_goals` | read | Savings goals with projections |
@@ -100,6 +101,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_create_transaction` | write | Record a buy, sell or gift |
 | `fintrack_create_dividend` | write | Record a dividend |
 | `fintrack_create_interest` | write | Record interest income |
+| `fintrack_create_other_income` | write | Record other income (e.g. this month's rent) |
 | `fintrack_detect_dividend_drafts` | write | Look up dividends on Yahoo and create drafts |
 | `fintrack_accept_dividend_draft` | write | Turn a draft into a dividend with your broker's figures |
 | `fintrack_dismiss_dividend_draft` | write | Dismiss a draft |

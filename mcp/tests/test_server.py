@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 31 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 33 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -69,6 +69,7 @@ async def test_tools_are_prefixed_and_annotated():
         "fintrack_create_asset",
         "fintrack_update_asset",
         "fintrack_record_account_balances",
+        "fintrack_create_other_income",
     }
     # Only the tools that overwrite existing values are flagged; none deletes anything
     overwriting = {n for n, t in tools.items() if t.annotations.destructive_hint}
@@ -485,3 +486,42 @@ async def test_record_account_balances_posts_one_snapshot_per_account(api, monke
 async def test_record_account_balances_rejects_repeated_account(api):
     args = {"balances": [{"account": "Trade Republic", "balance": "1"}, {"account": BROKER["id"], "balance": "2"}]}
     assert "appears twice" in error_text(await call("fintrack_record_account_balances", args))
+
+
+async def test_list_other_income_adds_totals(api):
+    rows = [
+        {"date": "2026-10-01", "category": "RENTAL", "amount": "390.00", "declared": False},
+        {"date": "2026-11-01", "category": "RENTAL", "amount": "400.00", "declared": False},
+        {"date": "2026-11-15", "category": "SIDE_JOB", "amount": "200.00", "declared": True},
+    ]
+    route = api.get("/other-incomes/").mock(return_value=httpx.Response(200, json=page(rows)))
+    result = payload(await call("fintrack_list_other_income", {"year": 2026, "category": "RENTAL"}))
+    params = route.calls.last.request.url.params
+    assert (params["year"], params["category"]) == ("2026", "RENTAL")
+    assert (result["total"], result["declared"], result["not_declared"]) == ("990.00", "200.00", "790.00")
+    assert result["by_month"] == {"2026-10": "390.00", "2026-11": "600.00"}
+    assert result["by_category"]["RENTAL"] == "790.00"
+    assert result["average_per_month_with_income"] == "495.00"
+
+
+async def test_create_other_income_resolves_account(api):
+    route = api.post("/other-incomes/").mock(return_value=httpx.Response(201, json={"id": "o1"}))
+    args = {"date": "2026-11-01", "amount": "390,50", "description": " Alquiler piso ", "category": "RENTAL"}
+    await call("fintrack_create_other_income", {**args, "account": "MyInvestor"})
+    body = json.loads(route.calls.last.request.content)
+    assert body == {
+        "date": "2026-11-01",
+        "amount": "390.50",
+        "description": "Alquiler piso",
+        "category": "RENTAL",
+        "account": SAVINGS["id"],
+        "declared": False,
+        "notes": "",
+    }
+
+
+async def test_create_other_income_without_account(api):
+    route = api.post("/other-incomes/").mock(return_value=httpx.Response(201, json={"id": "o1"}))
+    await call("fintrack_create_other_income", {"date": "2026-11-01", "amount": "50", "description": "Regalo"})
+    body = json.loads(route.calls.last.request.content)
+    assert (body["account"], body["category"]) == (None, "OTHER")

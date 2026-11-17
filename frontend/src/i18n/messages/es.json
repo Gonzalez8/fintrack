@@ -1029,7 +1029,7 @@
   "aiAccess.scopeRead": "Solo lectura",
   "aiAccess.scopeWrite": "Lectura y escritura",
   "aiAccess.scopeReadHelp": "El asistente puede consultar tu cartera, operaciones, dividendos, intereses e informes. No puede modificar nada.",
-  "aiAccess.scopeWriteHelp": "Además puede añadir operaciones, dividendos e intereses, aceptar borradores, aplicar splits, crear o editar activos y registrar los saldos de tus cuentas. Nunca puede borrar datos ni cambiar tu cuenta, y tu cliente de IA te pedirá confirmación antes de cada escritura.",
+  "aiAccess.scopeWriteHelp": "Además puede añadir operaciones, dividendos, intereses y otros ingresos, aceptar borradores, aplicar splits, crear o editar activos y registrar los saldos de tus cuentas. Nunca puede borrar datos ni cambiar tu cuenta, y tu cliente de IA te pedirá confirmación antes de cada escritura.",
   "aiAccess.create": "Crear token",
   "otherIncome.title": "Otros ingresos",
   "otherIncome.subtitle": "Dinero que recibes fuera de nóminas, dividendos e intereses: alquileres, trabajos extra, regalos… Cuenta para tu ahorro y tu gasto estimado.",

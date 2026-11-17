@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.0] - 2026-11-17
+
+### Added
+
+- **The AI advisor remembers your investor profile.** The `fintrack-advisor` skill keeps the personal context Fintrack doesn't have — age, housing and who collects your rents, real horizon and goals, risk tolerance, emergency fund and its purpose, preferences and limits, recording rules, topics to avoid — in Claude Code's local persistent memory (`perfil-financiero`). It asks only for what is missing, confirms what may have changed and updates the profile as you mention changes. Figures Fintrack has (salary, savings, spending, balances, portfolio) are never stored or asked, and the profile is never saved in Fintrack or external services. In clients without that memory it uses the client's own memory if enabled, or asks in the conversation. (#132)
+
+### Fixed
+
+- **Monthly savings measured cash and investments on different days.** Cash comes from the month's snapshot (usually the 1st) but purchases were counted over the whole calendar month, so a buy after the snapshot looked like savings that month and spending the next (e.g. March −542 € / April 1,070 € instead of 460 € / 68 €). Money invested is now measured up to the same snapshot date. Yearly totals shift slightly at the year boundary. (#130)
+- **Net worth evolution counted a purchase twice in its month.** Investments are valued at month end while cash is the photo taken earlier, so money invested after the photo appeared as cash and as investment. Cash is now the photo minus what moved into investments after it (the raw photo is kept as `cash_snapshot`). Affects the net worth chart, the yearly net worth in Savings, savings-goal progress and the MCP net worth tool. (#131)
+
+### MCP update
+
+- Updated descriptions of the savings and net worth tools, and the server instructions and portfolio-analysis prompt use the saved profile. The updated `fintrack-advisor.zip` is attached to this release — upload it again in Claude Desktop (Settings → Skills).
+
 ## [2.20.0] - 2026-11-17
 
 ### Added

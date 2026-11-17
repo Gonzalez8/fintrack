@@ -49,6 +49,8 @@ class OtherIncomeFilter(django_filters.FilterSet):
     to_date = django_filters.DateFilter(field_name="date", lookup_expr="lte")
     category = django_filters.CharFilter(field_name="category")
     account_id = django_filters.UUIDFilter(field_name="account_id")
+    lease = django_filters.UUIDFilter(field_name="lease_id")
+    property = django_filters.UUIDFilter(field_name="lease__property_id")
     search = django_filters.CharFilter(method="filter_search")
 
     class Meta:

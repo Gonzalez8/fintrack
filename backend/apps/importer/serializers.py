@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, Settings
 from apps.payroll.models import Employer, Payroll
-from apps.realestate.models import Amortization, Property
+from apps.realestate.models import Amortization, Lease, Property, RentalExpense
 from apps.reports.models import SavingsGoal
 from apps.transactions.models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
 
@@ -92,7 +92,7 @@ class BackupInterestSerializer(serializers.ModelSerializer):
 class BackupOtherIncomeSerializer(serializers.ModelSerializer):
     class Meta:
         model = OtherIncome
-        fields = ["id", "date", "category", "description", "amount", "account", "notes"]
+        fields = ["id", "date", "category", "description", "amount", "account", "lease", "notes"]
         extra_kwargs = {"id": {"read_only": False}}
 
 
@@ -134,6 +134,12 @@ class BackupPropertySerializer(serializers.ModelSerializer):
             "total_term_months",
             "months_paid",
             "monthly_payment",
+            "acquisition_costs",
+            "cadastral_value",
+            "cadastral_construction_value",
+            "cadastral_revised",
+            "furniture_value",
+            "ownership_pct",
         ]
         extra_kwargs = {"id": {"read_only": False}}
 
@@ -219,4 +225,29 @@ class BackupPayrollSerializer(serializers.ModelSerializer):
             "notes",
             "import_hash",
         ]
+        extra_kwargs = {"id": {"read_only": False}}
+
+
+class BackupLeaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lease
+        fields = [
+            "id",
+            "property",
+            "tenant",
+            "start_date",
+            "end_date",
+            "monthly_rent",
+            "deposit",
+            "reduction",
+            "rented_share_pct",
+            "notes",
+        ]
+        extra_kwargs = {"id": {"read_only": False}}
+
+
+class BackupRentalExpenseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RentalExpense
+        fields = ["id", "property", "date", "category", "amount", "description"]
         extra_kwargs = {"id": {"read_only": False}}

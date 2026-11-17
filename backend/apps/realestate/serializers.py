@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from apps.transactions.serializers import _OwnershipValidationMixin
 
-from .models import Amortization, Property
+from .models import Amortization, Lease, Property, RentalExpense
 from .mortgage import mortgage_state
 
 ZERO = Decimal("0.00")
@@ -49,6 +49,12 @@ class PropertySerializer(serializers.ModelSerializer):
             "total_term_months",
             "months_paid",
             "monthly_payment",
+            "acquisition_costs",
+            "cadastral_value",
+            "cadastral_construction_value",
+            "cadastral_revised",
+            "furniture_value",
+            "ownership_pct",
             # computed
             "net_equity",
             "amortized_capital",
@@ -127,6 +133,83 @@ class AmortizationSerializer(_OwnershipValidationMixin, serializers.ModelSeriali
 
     def validate_property(self, value):
         return self._validate_owned_fk(value, "property")
+
+
+class LeaseSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
+    property_name = serializers.CharField(source="property.name", read_only=True)
+
+    class Meta:
+        model = Lease
+        fields = [
+            "id",
+            "property",
+            "property_name",
+            "tenant",
+            "start_date",
+            "end_date",
+            "monthly_rent",
+            "deposit",
+            "reduction",
+            "rented_share_pct",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "property_name", "created_at", "updated_at"]
+
+    def validate_property(self, value):
+        return self._validate_owned_fk(value, "property")
+
+    def validate(self, data):
+        start = data.get("start_date") or (self.instance and self.instance.start_date)
+        end = data.get("end_date", self.instance.end_date if self.instance else None)
+        if start and end and end < start:
+            raise serializers.ValidationError({"end_date": "end_date must be on or after start_date."})
+        return data
+
+
+class RentalExpenseSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
+    property_name = serializers.CharField(source="property.name", read_only=True)
+
+    class Meta:
+        model = RentalExpense
+        fields = ["id", "property", "property_name", "date", "category", "amount", "description", "created_at"]
+        read_only_fields = ["id", "property_name", "created_at"]
+
+    def validate_property(self, value):
+        return self._validate_owned_fk(value, "property")
+
+
+class RentalSimulationSerializer(serializers.Serializer):
+    """Any figures to simulate one property-year (see ``tax_adapters/es_rental.RentalInputs``)."""
+
+    money = {"max_digits": 14, "decimal_places": 2, "required": False, "allow_null": True}
+    percent = {"max_digits": 5, "decimal_places": 2, "min_value": Decimal("0"), "max_value": Decimal("100")}
+
+    year = serializers.IntegerField(min_value=1990, max_value=2100)
+    income = serializers.DecimalField(**money)
+    days_rented = serializers.IntegerField(min_value=0, max_value=366, required=False)
+    days_vacant = serializers.IntegerField(min_value=0, max_value=366, required=False)
+    rented_share_pct = serializers.DecimalField(**percent, required=False)
+    ownership_pct = serializers.DecimalField(**percent, required=False)
+    financing = serializers.DecimalField(**money)
+    repairs = serializers.DecimalField(**money)
+    taxes = serializers.DecimalField(**money)
+    community = serializers.DecimalField(**money)
+    insurance = serializers.DecimalField(**money)
+    utilities = serializers.DecimalField(**money)
+    services = serializers.DecimalField(**money)
+    other = serializers.DecimalField(**money)
+    acquisition_price = serializers.DecimalField(**money)
+    acquisition_costs = serializers.DecimalField(**money)
+    cadastral_value = serializers.DecimalField(**money)
+    cadastral_construction_value = serializers.DecimalField(**money)
+    cadastral_revised = serializers.BooleanField(required=False)
+    improvements = serializers.DecimalField(**money)
+    furniture_value = serializers.DecimalField(**money)
+    reduction_pct = serializers.DecimalField(**percent, required=False)
+    pending_excess = serializers.DecimalField(**money)
+    other_general_base = serializers.DecimalField(**money)
 
 
 class MortgageSimulationInputSerializer(serializers.Serializer):

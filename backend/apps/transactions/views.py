@@ -58,7 +58,7 @@ class InterestViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
 
 
 class OtherIncomeViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
-    queryset = OtherIncome.objects.select_related("account").all()
+    queryset = OtherIncome.objects.select_related("account", "lease__property").all()
     serializer_class = OtherIncomeSerializer
     filterset_class = OtherIncomeFilter
     ordering_fields = ["date", "amount", "category"]

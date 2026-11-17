@@ -164,3 +164,29 @@ def mortgage_state(prop, amortizations, today: date) -> MortgageState:
         end_date=add_months(prop.purchase_date, end_month) if prop.purchase_date else None,
         extra_amortizations=round2(extra),
     )
+
+
+def interest_in_year(prop, amortizations, year: int, before_month: str | None = None) -> Decimal | None:
+    """Mortgage interest paid in calendar ``year`` (payment ``m`` falls ``m`` months after the purchase date).
+
+    ``before_month`` (``YYYY-MM``, exclusive) keeps only the payments made before it. ``None`` when the mortgage
+    or its start date is unknown.
+    """
+    if (
+        prop.original_loan_amount is None
+        or not prop.total_term_months
+        or not prop.monthly_payment
+        or not prop.purchase_date
+    ):
+        return None
+    monthly_rate = (prop.annual_interest_rate or ZERO) / 100 / 12
+    balances, payments, _ = _schedule_with_amortizations(
+        prop.original_loan_amount, monthly_rate, prop.total_term_months, prop.monthly_payment, list(amortizations)
+    )
+    prefix = f"{year}-"
+    interest = ZERO
+    for m in payments:
+        when = add_months(prop.purchase_date, m)
+        if when.startswith(prefix) and (before_month is None or when < before_month):
+            interest += balances[m - 1] * monthly_rate
+    return round2(interest)

@@ -7,6 +7,7 @@ import {
   demoTransactions,
   demoDividends,
   demoInterests,
+  demoOtherIncomes,
   demoPortfolio,
   demoYearSummary,
   demoPatrimonioEvolution,
@@ -274,6 +275,27 @@ const proxyHandlers = [
   }),
 
   http.delete("/api/proxy/interests/:id/", async () => {
+    await delay(200);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  // ---- Other income ----
+  http.get("/api/proxy/other-incomes/", async () => {
+    await delay(200);
+    return HttpResponse.json(paginated(demoOtherIncomes));
+  }),
+
+  http.post("/api/proxy/other-incomes/", async () => {
+    await delay(200);
+    return HttpResponse.json(demoOtherIncomes[0]);
+  }),
+
+  http.put("/api/proxy/other-incomes/:id/", async () => {
+    await delay(200);
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.delete("/api/proxy/other-incomes/:id/", async () => {
     await delay(200);
     return new HttpResponse(null, { status: 204 });
   }),
@@ -583,6 +605,7 @@ const proxyHandlers = [
       transactions: demoTransactions,
       dividends: demoDividends,
       interests: demoInterests,
+      other_incomes: demoOtherIncomes,
       settings: demoSettings,
     });
   }),

@@ -148,7 +148,32 @@ export const demoRVEvolution: RVEvolutionPoint[] = [
 
 // ── Monthly Savings ─────────────────────────────────────────────────
 // Only months with buy activity shown. Cost basis tracks net after sells.
-export const demoMonthlySavings: MonthlySavingsPoint[] = [
+type DemoIncomeFields =
+  | "income_payroll"
+  | "income_other"
+  | "income_investment"
+  | "income_total"
+  | "estimated_spending";
+
+// Demo income: a fixed rent, payslips sized so spending stays plausible (~1,450 €/month)
+const DEMO_RENT = 390;
+const DEMO_SPENDING = 1450;
+
+function withDemoIncome(m: Omit<MonthlySavingsPoint, DemoIncomeFields>): MonthlySavingsPoint {
+  const saved = m.real_savings === null ? null : parseFloat(m.real_savings);
+  const payroll = saved === null ? 2600 : Math.max(2600, saved + DEMO_SPENDING - DEMO_RENT);
+  const total = payroll + DEMO_RENT;
+  return {
+    ...m,
+    income_payroll: payroll.toFixed(2),
+    income_other: DEMO_RENT.toFixed(2),
+    income_investment: "0.00",
+    income_total: total.toFixed(2),
+    estimated_spending: saved === null ? null : (total - saved).toFixed(2),
+  };
+}
+
+const demoMonthlySavingsRaw: Omit<MonthlySavingsPoint, DemoIncomeFields>[] = [
   {
     month: "2023-01",
     cash_end: "4800.00",
@@ -304,11 +329,13 @@ export const demoMonthlySavings: MonthlySavingsPoint[] = [
   },
 ];
 
+export const demoMonthlySavings: MonthlySavingsPoint[] = demoMonthlySavingsRaw.map(withDemoIncome);
+
 export const demoMonthlySavingsStats: MonthlySavingsStats = {
   current_cash: "5243.18",
   last_month_delta: "28.18",
   avg_monthly_delta: "1562.41",
-  best_month: {
+  best_month: withDemoIncome({
     month: "2023-04",
     cash_end: "4870.00",
     cash_delta: "20.00",
@@ -316,8 +343,8 @@ export const demoMonthlySavingsStats: MonthlySavingsStats = {
     investment_cost_delta: "5945.60",
     real_savings: "5965.60",
     comments: [],
-  },
-  worst_month: {
+  }),
+  worst_month: withDemoIncome({
     month: "2024-08",
     cash_end: "5130.00",
     cash_delta: "30.00",
@@ -325,10 +352,23 @@ export const demoMonthlySavingsStats: MonthlySavingsStats = {
     investment_cost_delta: "301.84",
     real_savings: "331.84",
     comments: [],
-  },
+  }),
 };
 
 // ── Annual Savings ──────────────────────────────────────────────────
+function demoYearIncome(year: number) {
+  const months = demoMonthlySavings.filter((m) => m.month.startsWith(String(year)));
+  const sum = (pick: (m: MonthlySavingsPoint) => string | null) =>
+    months.reduce((acc, m) => acc + parseFloat(pick(m) ?? "0"), 0).toFixed(2);
+  return {
+    income_payroll: sum((m) => m.income_payroll),
+    income_other: sum((m) => m.income_other),
+    income_investment: sum((m) => m.income_investment),
+    total_income: sum((m) => m.income_total),
+    total_estimated_spending: sum((m) => m.estimated_spending),
+  };
+}
+
 export const demoAnnualSavings: AnnualSavingsPoint[] = [
   {
     year: 2023,
@@ -341,6 +381,7 @@ export const demoAnnualSavings: AnnualSavingsPoint[] = [
     patrimony_growth: null,
     patrimony_growth_pct: null,
     months_count: 7,
+    ...demoYearIncome(2023),
   },
   {
     year: 2024,
@@ -353,6 +394,7 @@ export const demoAnnualSavings: AnnualSavingsPoint[] = [
     patrimony_growth: "21060.00",
     patrimony_growth_pct: "57.6",
     months_count: 5,
+    ...demoYearIncome(2024),
   },
   {
     year: 2025,
@@ -365,6 +407,7 @@ export const demoAnnualSavings: AnnualSavingsPoint[] = [
     patrimony_growth: "14314.48",
     patrimony_growth_pct: "24.8",
     months_count: 4,
+    ...demoYearIncome(2025),
   },
 ];
 

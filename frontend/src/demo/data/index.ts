@@ -4,6 +4,7 @@ export { demoAccounts } from "./accounts";
 export { demoTransactions } from "./transactions";
 export { demoDividends } from "./dividends";
 export { demoInterests } from "./interests";
+export { demoOtherIncomes } from "./other-income";
 export { demoPortfolio } from "./portfolio";
 export { demoSettings } from "./settings";
 export {

@@ -18,7 +18,7 @@ The user wants an AI assistant (Claude Desktop / Claude Code) to review their da
 
 - New package `mcp/` (`fintrack_mcp`, MCP Python SDK 2.x `MCPServer`), launched by the assistant on the user's computer through `uvx` and talking to the backend over the local network.
 - A remote (streamable HTTP) MCP was rejected: claude.ai would need Fintrack reachable from the internet over HTTPS plus OAuth.
-- The server is a **thin client of the REST API**: positions, splits, costs and tax figures come from the backend engine; no business logic is duplicated. 12 read tools and 7 write tools, prefixed `fintrack_`, with MCP annotations (`readOnlyHint`, `destructiveHint=false`). **No delete tools.**
+- The server is a **thin client of the REST API**: positions, splits, costs and tax figures come from the backend engine; no business logic is duplicated. Read tools and write tools prefixed `fintrack_`, with MCP annotations (`readOnlyHint`; `destructiveHint` only on the tools that overwrite values: editing an asset and recording an account snapshot for a date that already has one). **No delete tools.** Write tools started with operations, dividends, interests, dividend drafts and splits; creating/editing assets and recording account balances were added later. Payslips stay out because they need a review step (the PDF parser is suggestion-only).
 - The install command is pinned to the release tag (`…/fintrack@vX.Y.Z#subdirectory=mcp`), so the tools always match the deployed API. The frontend reads its version from `package.json` to fill it in.
 
 ### Personal access tokens

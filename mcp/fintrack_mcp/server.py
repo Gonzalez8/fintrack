@@ -19,7 +19,7 @@ from typing import Annotated, Any, Literal
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from .client import FintrackClient, FintrackError
 from .insights import investment_flows, payroll_summary
@@ -49,6 +49,10 @@ Rules:
 - Assets and accounts can be referenced by ticker, name or id.
 - Write tools create real records. Always show the user exactly what you are about to record and get their
   confirmation first. Nothing can be deleted through this server; mistakes are fixed by the user in the app.
+- New assets (fintrack_create_asset) need the Yahoo Finance ticker for automatic prices (e.g. APC.F Frankfurt,
+  VWCE.DE Xetra); check it with the user. fintrack_update_asset changes only the fields given.
+- "These are my balances today / on the 1st": fintrack_record_account_balances saves one snapshot per account on that
+  date (replacing one already there) and returns the previous balance of each so you can show the change.
 - Dividend drafts are suggestions detected from Yahoo Finance: the ex-dividend date is not the payment date and
   amounts are in the quote currency, so ask the user for the figures from their broker before accepting one.
 - For opinions or recommendations, ask for the user's profile first (horizon, risk tolerance, goals, emergency
@@ -57,6 +61,8 @@ Rules:
 
 READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
 WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False)
+# Overwrites existing values (asset fields, the snapshot of the same account and date) but never deletes a record
+EDIT = ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False)
 
 SPLIT_PAYMENT_WINDOW_DAYS = 120
 
@@ -70,6 +76,22 @@ DateStr = Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}$", description="Date
 Money = Annotated[str, Field(description='Decimal amount as a string, e.g. "12.50".')]
 AssetRef = Annotated[str, Field(description="Asset ticker (e.g. AAPL, BY6.F), name or id.")]
 AccountRef = Annotated[str, Field(description="Account name or id.")]
+AssetType = Literal["STOCK", "ETF", "FUND", "CRYPTO"]
+PriceMode = Literal["AUTO", "MANUAL"]
+Country = Annotated[str | None, Field(description="ISO 3166-1 alpha-2 code, e.g. US, ES, IE.")]
+
+
+class AccountBalance(BaseModel):
+    account: AccountRef
+    balance: Money
+    note: str = ""
+
+
+def _country(value: str | None, field: str) -> str | None:
+    value = (value or "").strip().upper()
+    if value and not re.fullmatch(r"[A-Z]{2}", value):
+        raise ToolError(f'"{field}" must be a two-letter country code such as US or ES, got {value!r}.')
+    return value or None
 
 
 def _decimal(value: str | None, field: str) -> str | None:
@@ -79,6 +101,10 @@ def _decimal(value: str | None, field: str) -> str | None:
         return str(Decimal(str(value).replace(",", ".")))
     except InvalidOperation as exc:
         raise ToolError(f'"{field}" must be a number, got {value!r}.') from exc
+
+
+def _today() -> str:
+    return date.today().isoformat()
 
 
 def _days_between(start: str, end: str) -> int:
@@ -138,10 +164,12 @@ def create_server(client: FintrackClient) -> MCPServer:
                 return rows
             page += 1
 
-    async def resolve_account(ref: str) -> dict[str, Any]:
-        ref = ref.strip()
+    async def list_accounts() -> list[dict[str, Any]]:
         data = await call("get", "accounts/", params={"page_size": MAX_LIMIT})
-        rows = data["results"] if isinstance(data, dict) else data
+        return data["results"] if isinstance(data, dict) else data
+
+    def match_account(rows: list[dict[str, Any]], ref: str) -> dict[str, Any]:
+        ref = ref.strip()
         matches = [a for a in rows if a["id"] == ref or a["name"].lower() == ref.lower()]
         if not matches:
             matches = [a for a in rows if ref.lower() in a["name"].lower()]
@@ -151,6 +179,12 @@ def create_server(client: FintrackClient) -> MCPServer:
         if not matches:
             raise ToolError(f'No account matches "{ref}". Accounts: {names}.')
         raise ToolError(f'"{ref}" matches several accounts. Accounts: {names}.')
+
+    async def resolve_account(ref: str) -> dict[str, Any]:
+        return match_account(await list_accounts(), ref)
+
+    async def set_manual_price(asset: dict[str, Any], price: str) -> dict[str, Any]:
+        return await call("post", f"assets/{asset['id']}/set-price/", json={"price": _decimal(price, "price")})
 
     # ------------------------------------------------------------------ read
 
@@ -651,6 +685,138 @@ def create_server(client: FintrackClient) -> MCPServer:
     ) -> dict[str, Any]:
         """Apply a detected stock split: from its date, shares are multiplied and unit costs divided."""
         return await call("post", f"splits/{split_id}/apply/")
+
+    @mcp.tool(annotations=WRITE)
+    async def fintrack_create_asset(
+        name: Annotated[str, Field(min_length=1, description="Asset name, e.g. Apple or Vanguard FTSE All-World.")],
+        type: Annotated[AssetType, Field(description="STOCK, ETF, FUND or CRYPTO.")],
+        currency: Annotated[str, Field(pattern=r"^[A-Za-z]{3}$", description="Quote currency, e.g. EUR.")] = "EUR",
+        ticker: Annotated[
+            str | None, Field(description="Yahoo Finance ticker used for prices and splits, e.g. APC.F, VWCE.DE.")
+        ] = None,
+        isin: Annotated[str | None, Field(pattern=r"^[A-Za-z]{2}[A-Za-z0-9]{10}$", description="12-char ISIN.")] = None,
+        price_mode: Annotated[
+            PriceMode, Field(description="AUTO: daily price from Yahoo by ticker. MANUAL: you set the price.")
+        ] = "AUTO",
+        price: Annotated[str | None, Field(description="Current price; only for MANUAL assets.")] = None,
+        issuer_country: Annotated[Country, Field(description="Issuer country; defaults to the ISIN prefix.")] = None,
+        domicile_country: Annotated[Country, Field(description="Fund domicile (e.g. IE, LU).")] = None,
+        withholding_country: Annotated[
+            Country,
+            Field(description="Country that withholds tax on its dividends (e.g. US for an ADR with a KY ISIN)."),
+        ] = None,
+    ) -> dict[str, Any]:
+        """Add an asset (stock, ETF, fund or crypto) so operations and dividends can be recorded on it.
+        Confirm the details with the user before calling."""
+        ticker = (ticker or "").strip().upper() or None
+        isin = (isin or "").strip().upper() or None
+        if price_mode == "AUTO" and not ticker:
+            raise ToolError("AUTO prices need a Yahoo Finance ticker; give one or use price_mode MANUAL.")
+        if price and price_mode != "MANUAL":
+            raise ToolError("A price can only be set on MANUAL assets; AUTO assets take it from Yahoo Finance.")
+        payload = {
+            "name": name.strip(),
+            "type": type,
+            "currency": currency.upper(),
+            "ticker": ticker,
+            "isin": isin,
+            "price_mode": price_mode,
+            "issuer_country": _country(issuer_country, "issuer_country"),
+            "domicile_country": _country(domicile_country, "domicile_country"),
+            "withholding_country": _country(withholding_country, "withholding_country"),
+        }
+        asset = await call("post", "assets/", json=payload)
+        if price:
+            asset = await set_manual_price(asset, price)
+        return asset
+
+    @mcp.tool(annotations=EDIT)
+    async def fintrack_update_asset(
+        asset: AssetRef,
+        name: Annotated[str | None, Field(description="New name.")] = None,
+        type: Annotated[AssetType | None, Field(description="STOCK, ETF, FUND or CRYPTO.")] = None,
+        currency: Annotated[str | None, Field(pattern=r"^[A-Za-z]{3}$", description="Quote currency.")] = None,
+        ticker: Annotated[str | None, Field(description='Yahoo Finance ticker; "" removes it.')] = None,
+        isin: Annotated[str | None, Field(description='12-char ISIN; "" removes it.')] = None,
+        price_mode: Annotated[PriceMode | None, Field(description="AUTO (Yahoo by ticker) or MANUAL.")] = None,
+        price: Annotated[str | None, Field(description="Current price; only for MANUAL assets.")] = None,
+        issuer_country: Annotated[Country, Field(description='Issuer country; "" removes it.')] = None,
+        domicile_country: Annotated[Country, Field(description='Fund domicile; "" removes it.')] = None,
+        withholding_country: Annotated[
+            Country, Field(description='Country that withholds tax on its dividends; "" removes it.')
+        ] = None,
+    ) -> dict[str, Any]:
+        """Change an asset's details (only the fields given). Recorded operations and dividends are kept as they
+        are. Changing the currency does not convert recorded amounts. Confirm the change with the user first."""
+        current = await resolve_asset(asset)
+        changes: dict[str, Any] = {}
+        if name is not None:
+            if not name.strip():
+                raise ToolError("The name cannot be empty.")
+            changes["name"] = name.strip()
+        if type is not None:
+            changes["type"] = type
+        if currency is not None:
+            changes["currency"] = currency.upper()
+        if ticker is not None:
+            changes["ticker"] = ticker.strip().upper() or None
+        if isin is not None:
+            isin = isin.strip().upper()
+            if isin and not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{10}", isin):
+                raise ToolError(f"{isin!r} is not a valid ISIN (2 letters + 10 letters or digits).")
+            changes["isin"] = isin or None
+        if price_mode is not None:
+            changes["price_mode"] = price_mode
+        for field, value in (
+            ("issuer_country", issuer_country),
+            ("domicile_country", domicile_country),
+            ("withholding_country", withholding_country),
+        ):
+            if value is not None:
+                changes[field] = _country(value, field)
+
+        final_mode = changes.get("price_mode", current.get("price_mode"))
+        final_ticker = changes.get("ticker", current.get("ticker"))
+        if final_mode == "AUTO" and not final_ticker:
+            raise ToolError("AUTO prices need a Yahoo Finance ticker; keep or give one, or use price_mode MANUAL.")
+        if price and final_mode != "MANUAL":
+            raise ToolError("A price can only be set on MANUAL assets; AUTO assets take it from Yahoo Finance.")
+        if not changes and not price:
+            raise ToolError("Nothing to change: give at least one field.")
+
+        updated = await call("patch", f"assets/{current['id']}/", json=changes) if changes else current
+        if price:
+            updated = await set_manual_price(updated, price)
+        return updated
+
+    @mcp.tool(annotations=EDIT)
+    async def fintrack_record_account_balances(
+        balances: Annotated[
+            list[AccountBalance],
+            Field(min_length=1, description="One entry per account: account name or id, balance and optional note."),
+        ],
+        date: Annotated[
+            str | None,
+            Field(pattern=r"^\d{4}-\d{2}-\d{2}$", description="Snapshot date, YYYY-MM-DD; today if omitted."),
+        ] = None,
+    ) -> dict[str, Any]:
+        """Record the balance of one or more accounts on a date (a snapshot per account), e.g. "these are my
+        balances today" or "on the 1st of the month". The account's current balance becomes its latest snapshot.
+        A snapshot already recorded for that account and date is replaced. Confirm the figures with the user first."""
+        rows = await list_accounts()
+        snapshot_date = date or _today()
+        items, before, seen = [], {}, set()
+        for entry in balances:
+            acc = match_account(rows, entry.account)
+            if acc["id"] in seen:
+                raise ToolError(f"{acc['name']} appears twice; give one balance per account.")
+            seen.add(acc["id"])
+            before[acc["id"]] = acc.get("balance")
+            items.append({"account": acc["id"], "balance": _decimal(entry.balance, "balance"), "note": entry.note})
+        created = await call("post", "accounts/bulk-snapshot/", json={"date": snapshot_date, "snapshots": items})
+        for snap in created:
+            snap["previous_balance"] = before.get(snap["account"])
+        return {"date": snapshot_date, "snapshots": created}
 
     return mcp
 

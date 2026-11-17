@@ -289,7 +289,7 @@ Browser
 
 ## AI Access (MCP)
 
-Fintrack ships an [MCP](https://modelcontextprotocol.io) server (`mcp/`) so an AI assistant — **Claude Desktop** or **Claude Code** — can work with your data: review your portfolio and history, explain figures, spot missing operations, prepare your tax data and, if you allow it, record operations and dividends for you.
+Fintrack ships an [MCP](https://modelcontextprotocol.io) server (`mcp/`) so an AI assistant — **Claude Desktop** or **Claude Code** — can work with your data: review your portfolio and history, explain figures, spot missing operations, prepare your tax data and, if you allow it, record operations and dividends, add assets and update your account balances for you.
 
 It runs **locally on your computer** and talks to your Fintrack over your own network. Fintrack does **not** need to be exposed to the internet.
 
@@ -304,7 +304,7 @@ Claude Desktop / Claude Code ──stdio──▶ fintrack-mcp (your computer) �
 | Permission | The assistant can… |
 |---|---|
 | **Read only** (recommended to start) | Read portfolio, operations, dividends, interests, reports and pending reviews |
-| **Read and write** | Also create operations, dividends and interests, accept or dismiss dividend drafts and apply splits |
+| **Read and write** | Also create operations, dividends and interests, accept or dismiss dividend drafts, apply splits, add or edit assets and record account balances |
 
 The token (`ft_…`) is shown **once**, together with the configuration for Claude Code and Claude Desktop already filled in — copy it from there.
 
@@ -370,6 +370,8 @@ Replace `vX.Y.Z` with **your Fintrack version** (e.g. `v2.14.0`): the MCP is pin
 - *"How much did I receive in dividends in 2025, by country and with the withholding?"*
 - *"Which dividends are pending review? Accept the Apple one: paid on 16/11/2026, gross 0.33 €, withholding 0.05 €."* (write token)
 - *"I bought 5 Inditex shares today at 42.10 € on Trade Republic with 1 € commission — record it."* (write token)
+- *"Add the Vanguard FTSE All-World ETF, ticker VWCE.DE, ISIN IE00BK5BQT80."* (write token)
+- *"My balances on the 1st: Trade Republic 1,250 €, MyInvestor 8,400 € — update them."* (write token; saves a snapshot per account)
 
 It can also cover payslips (salary, bonus, IRPF), monthly and yearly savings, money invested per month or per fund, account balances, savings goals and your mortgage. Ready-made prompts are included: **monthly review**, **payroll and bonus review** and **portfolio analysis**.
 

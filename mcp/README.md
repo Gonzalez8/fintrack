@@ -104,6 +104,9 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_accept_dividend_draft` | write | Turn a draft into a dividend with your broker's figures |
 | `fintrack_dismiss_dividend_draft` | write | Dismiss a draft |
 | `fintrack_apply_split` | write | Apply a detected stock split |
+| `fintrack_create_asset` | write | Add a stock, ETF, fund or crypto (ticker, ISIN, currency, AUTO/MANUAL price, countries) |
+| `fintrack_update_asset` | write (overwrites) | Change an asset's details or set the price of a MANUAL asset |
+| `fintrack_record_account_balances` | write (overwrites) | Save today's (or a date's) balance of one or more accounts as snapshots |
 
 ### Prompts
 
@@ -115,7 +118,7 @@ Ready-made analyses (slash commands in Claude Code, e.g. `/mcp__fintrack__fintra
 | `fintrack_payroll_review` | Salary, bonus, IRPF and year-over-year change |
 | `fintrack_portfolio_analysis` | Portfolio and per-investment review; asks for your profile first |
 
-Assets can be referenced by ticker, name or id; accounts by name or id. Write tools are marked as such so your client asks for confirmation before running them.
+Assets can be referenced by ticker, name or id; accounts by name or id. Write tools are marked as such so your client asks for confirmation before running them; the ones that overwrite existing values (editing an asset, a snapshot of the same account and date) are also flagged as destructive. No tool deletes anything.
 
 ## Advisor skill (optional)
 

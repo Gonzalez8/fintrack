@@ -1022,6 +1022,6 @@
   "aiAccess.scopeRead": "Lecture seule",
   "aiAccess.scopeWrite": "Lecture et écriture",
   "aiAccess.scopeReadHelp": "L'assistant peut consulter votre portefeuille, vos opérations, dividendes, intérêts et rapports. Il ne peut rien modifier.",
-  "aiAccess.scopeWriteHelp": "Il peut aussi ajouter des opérations, dividendes et intérêts, accepter des brouillons et appliquer des divisions. Il ne peut jamais supprimer de données ni modifier votre compte, et votre client IA demande confirmation avant chaque écriture.",
+  "aiAccess.scopeWriteHelp": "Il peut aussi ajouter des opérations, dividendes et intérêts, accepter des brouillons, appliquer des divisions, créer ou modifier des actifs et enregistrer les soldes de vos comptes. Il ne peut jamais supprimer de données ni modifier votre compte, et votre client IA demande confirmation avant chaque écriture.",
   "aiAccess.create": "Créer un jeton"
 }

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] - 2026-11-17
+
+### Added
+
+- **Save and test the backend URL for the AI assistant.** Settings → *AI access (MCP)* now has a "Connection to your Fintrack" block: enter the address the MCP should use (e.g. your reverse-proxy host `https://fintrack-api.example.com`), **Save** it and **Test connection** from the browser. The Claude Code and Claude Desktop snippets use the saved URL instead of guessing "web host + :8001", which was wrong behind a reverse proxy. (#120)
+
+### Fixed
+
+- **Mortgages paid off early kept counting payments.** `months_paid` now stops at the last payment actually made (it kept growing with the calendar after an early pay-off). The new `months_elapsed` carries "calendar months since the start", and the new `has_active_mortgage` is what debt figures should check — `has_mortgage` also covers finished mortgages. (#119)
+- **Backups now keep your fiscal country and tax-treaty limits** (and the MCP backend URL); they were not exported before. (#120)
+- **AI assistant (MCP):** yearly summary, net worth evolution and annual savings now return structured data (one object instead of one text block per row); the dividend share check no longer flags dividends paid on the shares held before a split whose ex-date came first (listed apart as `explained_by_split`); tool descriptions clarify that `payroll_gross` in the yearly summary is the IRPF taxable base, not the gross salary. (#121)
+
+### Migration notes
+
+- `assets/0008_settings_mcp_backend_url`: adds the optional `Settings.mcp_backend_url` (additive, applied automatically on start).
+
+### MCP update
+
+- **Update your MCP command to `v2.16.0`**: copy it again from Settings → *AI access (MCP)* (Claude Code: `claude mcp remove fintrack` and add it again; Claude Desktop: change the version in the config and restart). The updated `fintrack-advisor.zip` is attached to this release.
+
 ## [2.15.1] - 2026-11-17
 
 ### Fixed

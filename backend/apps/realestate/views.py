@@ -10,7 +10,7 @@ from .services import simulate_amortization
 
 
 class PropertyViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
-    queryset = Property.objects.all()
+    queryset = Property.objects.prefetch_related("amortizations")
     serializer_class = PropertySerializer
     invalidates_financial_cache = False
 

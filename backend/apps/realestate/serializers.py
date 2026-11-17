@@ -1,18 +1,32 @@
 from decimal import Decimal
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.transactions.serializers import _OwnershipValidationMixin
 
 from .models import Amortization, Property
+from .mortgage import mortgage_state
 
 ZERO = Decimal("0.00")
 
 
 class PropertySerializer(serializers.ModelSerializer):
+    """Property with its mortgage as of today.
+
+    ``months_paid`` and ``outstanding_balance`` are stored as a snapshot when the
+    property is saved; on read they are replaced by the current values (elapsed months
+    from the purchase date, early amortizations applied — see ``mortgage.py``), so the
+    API, the MCP and the screen agree and nothing goes stale.
+    """
+
     net_equity = serializers.SerializerMethodField()
     amortized_capital = serializers.SerializerMethodField()
     has_mortgage = serializers.SerializerMethodField()
+    mortgage_status = serializers.SerializerMethodField()
+    current_monthly_payment = serializers.SerializerMethodField()
+    mortgage_end_date = serializers.SerializerMethodField()
+    extra_amortizations = serializers.SerializerMethodField()
 
     class Meta:
         model = Property
@@ -34,23 +48,59 @@ class PropertySerializer(serializers.ModelSerializer):
             "net_equity",
             "amortized_capital",
             "has_mortgage",
+            "mortgage_status",
+            "current_monthly_payment",
+            "mortgage_end_date",
+            "extra_amortizations",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
+    def _state(self, obj):
+        # Cached per instance: several fields read it
+        if getattr(obj, "_mortgage_state", None) is None:
+            obj._mortgage_state = mortgage_state(obj, obj.amortizations.all(), timezone.localdate())
+        return obj._mortgage_state
+
+    def _balance(self, obj):
+        state = self._state(obj)
+        return state.outstanding_balance if state.outstanding_balance is not None else ZERO
+
     def get_net_equity(self, obj):
-        balance = obj.outstanding_balance or ZERO
-        return str((obj.current_value - balance).quantize(Decimal("0.01")))
+        return str((obj.current_value - self._balance(obj)).quantize(Decimal("0.01")))
 
     def get_amortized_capital(self, obj):
         if obj.original_loan_amount is None:
             return None
-        balance = obj.outstanding_balance or ZERO
-        return str((obj.original_loan_amount - balance).quantize(Decimal("0.01")))
+        return str((obj.original_loan_amount - self._balance(obj)).quantize(Decimal("0.01")))
 
     def get_has_mortgage(self, obj):
         return obj.original_loan_amount is not None
+
+    def get_mortgage_status(self, obj):
+        """NONE (no mortgage), ACTIVE or FINISHED (paid off, early amortizations included)."""
+        return self._state(obj).status
+
+    def get_current_monthly_payment(self, obj):
+        value = self._state(obj).current_monthly_payment
+        return None if value is None else str(value)
+
+    def get_mortgage_end_date(self, obj):
+        return self._state(obj).end_date
+
+    def get_extra_amortizations(self, obj):
+        value = self._state(obj).extra_amortizations
+        return None if value is None else str(value)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        state = self._state(instance)
+        if state.status != "NONE":
+            # Current values instead of the snapshot taken when the property was saved
+            data["months_paid"] = state.months_paid
+            data["outstanding_balance"] = str(state.outstanding_balance)
+        return data
 
 
 class AmortizationSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):

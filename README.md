@@ -60,7 +60,7 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 - **Dividend drafts** — Dividends detected on Yahoo Finance become pre-filled drafts (shares held on the ex-date, estimated gross and withholding). Review each one against your broker and accept it; drafts never count in reports or tax until accepted, and existing dividends are never duplicated
 - **Type-to-search pickers** — Pick the asset of a trade or dividend by typing part of its name or ticker
 - **Interest income** — Date-range based tracking per account, with optional explicit withholding tax (NULL = inferred from gross/net, 0 = confirmed no withholding) and fees
-- **Other income** — Rent, self-employment, side jobs, gifts or anything outside payslips, dividends and interests, one record per payment with an optional account. "Repeat last" fills in a new month in two fields. Counts for savings and estimated spending; never for the tax views. See [ADR-011](docs/adr/011-other-income-and-estimated-spending.md)
+- **Other income** — Rent, self-employment, side jobs, gifts or anything outside payslips, dividends and interests, one record per payment with an optional account. "Repeat last" fills in a new month in two fields. Counts for savings and estimated spending; not for the tax views (rent recorded against a lease feeds the rental tax instead). See [ADR-011](docs/adr/011-other-income-and-estimated-spending.md)
 - **Import deduplication** — Hash-based duplicate detection
 
 ### Accounts & Snapshots
@@ -126,6 +126,12 @@ Fintrack ships **two layers** of tax reporting:
 - **Payment breakdown** — Principal vs interest stacked bars per month
 - **Mortgage summary** — Side-by-side comparison: original vs modified for payment, installments, term, end date, total to pay, total interest, with savings highlighted
 - **Amortization persistence** — Events stored in database, optimistic UI updates
+
+### Rental management (Spain)
+- **Leases, payments and expenses** — Per property: tenant, dates, monthly rent, deposit and the main-home reduction regime (60 % before 26/05/2023, 50 % general, 70/90 % in stressed areas…); rent payments are other income linked to the lease (so they count for savings); expenses by type (IBI, community, insurance, repairs, interest, utilities, agency, improvements)
+- **Tax result to date and projected** — Net rent for the tax return with the Spanish rules: interest + repairs capped at the income (excess carried forward 4 years), year-round costs prorated by days rented, 3 % building depreciation on the higher of cost and cadastral value (without land) plus improvements, 10 % furniture, reduction, empty-days imputation; mortgage interest of the calendar year from the property's mortgage; estimated extra income tax on top of your payslips and what is left in cash
+- **Simulator** — Every figure editable, recomputed by the server with the difference against the projection
+- **Modo Renta** — "Rendimientos del capital inmobiliario" block with copyable figures per property. See [ADR-012](docs/adr/012-rental-management-and-tax.md)
 
 ### Privacy Mode
 - **One-click toggle** — Eye icon in sidebar / mobile nav masks all personal monetary amounts
@@ -305,7 +311,7 @@ Claude Desktop / Claude Code ──stdio──▶ fintrack-mcp (your computer) �
 | Permission | The assistant can… |
 |---|---|
 | **Read only** (recommended to start) | Read portfolio, operations, dividends, interests, other income, reports and pending reviews |
-| **Read and write** | Also create operations, dividends, interests and other income, accept or dismiss dividend drafts, apply splits, add or edit assets and record account balances |
+| **Read and write** | Also create operations, dividends, interests and other income, record rent payments and rental expenses, accept or dismiss dividend drafts, apply splits, add or edit assets and record account balances |
 
 The token (`ft_…`) is shown **once**, together with the configuration for Claude Code and Claude Desktop already filled in — copy it from there.
 
@@ -373,7 +379,8 @@ Replace `vX.Y.Z` with **your Fintrack version** (e.g. `v2.14.0`): the MCP is pin
 - *"I bought 5 Inditex shares today at 42.10 € on Trade Republic with 1 € commission — record it."* (write token)
 - *"Add the Vanguard FTSE All-World ETF, ticker VWCE.DE, ISIN IE00BK5BQT80."* (write token)
 - *"My balances on the 1st: Trade Republic 1,250 €, MyInvestor 8,400 € — update them."* (write token; saves a snapshot per account)
-- *"Record this month's rent: 390 € into MyInvestor."* / *"How much do I really spend per month?"* (estimated spending = income − savings)
+- *"Record this month's rent of the flat into MyInvestor."* / *"How much do I really spend per month?"* (estimated spending = income − savings)
+- *"How much will the flat's rent add to my tax this year, and what is left after costs?"*
 
 It can also cover payslips (salary, bonus, IRPF), monthly and yearly savings, money invested per month or per fund, account balances, savings goals and your mortgage. Ready-made prompts are included: **monthly review**, **payroll and bonus review** and **portfolio analysis**.
 
@@ -513,7 +520,7 @@ GET/PUT /api/settings/
 CRUD    /api/transactions/
 CRUD    /api/dividends/
 CRUD    /api/interests/
-CRUD    /api/other-incomes/               Other income (?year=, ?category=, ?account_id=, ?search=)
+CRUD    /api/other-incomes/               Other income (?year=, ?category=, ?account_id=, ?lease=, ?property=, ?search=)
 GET     /api/portfolio/
 
 CRUD    /api/splits/                      Stock splits (?asset_id=, ?status=PENDING|APPLIED|DISMISSED)
@@ -526,6 +533,11 @@ POST    /api/dividend-suggestions/{id}/accept/   Create the Dividend from review
 POST    /api/dividend-suggestions/{id}/dismiss/
 POST    /api/dividend-suggestions/dismiss-all/
 POST    /api/dividend-suggestions/detect/        { asset_id?, backfill? }
+
+CRUD    /api/leases/                      Rental contracts (?property=)
+CRUD    /api/rental-expenses/             Rental expenses (?property=, ?year=, ?category=)
+GET     /api/rental/overview/?year=       Rental tax per property, to date and projected (Spain)
+POST    /api/rental/simulate/             Recompute one property-year from any figures
 
 CRUD    /api/employers/
 CRUD    /api/payrolls/

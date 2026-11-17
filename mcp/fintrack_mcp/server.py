@@ -44,7 +44,10 @@ Where to look:
   (net payslips, other income, net dividends and interests) and estimated_spending = income − real savings.
   Before saying savings "don't add up" with the salary, add other income. Goals: fintrack_list_savings_goals.
 - Accounts and balance history: fintrack_list_accounts, fintrack_list_account_snapshots. Net worth over time:
-  fintrack_get_net_worth_evolution. Real estate and mortgages: fintrack_list_properties.
+  fintrack_get_net_worth_evolution. Real estate and mortgages: fintrack_list_properties. Renting out a property
+  (Spain): fintrack_get_rental_summary gives leases, rent, expenses, the taxable net rent and an income-tax estimate
+  up to today and projected to year end; record rent with fintrack_record_rent_payment and costs with
+  fintrack_create_rental_expense.
 
 Rules:
 - Positions, costs and P&L come from Fintrack's own FIFO/LIFO/WAC engine with stock splits applied: report them as
@@ -82,6 +85,10 @@ AccountRef = Annotated[str, Field(description="Account name or id.")]
 AssetType = Literal["STOCK", "ETF", "FUND", "CRYPTO"]
 PriceMode = Literal["AUTO", "MANUAL"]
 OtherIncomeCategory = Literal["RENTAL", "SELF_EMPLOYMENT", "SIDE_JOB", "GIFT", "OTHER"]
+RentalExpenseCategory = Literal[
+    "TAXES", "COMMUNITY", "INSURANCE", "REPAIRS", "FINANCING", "UTILITIES", "SERVICES", "IMPROVEMENT", "OTHER"
+]
+PropertyRef = Annotated[str, Field(description="Property name or id.")]
 Country = Annotated[str | None, Field(description="ISO 3166-1 alpha-2 code, e.g. US, ES, IE.")]
 
 
@@ -502,6 +509,32 @@ def create_server(client: FintrackClient) -> MCPServer:
         sum of early repayments."""
         return {"properties": await fetch_all("properties/")}
 
+    async def resolve_property(ref: str) -> dict[str, Any]:
+        ref = ref.strip()
+        rows = await fetch_all("properties/")
+        matches = [p for p in rows if p["id"] == ref or p["name"].lower() == ref.lower()]
+        if not matches:
+            matches = [p for p in rows if ref.lower() in p["name"].lower()]
+        if len(matches) == 1:
+            return matches[0]
+        names = ", ".join(p["name"] for p in rows) or "none"
+        if not matches:
+            raise ToolError(f'No property matches "{ref}". Properties: {names}.')
+        raise ToolError(f'"{ref}" matches several properties. Properties: {names}.')
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_get_rental_summary(
+        year: Annotated[int | None, Field(description="Fiscal year; the current one if omitted.")] = None,
+    ) -> dict[str, Any]:
+        """Rented properties in a year (Spanish tax rules): leases, months without a recorded payment and two
+        scenarios, to_date and projected (rest of the year from the lease and last year's recurring costs). Each has
+        the inputs (rent, expenses, depreciation base, reduction %, payslip base) and the result: net rent,
+        reduction, reduced net rent (what goes to the tax return), empty-days imputation, estimated extra income tax
+        (approximate combined scale on top of the payslip base) and cash_result = rent − expenses paid − tax.
+        Report the figures as given and present the tax as an estimate (regional scales differ)."""
+        params = {"year": year} if year else None
+        return await call("get", "rental/overview/", params=params)
+
     # ---------------------------------------------------------------- prompts
 
     @mcp.prompt(title="Monthly review")
@@ -729,6 +762,64 @@ def create_server(client: FintrackClient) -> MCPServer:
             "notes": notes,
         }
         return await call("post", "other-incomes/", json=payload)
+
+    @mcp.tool(annotations=WRITE)
+    async def fintrack_record_rent_payment(
+        property: PropertyRef,
+        date: DateStr,
+        amount: Annotated[str | None, Field(description="Rent received; the lease's monthly rent if omitted.")] = None,
+        account: Annotated[str | None, Field(description="Account it went into (name or id).")] = None,
+    ) -> dict[str, Any]:
+        """Record a rent payment of a property: an other-income row linked to the lease in force on that date, so it
+        counts for savings and for the rental tax. Confirm the amount with the user before calling."""
+        prop = await resolve_property(property)
+        leases = await fetch_all("leases/", {"property": prop["id"]})
+        in_force = [
+            lease
+            for lease in leases
+            if lease["start_date"] <= date and (not lease.get("end_date") or lease["end_date"] >= date)
+        ]
+        if not in_force:
+            raise ToolError(
+                f"{prop['name']} has no lease in force on {date}. Add one in Fintrack → Properties → Rental."
+            )
+        lease = in_force[0]
+        payload = {
+            "date": date,
+            "amount": _decimal(amount, "amount") or lease["monthly_rent"],
+            "description": f"Alquiler {prop['name']}",
+            "category": "RENTAL",
+            "lease": lease["id"],
+            "account": (await resolve_account(account))["id"] if account else None,
+            "notes": "",
+        }
+        return await call("post", "other-incomes/", json=payload)
+
+    @mcp.tool(annotations=WRITE)
+    async def fintrack_create_rental_expense(
+        property: PropertyRef,
+        date: DateStr,
+        category: Annotated[
+            RentalExpenseCategory,
+            Field(
+                description="TAXES (IBI, local taxes), COMMUNITY, INSURANCE, REPAIRS (repairs/maintenance), FINANCING "
+                "(loan interest; replaces the interest computed from the mortgage), UTILITIES, SERVICES (agency, "
+                "management, legal), IMPROVEMENT (adds value: depreciated, not expensed) or OTHER."
+            ),
+        ],
+        amount: Money,
+        description: str = "",
+    ) -> dict[str, Any]:
+        """Record an expense of a rented property. Confirm the details with the user before calling."""
+        prop = await resolve_property(property)
+        payload = {
+            "property": prop["id"],
+            "date": date,
+            "category": category,
+            "amount": _decimal(amount, "amount"),
+            "description": description,
+        }
+        return await call("post", "rental-expenses/", json=payload)
 
     @mcp.tool(annotations=WRITE)
     async def fintrack_create_asset(

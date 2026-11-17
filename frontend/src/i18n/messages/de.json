@@ -1029,7 +1029,7 @@
   "aiAccess.scopeRead": "Nur lesen",
   "aiAccess.scopeWrite": "Lesen und schreiben",
   "aiAccess.scopeReadHelp": "Der Assistent kann Portfolio, Transaktionen, Dividenden, Zinsen und Berichte abfragen. Er kann nichts ändern.",
-  "aiAccess.scopeWriteHelp": "Zusätzlich kann er Transaktionen, Dividenden, Zinsen und sonstige Einnahmen hinzufügen, Entwürfe übernehmen, Splits anwenden, Wertpapiere anlegen oder bearbeiten und deine Kontostände erfassen. Er kann nie Daten löschen oder dein Konto ändern, und dein KI-Client fragt vor jedem Schreibvorgang nach.",
+  "aiAccess.scopeWriteHelp": "Zusätzlich kann er Transaktionen, Dividenden, Zinsen, sonstige Einnahmen sowie Mietzahlungen und -ausgaben hinzufügen, Entwürfe übernehmen, Splits anwenden, Wertpapiere anlegen oder bearbeiten und deine Kontostände erfassen. Er kann nie Daten löschen oder dein Konto ändern, und dein KI-Client fragt vor jedem Schreibvorgang nach.",
   "aiAccess.create": "Token erstellen",
   "otherIncome.title": "Sonstige Einnahmen",
   "otherIncome.subtitle": "Geld, das du außerhalb von Gehalt, Dividenden und Zinsen erhältst: Miete, Nebenjobs, Geschenke… Es zählt für deine Ersparnis und geschätzten Ausgaben.",

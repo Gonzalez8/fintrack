@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 33 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 36 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -70,6 +70,8 @@ async def test_tools_are_prefixed_and_annotated():
         "fintrack_update_asset",
         "fintrack_record_account_balances",
         "fintrack_create_other_income",
+        "fintrack_record_rent_payment",
+        "fintrack_create_rental_expense",
     }
     # Only the tools that overwrite existing values are flagged; none deletes anything
     overwriting = {n for n, t in tools.items() if t.annotations.destructive_hint}
@@ -524,3 +526,47 @@ async def test_create_other_income_without_account(api):
     await call("fintrack_create_other_income", {"date": "2026-11-01", "amount": "50", "description": "Regalo"})
     body = json.loads(route.calls.last.request.content)
     assert (body["account"], body["category"]) == (None, "OTHER")
+
+
+FLAT = {"id": "55555555-5555-5555-5555-555555555555", "name": "Avenida Torrente n34"}
+LEASE = {
+    "id": "66666666-6666-6666-6666-666666666666",
+    "start_date": "2025-01-01",
+    "end_date": None,
+    "monthly_rent": "400.00",
+}
+
+
+async def test_rental_summary_passes_the_year(api):
+    route = api.get("/rental/overview/").mock(return_value=httpx.Response(200, json={"year": 2026, "properties": []}))
+    result = payload(await call("fintrack_get_rental_summary", {"year": 2026}))
+    assert route.calls.last.request.url.params["year"] == "2026"
+    assert result["year"] == 2026
+
+
+async def test_record_rent_payment_uses_the_lease_in_force(api):
+    api.get("/properties/").mock(return_value=httpx.Response(200, json=page([FLAT])))
+    old = {**LEASE, "id": "77777777-7777-7777-7777-777777777777", "start_date": "2020-01-01", "end_date": "2024-12-31"}
+    leases = api.get("/leases/").mock(return_value=httpx.Response(200, json=page([old, LEASE])))
+    route = api.post("/other-incomes/").mock(return_value=httpx.Response(201, json={"id": "o1"}))
+    await call("fintrack_record_rent_payment", {"property": "torrente", "date": "2026-11-01", "account": "MyInvestor"})
+    assert leases.calls.last.request.url.params["property"] == FLAT["id"]
+    body = json.loads(route.calls.last.request.content)
+    assert (body["lease"], body["amount"], body["category"]) == (LEASE["id"], "400.00", "RENTAL")
+    assert body["account"] == SAVINGS["id"]
+
+
+async def test_record_rent_payment_without_lease_is_explained(api):
+    api.get("/properties/").mock(return_value=httpx.Response(200, json=page([FLAT])))
+    api.get("/leases/").mock(return_value=httpx.Response(200, json=page([])))
+    message = error_text(await call("fintrack_record_rent_payment", {"property": FLAT["name"], "date": "2026-11-01"}))
+    assert "no lease in force" in message
+
+
+async def test_create_rental_expense(api):
+    api.get("/properties/").mock(return_value=httpx.Response(200, json=page([FLAT])))
+    route = api.post("/rental-expenses/").mock(return_value=httpx.Response(201, json={"id": "e1"}))
+    args = {"property": FLAT["id"], "date": "2026-03-01", "category": "TAXES", "amount": "412,30", "description": "IBI"}
+    await call("fintrack_create_rental_expense", args)
+    body = json.loads(route.calls.last.request.content)
+    assert (body["property"], body["amount"], body["category"]) == (FLAT["id"], "412.30", "TAXES")

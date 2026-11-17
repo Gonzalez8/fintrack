@@ -59,8 +59,8 @@ function ResultFootnotes({ r }: { r: RentalResult }) {
   );
 }
 
-function Warnings({ items }: { items: string[] }) {
-  if (!items.length) return null;
+function Warnings({ items }: { items?: string[] }) {
+  if (!items?.length) return null;
   return (
     <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 space-y-1">
       {items.map((w) => (
@@ -106,7 +106,7 @@ export function RentalResultCard({ entry, year }: { entry: RentalOverviewPropert
           </div>
         </div>
         <ResultFootnotes r={columns[columns.length - 1].r} />
-        {isCurrentYear && projected.estimated.length > 0 && (
+        {isCurrentYear && projected.estimated?.length > 0 && (
           <p className="text-[11px] text-muted-foreground">
             {t("rental.estimatedFields", {
               fields: projected.estimated.map((f) => t(`rental.field.${f}`)).join(", "),

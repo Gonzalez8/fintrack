@@ -33,6 +33,8 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/leases": paginatedResponse(data.demoLeases),
     "/api/rental-expenses": paginatedResponse(data.demoRentalExpenses),
     "/api/rental/overview": data.demoRentalOverview,
+    // The demo cannot recompute: any simulation answers with the projection
+    "/api/rental/simulate": data.demoRentalOverview.properties[0].projected.result,
     "/api/splits": paginatedResponse([]),
     "/api/dividend-suggestions": paginatedResponse([]),
     "/api/auth/api-tokens": paginatedResponse([]),

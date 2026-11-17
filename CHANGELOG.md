@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.1] - 2026-11-17
+
+### Fixed
+
+- **Mortgages paid off early showed outstanding debt in the API and the AI assistant.** The API returned the balance stored when the property was last saved: early amortizations were ignored (the web applied them, so the screen said "finished" while the MCP reported the theoretical balance) and the months paid never advanced, which also froze the debt shown on the web until the property was edited again. The backend now computes the mortgage as of today — months elapsed since the purchase date and early amortizations applied — and the API returns the current balance plus `mortgage_status` (NONE / ACTIVE / FINISHED), the current monthly payment, the end date and the total amortized early. Net equity and amortized capital use the current balance. (#118)
+- **Property cards** show "Mortgage finished" instead of a payment no longer due, and the current payment for active mortgages. (#118)
+- **Balance with early amortizations was a few cents off on the web** (the interest rate was derived from a rounded figure); web and API now give identical figures, checked by matching tests on both sides. (#118)
+
+### Documentation
+
+- MCP setup note for installations behind a reverse proxy (own host for the backend, `ALLOWED_HOSTS`, one-level subdomain with wildcard certificates). (#117)
+
 ## [2.15.0] - 2026-11-16
 
 ### Added

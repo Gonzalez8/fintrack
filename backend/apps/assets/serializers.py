@@ -33,6 +33,19 @@ class AssetSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def validate(self, attrs):
+        # The (owner, ticker) and (owner, isin) constraints would otherwise surface as a 500
+        request = self.context.get("request")
+        if request is not None:
+            others = Asset.objects.filter(owner=request.user)
+            if self.instance is not None:
+                others = others.exclude(pk=self.instance.pk)
+            for field in ("ticker", "isin"):
+                value = attrs.get(field)
+                if value and others.filter(**{f"{field}__iexact": value}).exists():
+                    raise serializers.ValidationError({field: f"Another asset already uses the {field} {value}."})
+        return attrs
+
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:

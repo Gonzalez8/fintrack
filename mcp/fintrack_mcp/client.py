@@ -30,6 +30,9 @@ class FintrackClient:
     async def post(self, path: str, json: dict[str, Any] | None = None) -> Any:
         return await self._request("POST", path, json=json)
 
+    async def patch(self, path: str, json: dict[str, Any] | None = None) -> Any:
+        return await self._request("PATCH", path, json=json)
+
     async def _request(self, method: str, path: str, **kwargs: Any) -> Any:
         try:
             response = await self._http.request(method, path, **kwargs)

@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 28 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 31 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -66,8 +66,13 @@ async def test_tools_are_prefixed_and_annotated():
         "fintrack_accept_dividend_draft",
         "fintrack_dismiss_dividend_draft",
         "fintrack_apply_split",
+        "fintrack_create_asset",
+        "fintrack_update_asset",
+        "fintrack_record_account_balances",
     }
-    assert not any(t.annotations.destructive_hint for t in tools.values())
+    # Only the tools that overwrite existing values are flagged; none deletes anything
+    overwriting = {n for n, t in tools.items() if t.annotations.destructive_hint}
+    assert overwriting == {"fintrack_update_asset", "fintrack_record_account_balances"}
 
 
 async def test_token_is_sent_as_bearer(api):
@@ -388,3 +393,95 @@ async def test_prompts_are_available():
         prompt = await client.get_prompt("fintrack_payroll_review", {"year": "2025"})
     assert names == {"fintrack_monthly_review", "fintrack_payroll_review", "fintrack_portfolio_analysis"}
     assert "2025" in prompt.messages[0].content.text
+
+
+async def test_create_asset_normalises_and_posts(api):
+    route = api.post("/assets/").mock(return_value=httpx.Response(201, json={"id": "a1", "name": "Inditex"}))
+    args = {"name": " Inditex ", "type": "STOCK", "ticker": "itx.mc", "isin": "es0148396007"}
+    args["withholding_country"] = "es"
+    await call("fintrack_create_asset", args)
+    body = json.loads(route.calls.last.request.content)
+    assert (body["name"], body["ticker"], body["isin"]) == ("Inditex", "ITX.MC", "ES0148396007")
+    assert (body["price_mode"], body["currency"], body["withholding_country"]) == ("AUTO", "EUR", "ES")
+    assert body["issuer_country"] is None
+
+
+async def test_create_asset_auto_needs_ticker(api):
+    message = error_text(await call("fintrack_create_asset", {"name": "Piso fund", "type": "FUND"}))
+    assert "ticker" in message
+
+
+async def test_create_manual_asset_sets_its_price(api):
+    api.post("/assets/").mock(return_value=httpx.Response(201, json={"id": "a1", "price_mode": "MANUAL"}))
+    price = api.post("/assets/a1/set-price/").mock(
+        return_value=httpx.Response(200, json={"id": "a1", "current_price": "12.5"})
+    )
+    args = {"name": "Fondo X", "type": "FUND", "price_mode": "MANUAL", "price": "12,5"}
+    result = payload(await call("fintrack_create_asset", args))
+    assert json.loads(price.calls.last.request.content) == {"price": "12.5"}
+    assert result["current_price"] == "12.5"
+
+
+async def test_create_asset_reports_duplicate_ticker(api):
+    api.post("/assets/").mock(
+        return_value=httpx.Response(400, json={"ticker": ["Another asset already uses the ticker APC.F."]})
+    )
+    message = error_text(await call("fintrack_create_asset", {"name": "Apple", "type": "STOCK", "ticker": "APC.F"}))
+    assert "already uses the ticker APC.F" in message
+
+
+async def test_create_asset_rejects_bad_country(api):
+    args = {"name": "X", "type": "STOCK", "ticker": "X", "withholding_country": "USA"}
+    assert "two-letter" in error_text(await call("fintrack_create_asset", args))
+
+
+async def test_update_asset_sends_only_given_fields(api):
+    current = {**APPLE, "price_mode": "AUTO"}
+    api.get("/assets/").mock(return_value=httpx.Response(200, json=page([current, APPLE_ADR])))
+    route = api.patch(f"/assets/{APPLE['id']}/").mock(return_value=httpx.Response(200, json={**current, "isin": "X"}))
+    await call("fintrack_update_asset", {"asset": "APC.F", "isin": "us0378331005", "domicile_country": ""})
+    assert json.loads(route.calls.last.request.content) == {"isin": "US0378331005", "domicile_country": None}
+
+
+async def test_update_asset_cannot_leave_auto_without_ticker(api):
+    api.get("/assets/").mock(return_value=httpx.Response(200, json=page([{**APPLE, "price_mode": "AUTO"}])))
+    message = error_text(await call("fintrack_update_asset", {"asset": "APC.F", "ticker": ""}))
+    assert "ticker" in message
+
+
+async def test_update_asset_needs_a_change(api):
+    assert "Nothing to change" in error_text(await call("fintrack_update_asset", {"asset": "APC.F"}))
+
+
+async def test_record_account_balances_posts_one_snapshot_per_account(api, monkeypatch):
+    monkeypatch.setattr("fintrack_mcp.server._today", lambda: "2026-12-01")
+    accounts = [{**BROKER, "balance": "100.00"}, {**SAVINGS, "balance": "5000.00"}]
+    api.get("/accounts/").mock(return_value=httpx.Response(200, json=page(accounts)))
+    route = api.post("/accounts/bulk-snapshot/").mock(
+        return_value=httpx.Response(
+            201,
+            json=[
+                {"account": BROKER["id"], "date": "2026-12-01", "balance": "250.00"},
+                {"account": SAVINGS["id"], "date": "2026-12-01", "balance": "5100.00"},
+            ],
+        )
+    )
+    args = {
+        "balances": [
+            {"account": "trade republic", "balance": "250"},
+            {"account": "MyInvestor", "balance": "5100", "note": "nómina"},
+        ]
+    }
+    result = payload(await call("fintrack_record_account_balances", args))
+    body = json.loads(route.calls.last.request.content)
+    assert body["date"] == "2026-12-01"
+    assert body["snapshots"] == [
+        {"account": BROKER["id"], "balance": "250", "note": ""},
+        {"account": SAVINGS["id"], "balance": "5100", "note": "nómina"},
+    ]
+    assert [s["previous_balance"] for s in result["snapshots"]] == ["100.00", "5000.00"]
+
+
+async def test_record_account_balances_rejects_repeated_account(api):
+    args = {"balances": [{"account": "Trade Republic", "balance": "1"}, {"account": BROKER["id"], "balance": "2"}]}
+    assert "appears twice" in error_text(await call("fintrack_record_account_balances", args))

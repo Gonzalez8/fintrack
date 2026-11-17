@@ -1022,6 +1022,6 @@
   "aiAccess.scopeRead": "Read only",
   "aiAccess.scopeWrite": "Read and write",
   "aiAccess.scopeReadHelp": "The assistant can look up your portfolio, operations, dividends, interests and reports. It can't change anything.",
-  "aiAccess.scopeWriteHelp": "It can also add operations, dividends and interests, accept drafts and apply splits. It can never delete data or change your account, and your AI client asks for confirmation before each write.",
+  "aiAccess.scopeWriteHelp": "It can also add operations, dividends and interests, accept drafts, apply splits, add or edit assets and record your account balances. It can never delete data or change your account, and your AI client asks for confirmation before each write.",
   "aiAccess.create": "Create token"
 }

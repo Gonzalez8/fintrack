@@ -198,6 +198,7 @@ class BulkSnapshotView(APIView):
             )
             snapshot._sync_account_balance()
             results.append(AccountSnapshotSerializer(snapshot).data)
+        invalidate_user_cache(request.user.pk, *FINANCIAL_NAMESPACES)
         return Response(results, status=status.HTTP_201_CREATED)
 
 

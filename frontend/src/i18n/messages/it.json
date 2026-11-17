@@ -1022,6 +1022,6 @@
   "aiAccess.scopeRead": "Sola lettura",
   "aiAccess.scopeWrite": "Lettura e scrittura",
   "aiAccess.scopeReadHelp": "L'assistente può consultare portafoglio, operazioni, dividendi, interessi e report. Non può modificare nulla.",
-  "aiAccess.scopeWriteHelp": "Può anche aggiungere operazioni, dividendi e interessi, accettare bozze e applicare frazionamenti. Non può mai eliminare dati né modificare il tuo account, e il tuo client IA chiede conferma prima di ogni scrittura.",
+  "aiAccess.scopeWriteHelp": "Può anche aggiungere operazioni, dividendi e interessi, accettare bozze, applicare frazionamenti, creare o modificare asset e registrare i saldi dei tuoi conti. Non può mai eliminare dati né modificare il tuo account, e il tuo client IA chiede conferma prima di ogni scrittura.",
   "aiAccess.create": "Crea token"
 }

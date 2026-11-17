@@ -170,3 +170,33 @@ class TestSetPriceValidation:
         res = client.post(f"/api/assets/{asset.id}/set-price/", {"price": "abc"}, format="json")
         assert res.status_code == 400
         assert "Invalid" in res.data["detail"]
+
+
+# ---------------------------------------------------------------------------
+# Duplicate ticker / ISIN
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestAssetUniqueness:
+    def test_create_with_used_ticker_is_rejected(self, client, asset):
+        resp = client.post("/api/assets/", {"name": "Copy", "ticker": asset.ticker.lower()}, format="json")
+        assert resp.status_code == 400
+        assert "ticker" in resp.data
+
+    def test_create_with_used_isin_is_rejected(self, client, user):
+        Asset.objects.create(owner=user, name="Nvidia", ticker="NVD.F", isin="US67066G1040")
+        resp = client.post("/api/assets/", {"name": "Copy", "isin": "US67066G1040"}, format="json")
+        assert resp.status_code == 400
+        assert "isin" in resp.data
+
+    def test_update_keeps_its_own_ticker(self, client, asset):
+        resp = client.patch(f"/api/assets/{asset.id}/", {"ticker": asset.ticker, "name": "Renamed"}, format="json")
+        assert resp.status_code == 200
+        assert resp.data["name"] == "Renamed"
+
+    def test_other_users_ticker_is_allowed(self, client, asset):
+        other = User.objects.create_user(username="other", password="x")
+        Asset.objects.create(owner=other, name="Theirs", ticker="ZZZ")
+        resp = client.post("/api/assets/", {"name": "Mine", "ticker": "ZZZ"}, format="json")
+        assert resp.status_code == 201

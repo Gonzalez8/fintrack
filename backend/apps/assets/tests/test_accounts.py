@@ -199,6 +199,19 @@ class TestBulkSnapshot:
         assert acct1.balance == Decimal("5000.00")
         assert acct2.balance == Decimal("3000.00")
 
+    def test_bulk_invalidates_report_cache(self, client, user):
+        from apps.core.cache import NS_REPORTS_PATRIMONIO, get_user_cache, set_user_cache
+
+        acct = Account.objects.create(owner=user, name="Acct", type="OPERATIVA", currency="EUR")
+        set_user_cache(user.pk, NS_REPORTS_PATRIMONIO, {"stale": True})
+        resp = client.post(
+            "/api/accounts/bulk-snapshot/",
+            {"date": "2025-01-15", "snapshots": [{"account": str(acct.id), "balance": "10.00"}]},
+            format="json",
+        )
+        assert resp.status_code == 201
+        assert get_user_cache(user.pk, NS_REPORTS_PATRIMONIO) is None
+
     def test_bulk_validates_account_ownership(self, client, other_account):
         resp = client.post(
             "/api/accounts/bulk-snapshot/",

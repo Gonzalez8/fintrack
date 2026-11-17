@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, Settings
 from apps.assets.serializers import SettingsSerializer
 from apps.payroll.models import Employer, Payroll
-from apps.realestate.models import Amortization, Property
+from apps.realestate.models import Amortization, Lease, Property, RentalExpense
 from apps.reports.models import SavingsGoal
 from apps.transactions.models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
 
@@ -24,10 +24,12 @@ from .serializers import (
     BackupDividendSuggestionSerializer,
     BackupEmployerSerializer,
     BackupInterestSerializer,
+    BackupLeaseSerializer,
     BackupOtherIncomeSerializer,
     BackupPayrollSerializer,
     BackupPortfolioSnapshotSerializer,
     BackupPropertySerializer,
+    BackupRentalExpenseSerializer,
     BackupSavingsGoalSerializer,
     BackupSettingsSerializer,
     BackupStockSplitSerializer,
@@ -65,6 +67,8 @@ class BackupExportView(APIView):
             "amortizations": BackupAmortizationSerializer(
                 Amortization.objects.filter(owner=user).select_related("property"), many=True
             ).data,
+            "leases": BackupLeaseSerializer(Lease.objects.filter(owner=user), many=True).data,
+            "rental_expenses": BackupRentalExpenseSerializer(RentalExpense.objects.filter(owner=user), many=True).data,
         }
         content = json.dumps(payload, indent=2, default=str)
         filename = datetime.now(UTC).strftime("fintrack-backup-%Y%m%d-%H%M%S.json")
@@ -114,6 +118,8 @@ class BackupImportView(APIView):
             "savings_goals": 0,
             "properties": 0,
             "amortizations": 0,
+            "leases": 0,
+            "rental_expenses": 0,
             "settings": False,
         }
 
@@ -214,8 +220,11 @@ class BackupImportView(APIView):
                     )
                     counts["interests"] += 1
 
+                income_leases = {}
                 for item in payload.get("other_incomes", []):
                     item.pop("declared", None)  # v2.19.0 backups
+                    # Linked after leases are restored (they need the properties, restored later)
+                    income_leases[item["id"]] = item.pop("lease", None)
                     OtherIncome.objects.update_or_create(
                         id=item["id"],
                         owner=user,
@@ -258,6 +267,22 @@ class BackupImportView(APIView):
                         defaults=to_defaults(item, fk_fields=("property",)),
                     )
                     counts["amortizations"] += 1
+
+                for item in payload.get("leases", []):
+                    Lease.objects.update_or_create(
+                        id=item["id"], owner=user, defaults=to_defaults(item, fk_fields=("property",))
+                    )
+                    counts["leases"] += 1
+
+                for item in payload.get("rental_expenses", []):
+                    RentalExpense.objects.update_or_create(
+                        id=item["id"], owner=user, defaults=to_defaults(item, fk_fields=("property",))
+                    )
+                    counts["rental_expenses"] += 1
+
+                for income_id, lease_id in income_leases.items():
+                    if lease_id:
+                        OtherIncome.objects.filter(id=income_id, owner=user).update(lease_id=lease_id)
 
         except Exception:
             return Response(

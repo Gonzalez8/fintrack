@@ -51,6 +51,7 @@ export function EsRentaTab({ year }: Props) {
     <div className="space-y-8">
       <Header t={t} year={year} />
       <EmploymentBlock t={t} block={data.employment_income} />
+      {data.rental_income?.properties.length > 0 && <RentalBlock t={t} block={data.rental_income} />}
       <InterestsBlock t={t} block={data.interests} />
       <DividendsBlock t={t} block={data.dividends} />
       <DoubleTaxationBlock t={t} block={data.double_taxation} />
@@ -265,6 +266,55 @@ function EmploymentBlock({
             </Table>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Block: Rental income (Rendimientos del capital inmobiliario) ───
+
+function RentalBlock({ t, block }: { t: T; block: TaxDeclaration["rental_income"] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <BlockHeader casilla={block.casilla} title={t("fiscal.renta.rental.title")} />
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {block.properties.map((p) => (
+          <div key={p.property_id} className="space-y-2">
+            <p className="text-sm font-medium">
+              {p.name}{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                {t("fiscal.renta.rental.days", { rented: p.days_rented, vacant: p.days_vacant })}
+              </span>
+            </p>
+            <div className="grid gap-2 md:grid-cols-2">
+              <CopyableField t={t} label={t("fiscal.renta.rental.income")} value={p.income} />
+              <CopyableField t={t} label={t("fiscal.renta.rental.capped")} value={p.capped_applied} />
+              <CopyableField t={t} label={t("fiscal.renta.rental.otherExpenses")} value={p.other_expenses} />
+              <CopyableField t={t} label={t("fiscal.renta.rental.depreciation")} value={p.depreciation} />
+              {parseFloat(p.furniture_depreciation) > 0 && (
+                <CopyableField t={t} label={t("fiscal.renta.rental.furniture")} value={p.furniture_depreciation} />
+              )}
+              <CopyableField t={t} label={t("fiscal.renta.rental.net")} value={p.net} />
+              <CopyableField
+                t={t}
+                label={t("fiscal.renta.rental.reduction", { pct: parseFloat(p.reduction_pct).toFixed(0) })}
+                value={p.reduction}
+              />
+              <CopyableField t={t} label={t("fiscal.renta.rental.netReduced")} value={p.net_reduced} />
+              {parseFloat(p.imputation) > 0 && (
+                <CopyableField t={t} label={t("fiscal.renta.rental.imputation")} value={p.imputation} />
+              )}
+            </div>
+            {parseFloat(p.excess_carry_forward) > 0 && (
+              <InfoField label={t("fiscal.renta.rental.excess")} value={p.excess_carry_forward} />
+            )}
+          </div>
+        ))}
+        <p className="text-[11px] text-muted-foreground">{t("fiscal.renta.rental.help")}</p>
       </CardContent>
     </Card>
   );
@@ -840,6 +890,18 @@ function SummaryBlock({ t, data }: { t: T; data: TaxDeclaration }) {
     parts.push(`  ${t("fiscal.renta.employment.ssDeductible")}: ${formatForRenta(summary.employment_ss_deductible)}`);
     parts.push(`  ${t("fiscal.renta.employment.withholding")}: ${formatForRenta(summary.employment_withholding)}`);
     parts.push("");
+    if (data.rental_income?.properties.length) {
+      parts.push("CAPITAL INMOBILIARIO");
+      for (const p of data.rental_income.properties) {
+        parts.push(`  ${p.name}`);
+        parts.push(`    ${t("fiscal.renta.rental.income")}: ${formatForRenta(p.income)}`);
+        parts.push(`    ${t("fiscal.renta.rental.capped")}: ${formatForRenta(p.capped_applied)}`);
+        parts.push(`    ${t("fiscal.renta.rental.otherExpenses")}: ${formatForRenta(p.other_expenses)}`);
+        parts.push(`    ${t("fiscal.renta.rental.depreciation")}: ${formatForRenta(p.depreciation)}`);
+        parts.push(`    ${t("fiscal.renta.rental.netReduced")}: ${formatForRenta(p.net_reduced)}`);
+      }
+      parts.push("");
+    }
     parts.push("INTERESES");
     parts.push(`  ${t("fiscal.renta.interests.gross")}: ${formatForRenta(summary.interests_gross)}`);
     parts.push(`  ${t("fiscal.renta.interests.withholding")}: ${formatForRenta(summary.interests_withholding)}`);
@@ -912,6 +974,9 @@ function SummaryBlock({ t, data }: { t: T; data: TaxDeclaration }) {
             label={t("fiscal.renta.doubleTaxation.deductibleTotal")}
             value={summary.double_taxation_deductible}
           />
+          {data.rental_income?.properties.length > 0 && (
+            <SummaryRow label={t("fiscal.renta.rental.netReduced")} value={summary.rental_net_reduced} />
+          )}
         </dl>
 
         {/* Sales section is rendered apart so we can flag it as "control totals only".

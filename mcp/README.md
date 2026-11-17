@@ -97,11 +97,14 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_get_investment_flows` | read | Money invested per month, asset or asset type (e.g. "how much in the S&P 500") |
 | `fintrack_list_account_snapshots` | read | Balance history of an account |
 | `fintrack_list_savings_goals` | read | Savings goals with projections |
+| `fintrack_get_rental_summary` | read | Rented properties (Spain): rent, expenses, taxable net rent and income-tax estimate, to date and projected |
 | `fintrack_list_properties` | read | Real estate and mortgages as of today (`mortgage_status` ACTIVE/FINISHED, balance after early amortizations) |
 | `fintrack_create_transaction` | write | Record a buy, sell or gift |
 | `fintrack_create_dividend` | write | Record a dividend |
 | `fintrack_create_interest` | write | Record interest income |
-| `fintrack_create_other_income` | write | Record other income (e.g. this month's rent) |
+| `fintrack_create_other_income` | write | Record other income (e.g. a gift or freelance invoice) |
+| `fintrack_record_rent_payment` | write | Record a rent payment of a property (linked to the lease in force) |
+| `fintrack_create_rental_expense` | write | Record an expense of a rented property (IBI, community, repairs…) |
 | `fintrack_detect_dividend_drafts` | write | Look up dividends on Yahoo and create drafts |
 | `fintrack_accept_dividend_draft` | write | Turn a draft into a dividend with your broker's figures |
 | `fintrack_dismiss_dividend_draft` | write | Dismiss a draft |

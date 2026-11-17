@@ -286,3 +286,43 @@ def test_backup_round_trips_employers_and_payrolls(client, user):
     assert (restored.employer.cif, restored.employer.notes) == ("B12345678", "HQ")
     assert (restored.payroll_type, restored.net, restored.base_irpf) == ("BONUS", Decimal("2359.50"), Decimal("2950"))
     assert restored.employer_cost == Decimal("3900")
+
+
+@pytest.mark.django_db
+def test_backup_round_trips_rentals(client, user):
+    from apps.realestate.models import Lease, Property, RentalExpense
+    from apps.transactions.models import OtherIncome
+
+    prop = Property.objects.create(
+        owner=user,
+        name="Flat",
+        current_value=Decimal("200000"),
+        cadastral_value=Decimal("80000"),
+        cadastral_construction_value=Decimal("48000"),
+        ownership_pct=Decimal("50"),
+    )
+    lease = Lease.objects.create(
+        owner=user,
+        property=prop,
+        start_date=datetime.date(2025, 1, 1),
+        monthly_rent=Decimal("400"),
+        reduction="PRE_2023",
+    )
+    RentalExpense.objects.create(
+        owner=user, property=prop, date=datetime.date(2026, 3, 1), category="TAXES", amount=Decimal("380")
+    )
+    OtherIncome.objects.create(
+        owner=user, date=datetime.date(2026, 11, 1), description="Rent", amount=Decimal("400"), lease=lease
+    )
+    exported = client.get("/api/backup/export/").json()
+
+    OtherIncome.objects.all().delete()
+    Property.objects.all().delete()  # cascades to leases and expenses
+    file = SimpleUploadedFile("b.json", json.dumps(exported).encode(), content_type="application/json")
+    res = client.post("/api/backup/import/", {"file": file}, format="multipart")
+    assert (res.data["counts"]["leases"], res.data["counts"]["rental_expenses"]) == (1, 1)
+
+    restored = Property.objects.get(owner=user)
+    assert (restored.cadastral_construction_value, restored.ownership_pct) == (Decimal("48000"), Decimal("50"))
+    assert Lease.objects.get(owner=user).reduction == "PRE_2023"
+    assert OtherIncome.objects.get(owner=user).lease_id == lease.id

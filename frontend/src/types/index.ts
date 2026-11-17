@@ -218,6 +218,9 @@ export interface OtherIncome {
   amount: string;
   account: string | null;
   account_name: string | null;
+  /** Rent payment of this lease */
+  lease: string | null;
+  property_name: string | null;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -229,7 +232,120 @@ export interface OtherIncomeFormData {
   description: string;
   amount: string;
   account: string | null;
+  lease?: string | null;
   notes: string;
+}
+
+// ── Rental ───────────────────────────────────────────────────────
+export type LeaseReduction = "PRE_2023" | "GENERAL" | "RENT_DROP" | "YOUNG" | "REHAB" | "NONE";
+
+export interface Lease {
+  id: string;
+  property: string;
+  property_name: string;
+  tenant: string;
+  start_date: string;
+  end_date: string | null;
+  monthly_rent: string;
+  deposit: string | null;
+  reduction: LeaseReduction;
+  rented_share_pct: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RentalExpenseCategory =
+  | "TAXES"
+  | "COMMUNITY"
+  | "INSURANCE"
+  | "REPAIRS"
+  | "FINANCING"
+  | "UTILITIES"
+  | "SERVICES"
+  | "IMPROVEMENT"
+  | "OTHER";
+
+export interface RentalExpense {
+  id: string;
+  property: string;
+  property_name: string;
+  date: string;
+  category: RentalExpenseCategory;
+  amount: string;
+  description: string;
+  created_at: string;
+}
+
+/** Figures of one property-year fed to the rental tax calculation (all money as strings). */
+export interface RentalInputs {
+  year: number;
+  income: string;
+  days_rented: number;
+  days_vacant: number;
+  rented_share_pct: string;
+  ownership_pct: string;
+  financing: string;
+  repairs: string;
+  taxes: string;
+  community: string;
+  insurance: string;
+  utilities: string;
+  services: string;
+  other: string;
+  acquisition_price: string | null;
+  acquisition_costs: string;
+  cadastral_value: string | null;
+  cadastral_construction_value: string | null;
+  cadastral_revised: boolean;
+  improvements: string;
+  furniture_value: string;
+  reduction_pct: string;
+  pending_excess: string;
+  other_general_base: string;
+  /** Days the figures cover; null = the whole year */
+  period_days?: number | null;
+}
+
+export interface RentalResult {
+  income: string;
+  capped_expenses: string;
+  capped_applied: string;
+  excess_carry_forward: string;
+  other_expenses: string;
+  expenses_detail: Record<string, string>;
+  depreciation: string;
+  furniture_depreciation: string;
+  net: string;
+  reduction_pct: string;
+  reduction: string;
+  net_reduced: string;
+  imputation: string;
+  taxable: string;
+  other_general_base: string;
+  marginal_rate: string;
+  estimated_tax: string;
+  effective_rate_on_income: string | null;
+  paid_expenses: string;
+  cash_result: string;
+  days_rented: number;
+  days_vacant: number;
+  warnings: string[];
+}
+
+export interface RentalOverviewProperty {
+  property: { id: string; name: string };
+  leases: Pick<Lease, "id" | "tenant" | "start_date" | "end_date" | "monthly_rent" | "reduction">[];
+  missing_months: string[];
+  to_date: { inputs: RentalInputs; result: RentalResult };
+  projected: { inputs: RentalInputs; estimated: string[]; result: RentalResult };
+}
+
+export interface RentalOverview {
+  year: number;
+  other_general_base: string;
+  other_general_base_projected: boolean;
+  properties: RentalOverviewProperty[];
 }
 
 // ── Portfolio ────────────────────────────────────────────────────
@@ -575,6 +691,13 @@ export interface Property {
   total_term_months: number | null;
   months_paid: number | null;
   monthly_payment: string | null;
+  // rental / tax data
+  acquisition_costs?: string | null;
+  cadastral_value?: string | null;
+  cadastral_construction_value?: string | null;
+  cadastral_revised?: boolean;
+  furniture_value?: string | null;
+  ownership_pct?: string;
   // computed
   net_equity: string;
   amortized_capital: string | null;
@@ -824,6 +947,8 @@ export type {
   TaxDoubleTaxationCountry,
   TaxCapitalGainsBlock,
   TaxCapitalGainRow,
+  TaxRentalBlock,
+  TaxRentalProperty,
   TaxSummary,
   TaxNotice,
 } from "./tax";

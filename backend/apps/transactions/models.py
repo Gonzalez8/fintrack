@@ -145,6 +145,14 @@ class OtherIncome(UserOwnedModel):
         blank=True,
         related_name="other_incomes",
     )
+    lease = models.ForeignKey(
+        "realestate.Lease",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payments",
+        help_text="Rent payment of this lease.",
+    )
     notes = models.TextField(blank=True, default="")
 
     class Meta:

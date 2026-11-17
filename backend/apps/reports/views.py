@@ -126,6 +126,41 @@ class TaxDeclarationView(APIView):
         return Response(adapter.declare(request.user, year))
 
 
+def _rental_adapter(request):
+    from apps.assets.models import Settings as UserSettings
+
+    adapter = get_adapter(UserSettings.load(request.user).tax_country)
+    return adapter if adapter is not None and hasattr(adapter, "rental_overview") else None
+
+
+class RentalOverviewView(APIView):
+    """Rental income per property for a year: up to today and projected, with the tax estimate."""
+
+    def get(self, request):
+        try:
+            year = int(request.query_params.get("year") or timezone.localdate().year)
+        except (TypeError, ValueError):
+            return Response({"detail": "year must be an integer"}, status=400)
+        adapter = _rental_adapter(request)
+        if adapter is None:
+            return Response({"detail": "Rental tax is not implemented for your fiscal country."}, status=404)
+        return Response(adapter.rental_overview(request.user, year))
+
+
+class RentalSimulationView(APIView):
+    """Recompute one property-year from figures typed in the simulator (nothing is stored)."""
+
+    def post(self, request):
+        from apps.realestate.serializers import RentalSimulationSerializer
+
+        adapter = _rental_adapter(request)
+        if adapter is None:
+            return Response({"detail": "Rental tax is not implemented for your fiscal country."}, status=404)
+        serializer = RentalSimulationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(adapter.rental_simulate(serializer.validated_data))
+
+
 class AnnualSavingsView(APIView):
     def get(self, request):
         cached = get_user_cache(request.user.pk, NS_REPORTS_ANNUAL_SAVINGS)

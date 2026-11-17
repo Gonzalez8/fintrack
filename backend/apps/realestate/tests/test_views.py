@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from apps.realestate.models import Amortization, Property
+from apps.realestate.models import Amortization, Lease, Property
 
 User = get_user_model()
 
@@ -379,3 +379,72 @@ class TestMortgageSimulation:
         }
         resp = client.post("/api/properties/simulate/", data3, format="json")
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+
+# ---------------------------------------------------------------------------
+# Rental: leases, expenses and rent payments
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestRental:
+    @pytest.fixture
+    def prop(self, user):
+        return Property.objects.create(owner=user, name="Flat", current_value=Decimal("200000"))
+
+    def test_property_keeps_tax_data(self, client, prop):
+        resp = client.patch(
+            f"/api/properties/{prop.id}/",
+            {"cadastral_value": "80000", "cadastral_construction_value": "48000", "ownership_pct": "50"},
+            format="json",
+        )
+        assert resp.status_code == 200
+        assert (resp.data["cadastral_construction_value"], resp.data["ownership_pct"]) == ("48000.00", "50.00")
+
+    def test_lease_crud_and_validation(self, client, prop):
+        payload = {"property": str(prop.id), "start_date": "2025-01-01", "monthly_rent": "400", "reduction": "PRE_2023"}
+        resp = client.post("/api/leases/", payload, format="json")
+        assert resp.status_code == 201
+        assert resp.data["property_name"] == "Flat"
+        bad = client.post("/api/leases/", {**payload, "end_date": "2024-01-01"}, format="json")
+        assert bad.status_code == 400
+        assert client.get(f"/api/leases/?property={prop.id}").data["count"] == 1
+
+    def test_lease_on_another_users_property_is_rejected(self, client):
+        other = User.objects.create_user(username="intruder", password="x")
+        theirs = Property.objects.create(owner=other, name="Theirs", current_value=Decimal("1"))
+        resp = client.post(
+            "/api/leases/",
+            {"property": str(theirs.id), "start_date": "2025-01-01", "monthly_rent": "400"},
+            format="json",
+        )
+        assert resp.status_code == 400
+
+    def test_expenses_filter_by_year_and_category(self, client, prop):
+        for date, category in (("2025-06-01", "TAXES"), ("2026-03-01", "REPAIRS"), ("2026-04-01", "TAXES")):
+            client.post(
+                "/api/rental-expenses/",
+                {"property": str(prop.id), "date": date, "category": category, "amount": "100"},
+                format="json",
+            )
+        assert client.get("/api/rental-expenses/?year=2026").data["count"] == 2
+        assert client.get("/api/rental-expenses/?year=2026&category=TAXES").data["count"] == 1
+
+    def test_rent_payment_links_to_a_lease(self, client, user, prop):
+        lease = Lease.objects.create(owner=user, property=prop, start_date="2025-01-01", monthly_rent=Decimal("400"))
+        resp = client.post(
+            "/api/other-incomes/",
+            {
+                "date": "2026-11-01",
+                "category": "RENTAL",
+                "description": "Rent",
+                "amount": "400",
+                "lease": str(lease.id),
+            },
+            format="json",
+        )
+        assert resp.status_code == 201
+        assert resp.data["property_name"] == "Flat"
+        assert client.get(f"/api/other-incomes/?property={prop.id}").data["count"] == 1
+        lease.delete()
+        assert client.get("/api/other-incomes/").data["results"][0]["lease"] is None

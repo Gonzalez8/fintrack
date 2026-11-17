@@ -13,7 +13,7 @@ from decimal import Decimal
 from apps.portfolio.services import calculate_realized_pnl_fiscal
 from apps.transactions.models import Dividend, Interest
 
-from . import register
+from . import es_rental, register
 from .common import (
     NET_MISMATCH_TOLERANCE,
     asset_country,
@@ -39,6 +39,12 @@ class SpanishTaxAdapter:
     """AEAT / Modelo 100 Renta Web adapter."""
 
     country_code = "ES"
+
+    def rental_overview(self, user, year: int) -> dict:
+        return es_rental.rental_overview(user, year)
+
+    def rental_simulate(self, data: dict) -> dict:
+        return es_rental.compute_rental(es_rental.RentalInputs.from_dict(data))
 
     def declare(self, user, year: int) -> dict:
         from apps.assets.models import Settings as UserSettings
@@ -364,6 +370,9 @@ class SpanishTaxAdapter:
         # ----- RENDIMIENTOS DEL TRABAJO -------------------------------------
         employment_block = self._build_employment_block(user, year, warnings)
 
+        # ----- RENDIMIENTOS DEL CAPITAL INMOBILIARIO ---------------------------
+        rental_block = self._build_rental_block(user, year, warnings)
+
         # ----- SUMMARY ------------------------------------------------------
         summary = {
             "interests_gross": interests_block["gross"],
@@ -379,6 +388,8 @@ class SpanishTaxAdapter:
             "employment_gross_subject": employment_block["gross_subject"],
             "employment_ss_deductible": employment_block["ss_deductible"],
             "employment_withholding": employment_block["withholding"],
+            "rental_net_reduced": rental_block["net_reduced_total"],
+            "rental_imputation": rental_block["imputation_total"],
         }
 
         return {
@@ -388,9 +399,64 @@ class SpanishTaxAdapter:
             "double_taxation": double_taxation_block,
             "capital_gains": capital_gains_block,
             "employment_income": employment_block,
+            "rental_income": rental_block,
             "summary": summary,
             "warnings": warnings,
             "infos": infos,
+        }
+
+    def _build_rental_block(self, user, year: int, warnings: list[dict]) -> dict:
+        """Recorded rent of the year per property (leases, payments and expenses up to today)."""
+        overview = es_rental.rental_overview(user, year)
+        rows = []
+        net_total = imputation_total = Decimal("0")
+        for entry in overview["properties"]:
+            r = entry["to_date"]["result"]
+            net_total += Decimal(r["net_reduced"])
+            imputation_total += Decimal(r["imputation"])
+            rows.append(
+                {
+                    "property_id": entry["property"]["id"],
+                    "name": entry["property"]["name"],
+                    "days_rented": r["days_rented"],
+                    "days_vacant": r["days_vacant"],
+                    "income": r["income"],
+                    "capped_applied": r["capped_applied"],
+                    "excess_carry_forward": r["excess_carry_forward"],
+                    "other_expenses": r["other_expenses"],
+                    "depreciation": r["depreciation"],
+                    "furniture_depreciation": r["furniture_depreciation"],
+                    "net": r["net"],
+                    "reduction_pct": r["reduction_pct"],
+                    "reduction": r["reduction"],
+                    "net_reduced": r["net_reduced"],
+                    "imputation": r["imputation"],
+                }
+            )
+            for message in r["warnings"]:
+                warnings.append(
+                    {
+                        "kind": "rental_data",
+                        "scope": "rental_income",
+                        "message": f"{entry['property']['name']}: {message}",
+                    }
+                )
+            if entry["missing_months"]:
+                warnings.append(
+                    {
+                        "kind": "rental_missing_payments",
+                        "scope": "rental_income",
+                        "message": (
+                            f"{entry['property']['name']}: no hay cobro de alquiler registrado en "
+                            f"{', '.join(entry['missing_months'])}."
+                        ),
+                    }
+                )
+        return {
+            "casilla": "Rendimientos del capital inmobiliario · Inmuebles arrendados",
+            "properties": rows,
+            "net_reduced_total": str(q(net_total)),
+            "imputation_total": str(q(imputation_total)),
         }
 
     def _build_employment_block(self, user, year: int, warnings: list[dict]) -> dict:

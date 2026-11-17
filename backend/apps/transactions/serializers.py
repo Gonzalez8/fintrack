@@ -160,6 +160,7 @@ class InterestSerializer(_OwnershipValidationMixin, serializers.ModelSerializer)
 
 class OtherIncomeSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
     account_name = serializers.CharField(source="account.name", read_only=True, default=None)
+    property_name = serializers.CharField(source="lease.property.name", read_only=True, default=None)
 
     class Meta:
         model = OtherIncome
@@ -171,16 +172,23 @@ class OtherIncomeSerializer(_OwnershipValidationMixin, serializers.ModelSerializ
             "amount",
             "account",
             "account_name",
+            "lease",
+            "property_name",
             "notes",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "account_name", "created_at", "updated_at"]
+        read_only_fields = ["id", "account_name", "property_name", "created_at", "updated_at"]
 
     def validate_account(self, value):
         if value is None:
             return value
         return self._validate_owned_fk(value, "account")
+
+    def validate_lease(self, value):
+        if value is None:
+            return value
+        return self._validate_owned_fk(value, "lease")
 
 
 class StockSplitSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):

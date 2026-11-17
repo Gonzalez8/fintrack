@@ -4,8 +4,14 @@ from rest_framework.views import APIView
 
 from apps.core.mixins import OwnedByUserMixin
 
-from .models import Amortization, Property
-from .serializers import AmortizationSerializer, MortgageSimulationInputSerializer, PropertySerializer
+from .models import Amortization, Lease, Property, RentalExpense
+from .serializers import (
+    AmortizationSerializer,
+    LeaseSerializer,
+    MortgageSimulationInputSerializer,
+    PropertySerializer,
+    RentalExpenseSerializer,
+)
 from .services import simulate_amortization
 
 
@@ -34,3 +40,31 @@ class MortgageSimulationView(APIView):
         serializer.is_valid(raise_exception=True)
         result = simulate_amortization(**serializer.validated_data)
         return Response(result)
+
+
+class LeaseViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
+    queryset = Lease.objects.select_related("property")
+    serializer_class = LeaseSerializer
+    invalidates_financial_cache = False
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        property_id = self.request.query_params.get("property")
+        return qs.filter(property_id=property_id) if property_id else qs
+
+
+class RentalExpenseViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
+    queryset = RentalExpense.objects.select_related("property")
+    serializer_class = RentalExpenseSerializer
+    invalidates_financial_cache = False
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        params = self.request.query_params
+        if params.get("property"):
+            qs = qs.filter(property_id=params["property"])
+        if params.get("year"):
+            qs = qs.filter(date__year=params["year"])
+        if params.get("category"):
+            qs = qs.filter(category=params["category"])
+        return qs

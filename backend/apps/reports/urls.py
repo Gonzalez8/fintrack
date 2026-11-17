@@ -10,6 +10,8 @@ urlpatterns = [
     path("reports/annual-savings/", views.AnnualSavingsView.as_view(), name="annual-savings"),
     path("reports/tax-declaration/", views.TaxDeclarationView.as_view(), name="tax-declaration"),
     path("reports/snapshot-status/", views.SnapshotStatusView.as_view(), name="snapshot-status"),
+    path("rental/overview/", views.RentalOverviewView.as_view(), name="rental-overview"),
+    path("rental/simulate/", views.RentalSimulationView.as_view(), name="rental-simulate"),
     path(
         "savings-goals/", views.SavingsGoalViewSet.as_view({"get": "list", "post": "create"}), name="savings-goal-list"
     ),

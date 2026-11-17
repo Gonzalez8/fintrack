@@ -256,3 +256,37 @@ def test_backup_round_trips_other_income_and_interest_retention(client, user):
     )
     interest = Interest.objects.get(owner=user)
     assert (interest.tax, interest.commission) == (Decimal("1.90"), Decimal("0.10"))
+
+
+@pytest.mark.django_db
+def test_backup_round_trips_employers_and_payrolls(client, user):
+    from apps.payroll.models import Employer, Payroll
+
+    employer = Employer.objects.create(owner=user, name="ACME", cif="B12345678", ss_account="28/123", notes="HQ")
+    Payroll.objects.create(
+        owner=user,
+        employer=employer,
+        period_start=datetime.date(2026, 10, 1),
+        period_end=datetime.date(2026, 10, 31),
+        concept="Mensual",
+        payroll_type=Payroll.PayrollType.BONUS,
+        gross=Decimal("3000"),
+        ss_employee=Decimal("190.50"),
+        irpf_withholding=Decimal("450"),
+        net=Decimal("2359.50"),
+        base_irpf=Decimal("2950"),
+        employer_cost=Decimal("3900"),
+    )
+    exported = client.get("/api/backup/export/").json()
+    assert (len(exported["employers"]), len(exported["payrolls"])) == (1, 1)
+
+    Payroll.objects.all().delete()
+    Employer.objects.all().delete()
+    file = SimpleUploadedFile("b.json", json.dumps(exported).encode(), content_type="application/json")
+    res = client.post("/api/backup/import/", {"file": file}, format="multipart")
+    assert (res.data["counts"]["employers"], res.data["counts"]["payrolls"]) == (1, 1)
+
+    restored = Payroll.objects.select_related("employer").get(owner=user)
+    assert (restored.employer.cif, restored.employer.notes) == ("B12345678", "HQ")
+    assert (restored.payroll_type, restored.net, restored.base_irpf) == ("BONUS", Decimal("2359.50"), Decimal("2950"))
+    assert restored.employer_cost == Decimal("3900")

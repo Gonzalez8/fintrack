@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, Settings
+from apps.payroll.models import Employer, Payroll
 from apps.realestate.models import Amortization, Property
 from apps.reports.models import SavingsGoal
 from apps.transactions.models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
@@ -189,3 +190,33 @@ class BackupSettingsSerializer(serializers.ModelSerializer):
             "tax_country",
             "mcp_backend_url",
         ]
+
+
+class BackupEmployerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employer
+        fields = ["id", "name", "cif", "ss_account", "address", "notes"]
+        extra_kwargs = {"id": {"read_only": False}}
+
+
+class BackupPayrollSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payroll
+        fields = [
+            "id",
+            "employer",
+            "period_start",
+            "period_end",
+            "concept",
+            "payroll_type",
+            "gross",
+            "ss_employee",
+            "irpf_withholding",
+            "net",
+            "base_irpf",
+            "base_cc",
+            "employer_cost",
+            "notes",
+            "import_hash",
+        ]
+        extra_kwargs = {"id": {"read_only": False}}

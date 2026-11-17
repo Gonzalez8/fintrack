@@ -606,6 +606,8 @@ const proxyHandlers = [
       dividends: demoDividends,
       interests: demoInterests,
       other_incomes: demoOtherIncomes,
+      employers: demoEmployers,
+      payrolls: demoPayrolls,
       settings: demoSettings,
     });
   }),

@@ -315,7 +315,9 @@ ALLOWED_HOSTS=your-domain.com,192.168.1.10
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-*Behind a reverse proxy* (Nginx Proxy Manager, Traefik, Caddy…): the web host points to the frontend, so give the backend its own host, e.g. `fintrack-api.example.com` → backend port `8001`, add that name to `ALLOWED_HOSTS` and use `https://fintrack-api.example.com` as `FINTRACK_URL`. Use a **one-level** subdomain if your certificate is a wildcard — `*.example.com` covers `fintrack-api.example.com` but not `api.fintrack.example.com`.
+Then set that address once in **Settings → AI access (MCP) → Connection to your Fintrack**: *Test connection* checks it from your browser and *Save* stores it, so every command the page generates uses it (by default it suggests the web host on port `8001`).
+
+*Behind a reverse proxy* (Nginx Proxy Manager, Traefik, Caddy…): the web host points to the frontend, so give the backend its own host, e.g. `fintrack-api.example.com` → backend port `8001`, add that name to `ALLOWED_HOSTS` and save `https://fintrack-api.example.com` as the backend URL in Settings. Use a **one-level** subdomain if your certificate is a wildcard — `*.example.com` covers `fintrack-api.example.com` but not `api.fintrack.example.com`.
 
 **3. Install [uv](https://docs.astral.sh/uv/)** (it downloads and runs the MCP for you):
 

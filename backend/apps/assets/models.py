@@ -199,6 +199,15 @@ class Settings(models.Model):
             "Currently only 'ES' has a Modo Renta adapter; other countries hide the tab."
         ),
     )
+    mcp_backend_url = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        help_text=(
+            "Backend URL the MCP server calls from the user's computer (e.g. the reverse-proxy host). "
+            "Empty: the app suggests the web host on port 8001."
+        ),
+    )
 
     class Meta:
         verbose_name_plural = "settings"

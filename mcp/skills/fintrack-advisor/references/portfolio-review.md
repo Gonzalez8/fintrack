@@ -27,7 +27,7 @@ Use with the investor profile. For each point: what the data says → why it mat
 
 ## 5. Cash, emergency fund and savings capacity
 
-- Cash in accounts vs the emergency target (months × monthly spending from the profile). Too little → build it before adding risk; far too much idle cash → opportunity cost vs goals.
+- Cash in accounts vs the emergency target: months wanted (from the profile) × monthly spending (average `estimated_spending` from `fintrack_get_monthly_savings`; don't ask the user for it). Too little → build it before adding risk; far too much idle cash → opportunity cost vs goals.
 - Savings rate: real savings ÷ net income, both from `fintrack_get_annual_savings` (`total_real_savings` ÷ `total_income`, which already includes payslips, other income, dividends and interests). Trend over the years. Emergency fund in months = cash ÷ average `estimated_spending`.
 
 ## 6. Income

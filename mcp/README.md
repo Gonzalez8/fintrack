@@ -121,13 +121,13 @@ Ready-made analyses (slash commands in Claude Code, e.g. `/mcp__fintrack__fintra
 |---|---|
 | `fintrack_monthly_review` | Savings, investments, income and pending items of a month |
 | `fintrack_payroll_review` | Salary, bonus, IRPF and year-over-year change |
-| `fintrack_portfolio_analysis` | Portfolio and per-investment review; asks for your profile first |
+| `fintrack_portfolio_analysis` | Portfolio and per-investment review for your investor profile (saved one if any; asks only what is missing) |
 
 Assets can be referenced by ticker, name or id; accounts by name or id. Write tools are marked as such so your client asks for confirmation before running them; the ones that overwrite existing values (editing an asset, a snapshot of the same account and date) are also flagged as destructive. No tool deletes anything.
 
 ## Advisor skill (optional)
 
-`skills/fintrack-advisor/` is a [skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches the assistant how to answer financial questions with these tools: which tool fits each question, how to identify index funds, the definitions Fintrack uses, and a portfolio-review method (concentration, overlap, costs, currency, emergency fund, savings rate, bonus dependence, Spanish tax, mortgage vs investing). **Before giving opinions or recommendations it asks for your investor profile** (horizon, risk tolerance, goals, emergency fund, income stability, preferences) and never stores it.
+`skills/fintrack-advisor/` is a [skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches the assistant how to answer financial questions with these tools: which tool fits each question, how to identify index funds, the definitions Fintrack uses, and a portfolio-review method (concentration, overlap, costs, currency, emergency fund, savings rate, bonus dependence, Spanish tax, mortgage vs investing). **Before giving opinions or recommendations it uses your investor profile** — personal context Fintrack doesn't have (age, housing, horizon and goals, risk tolerance, emergency fund, preferences, recording rules, topics to avoid). In Claude Code it keeps it in the local persistent memory as `perfil-financiero`, asks only for what is missing and updates it as you mention changes; figures Fintrack has are always read with the tools, and the profile is never stored in Fintrack or external services.
 
 Each GitHub release attaches it as `fintrack-advisor.zip`.
 

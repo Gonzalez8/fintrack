@@ -235,10 +235,15 @@ export function applyAmortization(
  * Apply multiple amortization events to a schedule.
  * Events are processed in chronological order, each cascading into the next.
  * Single forward pass — O(n) where n = schedule length.
+ *
+ * Pass `annualRate` when known: deriving it from the schedule uses the first month's
+ * interest, already rounded to cents, and the small rate error accumulates over the
+ * remaining months. The backend (`apps/realestate/mortgage.py`) uses the exact rate.
  */
 export function applyMultipleAmortizations(
   schedule: AmortizationRow[],
   events: AmortizationEvent[],
+  annualRate?: number,
 ): MultiAmortizationResult {
   if (events.length === 0) {
     const last = schedule[schedule.length - 1];
@@ -261,8 +266,7 @@ export function applyMultipleAmortizations(
     .filter((e) => e.month >= 1 && parseFloat(String(e.amount)) > 0)
     .sort((a, b) => a.month - b.month);
 
-  const annualRate = deriveAnnualRate(schedule);
-  const monthlyRate = annualRate / 100 / 12;
+  const monthlyRate = (annualRate ?? deriveAnnualRate(schedule)) / 100 / 12;
 
   // Base date from schedule for computing dates of new months
   const baseDate = schedule[0].date;

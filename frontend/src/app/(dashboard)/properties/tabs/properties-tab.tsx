@@ -115,8 +115,8 @@ export function PropertiesTab() {
 
   const multiResult = useMemo(() => {
     if (!schedule || events.length === 0) return null;
-    return applyMultipleAmortizations(schedule, events);
-  }, [schedule, events]);
+    return applyMultipleAmortizations(schedule, events, parseFloat(selectedProperty!.annual_interest_rate!));
+  }, [schedule, events, selectedProperty]);
 
   const monthsPaidNum = selectedProperty?.months_paid ?? 0;
 
@@ -148,7 +148,7 @@ export function PropertiesTab() {
       } else {
         // Has amortizations — generate schedule and apply them
         const sched = generateSchedule(loan, rate, term, payment, mp);
-        const result = applyMultipleAmortizations(sched, propEvents);
+        const result = applyMultipleAmortizations(sched, propEvents, rate);
         const active = result.modified;
         const lastMonth = active[active.length - 1]?.month ?? 0;
         if (mp >= lastMonth) {
@@ -380,11 +380,14 @@ export function PropertiesTab() {
             </div>
             <div className="flex items-center gap-3 mt-1 text-[11px] font-mono text-muted-foreground">
               <span>{t("properties.netEquity")}: {formatMoney(getEquity(property))}</span>
-              {property.has_mortgage && (
-                <span className="text-red-400">
-                  {t("properties.outstandingBalance")}: {formatMoney(getDebt(property))}
-                </span>
-              )}
+              {property.has_mortgage &&
+                (property.mortgage_status === "FINISHED" ? (
+                  <span className="text-emerald-500">{t("properties.mortgageFinished")}</span>
+                ) : (
+                  <span className="text-red-400">
+                    {t("properties.outstandingBalance")}: {formatMoney(getDebt(property))}
+                  </span>
+                ))}
             </div>
           </SwipeCard>
         ))}
@@ -434,9 +437,15 @@ export function PropertiesTab() {
                     <p className="text-xs font-mono text-muted-foreground">
                       {t("properties.outstandingBalance")}: {formatMoney(getDebt(property))}
                     </p>
-                    <p className="text-xs font-mono text-muted-foreground">
-                      {t("properties.monthlyPayment")}: {formatMoney(property.monthly_payment)} · {property.annual_interest_rate}%
-                    </p>
+                    {property.mortgage_status === "FINISHED" ? (
+                      <p className="text-xs font-mono text-emerald-500">{t("properties.mortgageFinished")}</p>
+                    ) : (
+                      <p className="text-xs font-mono text-muted-foreground">
+                        {t("properties.monthlyPayment")}:{" "}
+                        {formatMoney(property.current_monthly_payment ?? property.monthly_payment)} ·{" "}
+                        {property.annual_interest_rate}%
+                      </p>
+                    )}
                   </>
                 )}
                 {!property.has_mortgage && (

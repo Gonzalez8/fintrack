@@ -83,7 +83,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_list_transactions` | read | Buy/sell/gift operations (filters: search, type, dates, account) |
 | `fintrack_list_dividends` | read | Recorded dividends (filters: year, search) |
 | `fintrack_list_interests` | read | Interest income (filters: year, account) |
-| `fintrack_list_other_income` | read | Rent, freelance, side jobs, gifts… with totals per type and month, declared vs not |
+| `fintrack_list_other_income` | read | Rent, freelance, side jobs, gifts… with totals per type and month |
 | `fintrack_get_year_summary` | read | Year-by-year fiscal summary |
 | `fintrack_get_net_worth_evolution` | read | Monthly net worth (cash + investments) |
 | `fintrack_get_tax_declaration` | read | Tax-declaration helper for your fiscal country |

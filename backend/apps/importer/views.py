@@ -215,6 +215,7 @@ class BackupImportView(APIView):
                     counts["interests"] += 1
 
                 for item in payload.get("other_incomes", []):
+                    item.pop("declared", None)  # v2.19.0 backups
                     OtherIncome.objects.update_or_create(
                         id=item["id"],
                         owner=user,

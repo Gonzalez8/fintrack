@@ -92,7 +92,7 @@ class BackupInterestSerializer(serializers.ModelSerializer):
 class BackupOtherIncomeSerializer(serializers.ModelSerializer):
     class Meta:
         model = OtherIncome
-        fields = ["id", "date", "category", "description", "amount", "account", "declared", "notes"]
+        fields = ["id", "date", "category", "description", "amount", "account", "notes"]
         extra_kwargs = {"id": {"read_only": False}}
 
 

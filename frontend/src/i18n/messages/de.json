@@ -1049,13 +1049,9 @@
   "otherIncome.amount": "Erhaltener Betrag",
   "otherIncome.account": "Eingangskonto",
   "otherIncome.noAccount": "Kein Konto / bar",
-  "otherIncome.declared": "In der Steuererklärung angegeben",
-  "otherIncome.declaredHelp": "Vorerst nur informativ: nicht angegebene Einnahmen zählen für die Ersparnis, erscheinen aber nicht unter Steuern.",
-  "otherIncome.notDeclared": "Nicht angegeben",
-  "otherIncome.declaredShort": "Angegeben",
   "otherIncome.notes": "Notizen",
   "otherIncome.totalPeriod": "Gesamt",
   "otherIncome.monthlyAvg": "Monatlicher Durchschnitt",
-  "otherIncome.undeclaredTotal": "Nicht angegeben",
+  "otherIncome.count": "Anzahl Zahlungen",
   "otherIncome.confirmDelete": "Diese Einnahme löschen?"
 }

@@ -1049,13 +1049,9 @@
   "otherIncome.amount": "Montant reçu",
   "otherIncome.account": "Compte crédité",
   "otherIncome.noAccount": "Sans compte / espèces",
-  "otherIncome.declared": "Déclaré aux impôts",
-  "otherIncome.declaredHelp": "Informatif pour l'instant : les revenus non déclarés comptent pour l'épargne mais n'apparaissent pas dans Fiscalité.",
-  "otherIncome.notDeclared": "Non déclaré",
-  "otherIncome.declaredShort": "Déclaré",
   "otherIncome.notes": "Notes",
   "otherIncome.totalPeriod": "Total",
   "otherIncome.monthlyAvg": "Moyenne mensuelle",
-  "otherIncome.undeclaredTotal": "Non déclaré",
+  "otherIncome.count": "Nombre de versements",
   "otherIncome.confirmDelete": "Supprimer ce revenu ?"
 }

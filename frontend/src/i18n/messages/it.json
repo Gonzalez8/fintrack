@@ -1049,13 +1049,9 @@
   "otherIncome.amount": "Importo ricevuto",
   "otherIncome.account": "Conto di accredito",
   "otherIncome.noAccount": "Nessun conto / contanti",
-  "otherIncome.declared": "Dichiarato nella dichiarazione dei redditi",
-  "otherIncome.declaredHelp": "Per ora solo informativo: le entrate non dichiarate contano per il risparmio ma non compaiono in Fisco.",
-  "otherIncome.notDeclared": "Non dichiarato",
-  "otherIncome.declaredShort": "Dichiarato",
   "otherIncome.notes": "Note",
   "otherIncome.totalPeriod": "Totale",
   "otherIncome.monthlyAvg": "Media mensile",
-  "otherIncome.undeclaredTotal": "Non dichiarato",
+  "otherIncome.count": "Numero di pagamenti",
   "otherIncome.confirmDelete": "Eliminare questa entrata?"
 }

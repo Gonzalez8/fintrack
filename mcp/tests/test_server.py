@@ -490,15 +490,15 @@ async def test_record_account_balances_rejects_repeated_account(api):
 
 async def test_list_other_income_adds_totals(api):
     rows = [
-        {"date": "2026-10-01", "category": "RENTAL", "amount": "390.00", "declared": False},
-        {"date": "2026-11-01", "category": "RENTAL", "amount": "400.00", "declared": False},
-        {"date": "2026-11-15", "category": "SIDE_JOB", "amount": "200.00", "declared": True},
+        {"date": "2026-10-01", "category": "RENTAL", "amount": "390.00"},
+        {"date": "2026-11-01", "category": "RENTAL", "amount": "400.00"},
+        {"date": "2026-11-15", "category": "SIDE_JOB", "amount": "200.00"},
     ]
     route = api.get("/other-incomes/").mock(return_value=httpx.Response(200, json=page(rows)))
     result = payload(await call("fintrack_list_other_income", {"year": 2026, "category": "RENTAL"}))
     params = route.calls.last.request.url.params
     assert (params["year"], params["category"]) == ("2026", "RENTAL")
-    assert (result["total"], result["declared"], result["not_declared"]) == ("990.00", "200.00", "790.00")
+    assert result["total"] == "990.00"
     assert result["by_month"] == {"2026-10": "390.00", "2026-11": "600.00"}
     assert result["by_category"]["RENTAL"] == "790.00"
     assert result["average_per_month_with_income"] == "495.00"
@@ -515,7 +515,6 @@ async def test_create_other_income_resolves_account(api):
         "description": "Alquiler piso",
         "category": "RENTAL",
         "account": SAVINGS["id"],
-        "declared": False,
         "notes": "",
     }
 

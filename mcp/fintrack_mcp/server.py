@@ -37,8 +37,8 @@ Where to look:
   of the fixed salary) and fintrack_list_payrolls for single payslips. Payroll types: MONTHLY (regular salary),
   BONUS (pagas extra, variable, incentives), ATRASOS (back pay / regularizations), OTHER (settlements, severance).
   Dividends: fintrack_list_dividends; interests: fintrack_list_interests; tax view: fintrack_get_year_summary and
-  fintrack_get_tax_declaration. Money received outside payslips (rent, freelance, side jobs, gifts — declared or
-  not): fintrack_list_other_income.
+  fintrack_get_tax_declaration. Money received outside payslips (rent, freelance, side jobs, gifts):
+  fintrack_list_other_income.
 - Savings: fintrack_get_monthly_savings / fintrack_get_annual_savings. Real savings = change in cash + money newly
   invested (investment cost delta), so investing does not count as spending. Each month/year also carries its income
   (net payslips, other income, net dividends and interests) and estimated_spending = income − real savings.
@@ -281,9 +281,8 @@ def create_server(client: FintrackClient) -> MCPServer:
         search: Annotated[str | None, Field(description="Text in the description or notes.")] = None,
     ) -> dict[str, Any]:
         """Money received outside payslips, dividends and interests: rent, self-employment, side jobs, gifts or
-        other. Each row has date, type, description, amount received, account and whether it is declared in the tax
-        return. Returns the rows plus totals per type and per month. Undeclared income is real money for savings
-        and spending; never treat it as a tax figure."""
+        other. Each row has date, type, description, amount received and account. Returns the rows plus totals per
+        type and per month. It is real money for savings and spending, not a tax figure (the tax views ignore it)."""
         rows = await fetch_all("other-incomes/", {"year": year, "category": category, "search": search})
         return {"items": rows, **other_income_totals(rows)}
 
@@ -716,7 +715,6 @@ def create_server(client: FintrackClient) -> MCPServer:
             OtherIncomeCategory, Field(description="RENTAL, SELF_EMPLOYMENT, SIDE_JOB, GIFT or OTHER.")
         ] = "OTHER",
         account: Annotated[str | None, Field(description="Account it went into (name or id); none for cash.")] = None,
-        declared: Annotated[bool, Field(description="Whether the user declares it in the tax return.")] = False,
         notes: str = "",
     ) -> dict[str, Any]:
         """Record money received outside payslips, dividends and interests (e.g. this month's rent). Confirm the
@@ -728,7 +726,6 @@ def create_server(client: FintrackClient) -> MCPServer:
             "description": description.strip(),
             "category": category,
             "account": (await resolve_account(account))["id"] if account else None,
-            "declared": declared,
             "notes": notes,
         }
         return await call("post", "other-incomes/", json=payload)

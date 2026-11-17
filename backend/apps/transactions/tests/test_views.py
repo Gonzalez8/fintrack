@@ -776,7 +776,7 @@ class TestOtherIncome:
         }
         resp = client.post("/api/other-incomes/", payload, format="json")
         assert resp.status_code == 201
-        assert (resp.data["account_name"], resp.data["declared"]) == (account.name, False)
+        assert resp.data["account_name"] == account.name
         client.post(
             "/api/other-incomes/",
             {"date": "2025-03-01", "category": "GIFT", "description": "Birthday", "amount": "100"},
@@ -786,7 +786,6 @@ class TestOtherIncome:
         assert client.get("/api/other-incomes/?year=2026").data["count"] == 1
         assert client.get("/api/other-incomes/?category=GIFT").data["results"][0]["account_name"] is None
         assert client.get("/api/other-incomes/?search=rent").data["count"] == 1
-        assert client.get("/api/other-incomes/?declared=false").data["count"] == 2
 
     def test_amount_must_be_positive(self, client):
         resp = client.post(

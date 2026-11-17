@@ -29,8 +29,8 @@ class InterestAdmin(admin.ModelAdmin):
 
 @admin.register(OtherIncome)
 class OtherIncomeAdmin(admin.ModelAdmin):
-    list_display = ("date", "category", "description", "amount", "account", "declared", "owner")
-    list_filter = ("category", "declared", "date")
+    list_display = ("date", "category", "description", "amount", "account", "owner")
+    list_filter = ("category", "date")
     search_fields = ("description", "notes")
     readonly_fields = ("id", "created_at", "updated_at")
 

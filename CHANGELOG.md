@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.18.0] - 2026-11-17
+
+### Added
+
+- **The AI assistant can add and edit assets.** With a read-and-write token, the MCP can now create a stock, ETF, fund or crypto (name, Yahoo Finance ticker, ISIN, currency, automatic or manual price, issuer/domicile/withholding country) and change any of those details later, including the price of a manual asset. Recorded operations and dividends are never touched. (#123)
+- **The AI assistant can record your account balances.** Tell it "these are my balances today" or "on the 1st: Trade Republic 1,250 €, MyInvestor 8,400 €" and it saves one snapshot per account on that date, showing the previous balance next to the new one. A snapshot already recorded for the same account and date is replaced. Payslips stay out of the assistant's reach, and it still cannot delete anything. (#123)
+
+### Fixed
+
+- **Net worth and savings reports were stale after saving several account balances at once** ("update balances" in Accounts): the bulk snapshot did not refresh the report cache. (#123)
+- **Creating or editing an asset with a ticker or ISIN you already use** returned a server error; it now explains which field is repeated. (#123)
+
+### MCP update
+
+- New tools `fintrack_create_asset`, `fintrack_update_asset` and `fintrack_record_account_balances`. Update your MCP command to `v2.18.0` (Settings → *AI access (MCP)*); the updated `fintrack-advisor.zip` is attached to this release. The fix for the stale reports needs the backend update too.
+
 ## [2.17.0] - 2026-11-17
 
 ### Added

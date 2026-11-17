@@ -67,7 +67,8 @@ export function MortgageSummaryHeader({ property, schedule, multiResult }: Props
 
   const balance = parseFloat(property.original_loan_amount!);
   const rate = parseFloat(property.annual_interest_rate!);
-  const monthsPaid = property.months_paid ?? 0;
+  // Position in the schedule = calendar months since the start (months_paid stops when it's paid off)
+  const monthsPaid = property.months_elapsed ?? property.months_paid ?? 0;
   const payment = parseFloat(property.monthly_payment!);
 
   const origLast = schedule[schedule.length - 1];

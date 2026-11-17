@@ -539,6 +539,10 @@ export interface Property {
   updated_at: string;
   /** NONE, ACTIVE or FINISHED (paid off, early amortizations included). */
   mortgage_status?: "NONE" | "ACTIVE" | "FINISHED";
+  /** Still paying (has_mortgage only means mortgage data exists). */
+  has_active_mortgage?: boolean;
+  /** Calendar months since the start, capped at the term — the schedule's "today". */
+  months_elapsed?: number | null;
   /** Payment due next month (after amortizations); "0" when finished. */
   current_monthly_payment?: string | null;
   /** YYYY-MM of the last payment, when the purchase date is known. */

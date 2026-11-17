@@ -67,6 +67,17 @@ class TestState:
         assert state.end_date == "2025-08"  # month 70
         assert state.extra_amortizations == Decimal("70000.00")
 
+    def test_payments_stop_when_paid_off_but_the_calendar_keeps_going(self):
+        """Paid off in month 29 (March 2022): 29 payments made, 85 months elapsed."""
+        state = mortgage_state(prop(), [event(29, "90000")], D(2026, 11, 17))
+        assert state.status == "FINISHED"
+        assert (state.months_paid, state.months_elapsed) == (29, 85)
+        assert state.end_date == "2022-03"
+
+    def test_active_mortgage_has_paid_every_elapsed_month(self):
+        state = mortgage_state(prop(), [], D(2026, 11, 17))
+        assert state.months_paid == state.months_elapsed == 85
+
     def test_reduce_term_shortens_the_mortgage(self):
         state = mortgage_state(prop(), [event(24, "20000")], D(2026, 3, 29))
         assert state.status == "ACTIVE"
@@ -135,12 +146,22 @@ class TestPropertyAPI:
         assert body["current_monthly_payment"] == "0"
         assert body["has_mortgage"] is True  # the mortgage data still exists
 
+    def test_finished_mortgage_flags(self, client_and_user):
+        client, user = client_and_user
+        p = self._create(user)
+        Amortization.objects.create(owner=user, property=p, month=29, amount=Decimal("90000"), strategy="REDUCE_TERM")
+        body = client.get(f"/api/properties/{p.id}/").json()
+        assert body["mortgage_status"] == "FINISHED"
+        assert body["has_mortgage"] is True and body["has_active_mortgage"] is False
+        assert (body["months_paid"], body["months_elapsed"]) == (29, 85)
+
     def test_active_mortgage_uses_months_elapsed_today(self, client_and_user):
         client, user = client_and_user
         p = self._create(user)
         body = client.get(f"/api/properties/{p.id}/").json()
         assert body["mortgage_status"] == "ACTIVE"
-        assert body["months_paid"] == 85  # not the stored 77
+        assert body["months_paid"] == body["months_elapsed"] == 85  # not the stored 77
+        assert body["has_active_mortgage"] is True
         assert Decimal(body["outstanding_balance"]) < Decimal("55190.78")
 
     def test_property_without_mortgage(self, client_and_user):

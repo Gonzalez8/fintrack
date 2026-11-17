@@ -399,6 +399,20 @@ class TestMonthlySavings:
         OtherIncome.objects.create(owner=other, date=datetime.date(2024, 1, 5), description="X", amount=Decimal("50"))
         assert monthly_savings(user)["months"][0]["income_other"] == "0.00"
 
+    def test_purchases_after_the_snapshot_count_next_month(self, user, settings_fifo, account, asset):
+        """Cash and money invested are measured on the same day: a buy after the month's snapshot moves to the next
+        month, together with the cash drop it causes."""
+        _snap(user, account, datetime.date(2026, 2, 1), 5000)
+        _snap(user, account, datetime.date(2026, 3, 1), 6000)
+        _snap(user, account, datetime.date(2026, 4, 1), 6000)
+        _tx(user, asset, account, "BUY", datetime.date(2026, 3, 9), 50, 20)  # 1,000 € after the 1 March snapshot
+
+        _, march, april = monthly_savings(user)["months"]
+        assert (Decimal(march["cash_delta"]), Decimal(march["investment_cost_delta"])) == (1000, 0)
+        # April: the cash spent on the buy (balance stayed flat with the income) and the 1,000 € invested
+        assert Decimal(april["investment_cost_delta"]) == 1000
+        assert Decimal(april["real_savings"]) == 1000
+
     def test_income_follows_the_snapshot_dates(self, user, settings_fifo, account):
         """Snapshots on the 1st record the previous month: its payslip belongs to that savings period."""
         employer = Employer.objects.create(owner=user, name="ACME")

@@ -135,6 +135,7 @@ A change is not done until everything that depends on it is updated **in the sam
 | A model holding user data | `owner` FK + `OwnedByUserMixin`, admin, backup export/import in `apps/importer` + round-trip test |
 | A frontend API call or route | Demo mode: MSW handler (`demo/handlers.ts`) **and** server demo route (`demo/server-data.ts`); generic matchers such as `/api/assets/{id}` answer deeper paths unless a specific route comes first |
 | UI text | All 5 locale files |
+| Mortgage maths | `apps/realestate/mortgage.py` **and** `frontend/src/lib/mortgage-math.ts` together; keep the parity tests on both sides passing |
 | Quantities, lots or cost basis | Portfolio engine (lot, WAC and `compute_investment_cost_by_month`), `position_history`, dividend-draft share counts, MCP `fintrack_check_dividend_shares` |
 | Authentication or tokens | `ApiTokenAuthentication` rules + tests, `docs/SECURITY.md`, MCP error messages |
 | A user-visible feature | README → *Features* (and *AI Access* if the assistant can use it), feature notes in this file, an ADR in `docs/adr/` for design decisions |
@@ -205,7 +206,7 @@ Spanish-payslip ingestion lives in `apps/payroll/` and feeds two consumers: the 
 - **Amortization model:** FK to Property, `month` (unique per property), `amount`, `strategy` (REDUCE_PAYMENT / REDUCE_TERM)
 - **Client-side math:** `mortgage-math.ts` — `generateSchedule()` builds full month-by-month schedule, `applyMultipleAmortizations()` cascades events in a single forward pass. All computation is O(n), sub-millisecond
 - **Auto-calculation on form:** User inputs loan amount + term (years) + rate type (fixed/variable) + rate. Monthly payment, months paid, outstanding balance computed automatically from purchase date
-- **Debt calculation:** `computeCurrentBalance()` for properties without loaded events, schedule-based calculation for selected property with amortizations applied
+- **Debt calculation:** the backend (`apps/realestate/mortgage.py`) is the source of truth: the API replaces the stored `months_paid`/`outstanding_balance` snapshot with today's values (months elapsed since `purchase_date`, early amortizations applied) and adds `mortgage_status` (NONE/ACTIVE/FINISHED), `current_monthly_payment`, `mortgage_end_date`, `extra_amortizations`. The client engine (`mortgage-math.ts`) must give the same figures — `applyMultipleAmortizations` gets the exact `annualRate`; parity is pinned by matching tests on both sides
 
 ## Development Workflow
 

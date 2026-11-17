@@ -535,6 +535,13 @@ export interface Property {
   has_mortgage: boolean;
   created_at: string;
   updated_at: string;
+  /** NONE, ACTIVE or FINISHED (paid off, early amortizations included). */
+  mortgage_status?: "NONE" | "ACTIVE" | "FINISHED";
+  /** Payment due next month (after amortizations); "0" when finished. */
+  current_monthly_payment?: string | null;
+  /** YYYY-MM of the last payment, when the purchase date is known. */
+  mortgage_end_date?: string | null;
+  extra_amortizations?: string | null;
 }
 
 export interface PropertyFormData {

@@ -402,8 +402,11 @@ def create_server(client: FintrackClient) -> MCPServer:
 
     @mcp.tool(annotations=READ)
     async def fintrack_list_properties() -> dict[str, Any]:
-        """Real estate: current value, purchase price, net equity and mortgage (outstanding balance, rate, monthly
-        payment, months paid, term)."""
+        """Real estate: current value, purchase price, net equity and mortgage as of today.
+
+        mortgage_status is NONE, ACTIVE or FINISHED (paid off, early amortizations included). outstanding_balance,
+        months_paid and current_monthly_payment are today's values; monthly_payment is the original payment;
+        mortgage_end_date is when the last payment falls; extra_amortizations is the sum of early repayments."""
         return {"properties": await fetch_all("properties/")}
 
     # ---------------------------------------------------------------- prompts

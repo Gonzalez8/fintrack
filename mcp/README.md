@@ -96,7 +96,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_get_investment_flows` | read | Money invested per month, asset or asset type (e.g. "how much in the S&P 500") |
 | `fintrack_list_account_snapshots` | read | Balance history of an account |
 | `fintrack_list_savings_goals` | read | Savings goals with projections |
-| `fintrack_list_properties` | read | Real estate and mortgages |
+| `fintrack_list_properties` | read | Real estate and mortgages as of today (`mortgage_status` ACTIVE/FINISHED, balance after early amortizations) |
 | `fintrack_create_transaction` | write | Record a buy, sell or gift |
 | `fintrack_create_dividend` | write | Record a dividend |
 | `fintrack_create_interest` | write | Record interest income |

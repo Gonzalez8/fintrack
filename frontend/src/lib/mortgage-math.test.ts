@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
-import {
-  annuityPayment,
-  generateSchedule,
-  applyAmortization,
-  applyMultipleAmortizations,
-} from "./mortgage-math";
+import type { AmortizationEvent } from "@/types";
+import { annuityPayment, generateSchedule, applyAmortization, applyMultipleAmortizations } from "./mortgage-math";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -189,9 +185,7 @@ describe("applyMultipleAmortizations", () => {
   });
 
   it("single event works correctly", () => {
-    const events = [
-      { id: "1", property: "p1", month: 12, amount: 10_000, strategy: "REDUCE_TERM" as const },
-    ];
+    const events = [{ id: "1", property: "p1", month: 12, amount: 10_000, strategy: "REDUCE_TERM" as const }];
     const result = applyMultipleAmortizations(schedule, events);
     expect(result.modified.length).toBeLessThan(schedule.length);
     expect(result.savings.interestSaved).toBeGreaterThan(0);
@@ -249,5 +243,42 @@ describe("applyMultipleAmortizations", () => {
     // Only the event at month 24 with amount 5000 should apply
     expect(result.events).toHaveLength(1);
     expect(result.events[0].month).toBe(24);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Parity with the backend engine (apps/realestate/mortgage.py)
+// ---------------------------------------------------------------------------
+
+describe("parity with the backend mortgage engine", () => {
+  // 91 500 € at 1.7 %, 180 months, 576.26 €/month. The same figures are asserted in
+  // backend/apps/realestate/tests/test_mortgage.py — change both engines together.
+  const balanceAt = (events: AmortizationEvent[], monthsPaid: number) => {
+    const schedule = generateSchedule(91500, 1.7, 180, 576.26, monthsPaid);
+    const { modified } = applyMultipleAmortizations(schedule, events, 1.7);
+    const last = modified[modified.length - 1].month;
+    return {
+      balance: monthsPaid >= last ? 0 : modified[monthsPaid].remainingBalance,
+      payment: modified.find((r) => r.month > monthsPaid)?.payment ?? 0,
+      end: last,
+    };
+  };
+  const ev = (month: number, amount: string, strategy: "REDUCE_TERM" | "REDUCE_PAYMENT") =>
+    ({ id: String(month), property: "p", month, amount, strategy }) as unknown as AmortizationEvent;
+
+  it("reduce term", () => {
+    expect(balanceAt([ev(24, "20000", "REDUCE_TERM")], 77)).toEqual({ balance: 33632.07, payment: 576.26, end: 138 });
+  });
+
+  it("reduce payment", () => {
+    expect(balanceAt([ev(24, "20000", "REDUCE_PAYMENT")], 77)).toEqual({
+      balance: 41496.47,
+      payment: 433.27,
+      end: 180,
+    });
+  });
+
+  it("paid off early", () => {
+    expect(balanceAt([ev(70, "70000", "REDUCE_TERM")], 77)).toEqual({ balance: 0, payment: 0, end: 70 });
   });
 });

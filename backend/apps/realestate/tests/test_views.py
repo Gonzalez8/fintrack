@@ -98,7 +98,10 @@ class TestPropertyCRUD:
         body = resp.json()
         assert body["has_mortgage"] is True
         assert body["original_loan_amount"] == "200000.00"
-        assert body["outstanding_balance"] == "180000.00"
+        # The API returns the balance computed from the loan terms (200000 at 2.5 %, 300 months,
+        # 24 paid), not the snapshot sent by the client
+        assert body["outstanding_balance"] == "188185.80"
+        assert body["mortgage_status"] == "ACTIVE"
 
     def test_list_properties(self, client, property_no_mortgage, property_with_mortgage):
         resp = client.get("/api/properties/")
@@ -142,14 +145,14 @@ class TestPropertyCRUD:
     def test_computed_net_equity(self, client, property_with_mortgage):
         resp = client.get(f"/api/properties/{property_with_mortgage.id}/")
         body = resp.json()
-        # current_value=300000, outstanding_balance=150000 -> net_equity=150000
-        assert body["net_equity"] == "150000.00"
+        # 200000 at 3 %, 360 months, 60 paid -> 177812.73 outstanding (the stored 150000 is ignored)
+        assert body["net_equity"] == "122187.27"
 
     def test_computed_amortized_capital(self, client, property_with_mortgage):
         resp = client.get(f"/api/properties/{property_with_mortgage.id}/")
         body = resp.json()
-        # original_loan=200000, outstanding=150000 -> amortized_capital=50000
-        assert body["amortized_capital"] == "50000.00"
+        # original_loan=200000, computed outstanding=177812.73 -> amortized_capital=22187.27
+        assert body["amortized_capital"] == "22187.27"
 
     def test_computed_has_mortgage_true(self, client, property_with_mortgage):
         resp = client.get(f"/api/properties/{property_with_mortgage.id}/")

@@ -94,6 +94,31 @@ export interface TaxEmploymentBlock {
   by_employer: TaxEmploymentByEmployer[];
 }
 
+export interface TaxRentalProperty {
+  property_id: string;
+  name: string;
+  days_rented: number;
+  days_vacant: number;
+  income: string;
+  capped_applied: string;
+  excess_carry_forward: string;
+  other_expenses: string;
+  depreciation: string;
+  furniture_depreciation: string;
+  net: string;
+  reduction_pct: string;
+  reduction: string;
+  net_reduced: string;
+  imputation: string;
+}
+
+export interface TaxRentalBlock {
+  casilla: string;
+  properties: TaxRentalProperty[];
+  net_reduced_total: string;
+  imputation_total: string;
+}
+
 export interface TaxSummary {
   interests_gross: string;
   interests_withholding: string;
@@ -108,6 +133,8 @@ export interface TaxSummary {
   employment_gross_subject: string;
   employment_ss_deductible: string;
   employment_withholding: string;
+  rental_net_reduced: string;
+  rental_imputation: string;
 }
 
 export interface TaxNotice {
@@ -123,6 +150,7 @@ export interface TaxDeclaration {
   double_taxation: TaxDoubleTaxationBlock;
   capital_gains: TaxCapitalGainsBlock;
   employment_income: TaxEmploymentBlock;
+  rental_income: TaxRentalBlock;
   summary: TaxSummary;
   warnings: TaxNotice[];
   infos: TaxNotice[];

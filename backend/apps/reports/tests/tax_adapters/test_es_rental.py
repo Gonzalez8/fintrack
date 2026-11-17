@@ -92,6 +92,13 @@ def test_part_year_prorates_property_costs_and_imputes_vacancy():
     assert r["imputation"] == "275.75"
 
 
+def test_year_to_date_prorates_costs_over_the_elapsed_period():
+    # Rented all of the first 100 days: costs paid so far count in full, depreciation accrues 100/365
+    r = compute_rental(base_inputs(days_rented=100, period_days=100, taxes=D("400")))
+    assert r["expenses_detail"]["taxes"] == "400.00"
+    assert r["depreciation"] == "813.70"
+
+
 def test_unrevised_cadastral_value_imputes_two_percent():
     r = compute_rental(base_inputs(days_rented=0, days_vacant=365, cadastral_revised=False))
     assert r["imputation"] == "1600.00"

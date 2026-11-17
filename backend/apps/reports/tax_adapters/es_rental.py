@@ -11,7 +11,7 @@ Rules applied (simplified, documented in ADR-012):
 - Loan interest + repairs/maintenance are deductible up to the income; the excess carries forward 4 years.
 - Other expenses (IBI and local taxes, community, insurance, utilities, agency/management/legal, other) are
   deductible without that cap. Year-round costs of the whole property (IBI, community, insurance, interest) are
-  prorated by the days rented and the share of the property rented.
+  prorated by the days rented within the period they cover and by the share of the property rented.
 - Depreciation: 3 % a year of the higher of acquisition cost (price + purchase costs) and cadastral value, excluding
   the land (construction share of the cadastral value), plus improvements; furniture 10 %. Prorated like above.
 - Reduction on a positive net rent when it is the tenant's main home: 50 % general, 60 % contracts before
@@ -89,6 +89,8 @@ class RentalInputs:
     reduction_pct: Decimal = ZERO
     pending_excess: Decimal = ZERO
     other_general_base: Decimal = ZERO
+    # Days the figures cover (the year by default; up to today for the year-to-date view)
+    period_days: int | None = None
 
     @classmethod
     def from_dict(cls, data: dict) -> RentalInputs:
@@ -97,7 +99,7 @@ class RentalInputs:
             if f.name not in data or data[f.name] is None:
                 continue
             raw = data[f.name]
-            if f.name in ("year", "days_rented", "days_vacant"):
+            if f.name in ("year", "days_rented", "days_vacant", "period_days"):
                 values[f.name] = int(raw)
             elif f.name == "cadastral_revised":
                 values[f.name] = bool(raw)
@@ -140,10 +142,13 @@ def compute_rental(inp: RentalInputs) -> dict:
     year_days = days_in_year(inp.year)
     rented = min(max(inp.days_rented, 0), year_days)
     vacant = min(max(inp.days_vacant, 0), year_days - rented)
-    rented_frac = Decimal(rented) / Decimal(year_days)
+    period = min(inp.period_days or year_days, year_days)
     share = inp.rented_share_pct / HUNDRED
     own = inp.ownership_pct / HUNDRED
-    prorate = rented_frac * share  # year-round costs of the whole property
+    # Costs of the whole property paid in the period, by the share of that period it was rented
+    prorate = Decimal(min(rented, period)) / Decimal(period) * share
+    # Depreciation accrues per day rented over the year
+    accrual = Decimal(rented) / Decimal(year_days) * share
 
     income = inp.income * own
     financing = inp.financing * prorate * own
@@ -164,7 +169,7 @@ def compute_rental(inp: RentalInputs) -> dict:
         construction_ratio = inp.cadastral_construction_value / inp.cadastral_value
         base_total = max(acquisition, inp.cadastral_value)
         building_base = base_total * construction_ratio + inp.improvements
-        depreciation = building_base * DEPRECIATION_RATE * prorate * own
+        depreciation = building_base * DEPRECIATION_RATE * accrual * own
     elif rented:
         warnings.append(
             "Falta el valor catastral (total y de la construcción): sin él no se puede calcular la amortización "
@@ -172,7 +177,7 @@ def compute_rental(inp: RentalInputs) -> dict:
         )
     if not inp.acquisition_price and rented:
         warnings.append("Falta el precio de compra: la amortización se calcula solo con el valor catastral.")
-    furniture = inp.furniture_value * FURNITURE_RATE * prorate * own
+    furniture = inp.furniture_value * FURNITURE_RATE * accrual * own
 
     net = income - capped_applied - other_expenses - depreciation - furniture
     reduction = net * inp.reduction_pct / HUNDRED if net > 0 else ZERO
@@ -346,7 +351,9 @@ def _property_scenarios(prop, year: int, today: date, base: Decimal) -> dict:
     )
     projecting = year >= today.year
 
-    def build(days: int, income: Decimal, exp: dict, interest: Decimal | None, proj: bool) -> _Scenario:
+    def build(
+        days: int, income: Decimal, exp: dict, interest: Decimal | None, proj: bool, period: int | None = None
+    ) -> _Scenario:
         estimated: list[str] = []
         if proj:
             for cat in RECURRING:
@@ -382,10 +389,19 @@ def _property_scenarios(prop, year: int, today: date, base: Decimal) -> dict:
             furniture_value=prop.furniture_value or ZERO,
             reduction_pct=REDUCTION_PCT[main.reduction],
             other_general_base=base,
+            period_days=period,
         )
         return _Scenario(inputs, estimated)
 
-    to_date = build(len(rented_to_date), income_actual, actual, to_date_interest, proj=False)
+    elapsed = (cutoff - year_start).days + 1
+    to_date = build(
+        len(rented_to_date),
+        income_actual,
+        actual,
+        to_date_interest,
+        proj=False,
+        period=elapsed if elapsed < days_in_year(year) else None,
+    )
     projected = build(len(rented_all), income_actual + expected_rest, full_actual, mortgage_interest, proj=projecting)
     if expected_rest:
         projected.estimated.append("income")

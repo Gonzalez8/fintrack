@@ -8,6 +8,9 @@ import {
   demoDividends,
   demoInterests,
   demoOtherIncomes,
+  demoLeases,
+  demoRentalExpenses,
+  demoRentalOverview,
   demoPortfolio,
   demoYearSummary,
   demoPatrimonioEvolution,
@@ -530,6 +533,31 @@ const proxyHandlers = [
   }),
 
   // ---- Amortizations ----
+  // ---- Rental ----
+  http.get("/api/proxy/leases/", async () => {
+    await delay(200);
+    return HttpResponse.json(paginated(demoLeases));
+  }),
+  http.post("/api/proxy/leases/", async () => HttpResponse.json(demoLeases[0])),
+  http.put("/api/proxy/leases/:id/", async () => HttpResponse.json(demoLeases[0])),
+  http.delete("/api/proxy/leases/:id/", async () => new HttpResponse(null, { status: 204 })),
+  http.get("/api/proxy/rental-expenses/", async () => {
+    await delay(200);
+    return HttpResponse.json(paginated(demoRentalExpenses));
+  }),
+  http.post("/api/proxy/rental-expenses/", async () => HttpResponse.json(demoRentalExpenses[0])),
+  http.put("/api/proxy/rental-expenses/:id/", async () => HttpResponse.json(demoRentalExpenses[0])),
+  http.delete("/api/proxy/rental-expenses/:id/", async () => new HttpResponse(null, { status: 204 })),
+  http.get("/api/proxy/rental/overview/", async () => {
+    await delay(200);
+    return HttpResponse.json(demoRentalOverview);
+  }),
+  // The demo cannot recompute: it answers with the projection for any figures
+  http.post("/api/proxy/rental/simulate/", async () =>
+    HttpResponse.json(demoRentalOverview.properties[0].projected.result),
+  ),
+  http.patch("/api/proxy/properties/:id/", async () => HttpResponse.json({ ok: true })),
+
   http.get("/api/proxy/amortizations/", async () => {
     await delay(200);
     return HttpResponse.json(paginated(demoAmortizations));

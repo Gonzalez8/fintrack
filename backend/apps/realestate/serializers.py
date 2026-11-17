@@ -210,6 +210,7 @@ class RentalSimulationSerializer(serializers.Serializer):
     reduction_pct = serializers.DecimalField(**percent, required=False)
     pending_excess = serializers.DecimalField(**money)
     other_general_base = serializers.DecimalField(**money)
+    period_days = serializers.IntegerField(min_value=1, max_value=366, required=False, allow_null=True)
 
 
 class MortgageSimulationInputSerializer(serializers.Serializer):

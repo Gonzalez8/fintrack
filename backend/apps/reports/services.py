@@ -2,12 +2,12 @@ import logging
 from decimal import Decimal
 
 from django.db.models import F, Sum
-from django.db.models.functions import Coalesce, ExtractYear
+from django.db.models.functions import Coalesce, ExtractYear, TruncMonth
 from django.utils import timezone
 
 from apps.payroll.models import Payroll
 from apps.portfolio.services import calculate_realized_pnl_fiscal
-from apps.transactions.models import Dividend, Interest
+from apps.transactions.models import Dividend, Interest, OtherIncome
 
 logger = logging.getLogger(__name__)
 
@@ -266,6 +266,39 @@ def _compute_savings_stats(months_data):
     }
 
 
+INCOME_KINDS = ("payroll", "other", "investment")
+
+
+def _income_by_month(user):
+    """Money received per month (YYYY-MM): net payslips (by period end), other income, net dividends and interests."""
+    sources = (
+        ("payroll", Payroll.objects.filter(owner=user), "period_end", "net"),
+        ("other", OtherIncome.objects.filter(owner=user), "date", "amount"),
+        ("investment", Dividend.objects.filter(owner=user), "date", "net"),
+        ("investment", Interest.objects.filter(owner=user), "date_end", "net"),
+    )
+    months: dict[str, dict[str, Decimal]] = {}
+    for kind, queryset, date_field, amount_field in sources:
+        rows = queryset.annotate(m=TruncMonth(date_field)).values("m").annotate(total=Sum(amount_field))
+        for row in rows:
+            entry = months.setdefault(row["m"].strftime("%Y-%m"), dict.fromkeys(INCOME_KINDS, Decimal("0")))
+            entry[kind] += row["total"] or Decimal("0")
+    return months
+
+
+def _income_fields(income, real_savings):
+    """Income of a month and the spending it implies: what came in minus what was saved."""
+    total = sum(income.values(), Decimal("0"))
+    spending = total - real_savings if real_savings is not None and total > 0 else None
+    return {
+        "income_payroll": str(income["payroll"]),
+        "income_other": str(income["other"]),
+        "income_investment": str(income["investment"]),
+        "income_total": str(total),
+        "estimated_spending": str(spending) if spending is not None else None,
+    }
+
+
 def monthly_savings(user, start_date=None, end_date=None):
     from apps.assets.models import AccountSnapshot
 
@@ -301,6 +334,8 @@ def monthly_savings(user, start_date=None, end_date=None):
     from apps.portfolio.services import compute_investment_cost_by_month
 
     inv_cost_by_month = compute_investment_cost_by_month(user)
+    income_by_month = _income_by_month(user)
+    no_income = dict.fromkeys(INCOME_KINDS, Decimal("0"))
 
     sorted_tx_months = sorted(inv_cost_by_month.keys())
     tx_idx = 0
@@ -336,6 +371,7 @@ def monthly_savings(user, start_date=None, end_date=None):
                 "investment_cost_end": str(inv_cost_end),
                 "investment_cost_delta": str(inv_cost_delta) if inv_cost_delta is not None else None,
                 "real_savings": str(real_savings) if real_savings is not None else None,
+                **_income_fields(income_by_month.get(month, no_income), real_savings),
                 "comments": monthly_comments.get(month, []),
             }
         )
@@ -374,8 +410,18 @@ def annual_savings(user):
                 "investment_cost_end": Decimal("0"),
                 "months_count": 0,
                 "_last_month": m["month"],
+                **{f"income_{kind}": Decimal("0") for kind in INCOME_KINDS},
+                "total_income": Decimal("0"),
+                "total_estimated_spending": None,
             }
         entry = years[year]
+        for kind in INCOME_KINDS:
+            entry[f"income_{kind}"] += Decimal(m[f"income_{kind}"])
+        entry["total_income"] += Decimal(m["income_total"])
+        if m["estimated_spending"] is not None:
+            entry["total_estimated_spending"] = (entry["total_estimated_spending"] or Decimal("0")) + Decimal(
+                m["estimated_spending"]
+            )
         if m["real_savings"] is not None:
             entry["total_real_savings"] += Decimal(m["real_savings"])
         if m["cash_delta"] is not None:
@@ -423,6 +469,13 @@ def annual_savings(user):
                 "patrimony_growth": str(growth.quantize(Decimal("0.01"))) if growth is not None else None,
                 "patrimony_growth_pct": str(growth_pct) if growth_pct is not None else None,
                 "months_count": entry["months_count"],
+                **{f"income_{kind}": str(entry[f"income_{kind}"].quantize(Decimal("0.01"))) for kind in INCOME_KINDS},
+                "total_income": str(entry["total_income"].quantize(Decimal("0.01"))),
+                "total_estimated_spending": (
+                    str(entry["total_estimated_spending"].quantize(Decimal("0.01")))
+                    if entry["total_estimated_spending"] is not None
+                    else None
+                ),
             }
         )
 

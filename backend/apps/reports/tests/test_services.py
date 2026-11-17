@@ -19,7 +19,7 @@ from apps.reports.services import (
     savings_projection,
     year_summary,
 )
-from apps.transactions.models import Dividend, Interest, Transaction
+from apps.transactions.models import Dividend, Interest, OtherIncome, Transaction
 
 User = get_user_model()
 
@@ -363,6 +363,41 @@ class TestMonthlySavings:
         assert Decimal(feb["investment_cost_delta"]) == Decimal("200")
         # Real savings = -500 + 200 = -300
         assert Decimal(feb["real_savings"]) == Decimal("-300")
+
+    def test_income_and_estimated_spending(self, user, settings_fifo, account, asset):
+        _snap(user, account, datetime.date(2024, 1, 31), 1000)
+        _snap(user, account, datetime.date(2024, 2, 28), 1800)
+        Payroll.objects.create(
+            owner=user,
+            employer=Employer.objects.create(owner=user, name="ACME"),
+            period_start=datetime.date(2024, 2, 1),
+            period_end=datetime.date(2024, 2, 29),
+            gross=Decimal("2000"),
+            ss_employee=Decimal("100"),
+            irpf_withholding=Decimal("300"),
+            net=Decimal("1600"),
+        )
+        OtherIncome.objects.create(
+            owner=user, date=datetime.date(2024, 2, 5), description="Rent", amount=Decimal("390"), declared=False
+        )
+        Dividend.objects.create(owner=user, asset=asset, date=datetime.date(2024, 2, 10), gross=12, tax=2, net=10)
+
+        jan, feb = monthly_savings(user)["months"]
+        assert jan["income_total"] == "0" and jan["estimated_spending"] is None
+        assert (feb["income_payroll"], feb["income_other"], feb["income_investment"]) == ("1600.00", "390.00", "10.00")
+        assert Decimal(feb["income_total"]) == Decimal("2000")
+        # Saved 800 of the 2000 that came in → 1200 spent
+        assert Decimal(feb["estimated_spending"]) == Decimal("1200")
+
+        year = annual_savings(user)[0]
+        assert (year["income_other"], year["total_income"]) == ("390.00", "2000.00")
+        assert year["total_estimated_spending"] == "1200.00"
+
+    def test_other_income_of_another_user_is_ignored(self, user, settings_fifo, account):
+        other = User.objects.create_user(username="someone", password="x")
+        _snap(user, account, datetime.date(2024, 1, 31), 1000)
+        OtherIncome.objects.create(owner=other, date=datetime.date(2024, 1, 5), description="X", amount=Decimal("50"))
+        assert monthly_savings(user)["months"][0]["income_other"] == "0"
 
 
 # ---------------------------------------------------------------------------

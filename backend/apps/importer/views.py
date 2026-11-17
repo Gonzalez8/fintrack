@@ -12,7 +12,7 @@ from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapsho
 from apps.assets.serializers import SettingsSerializer
 from apps.realestate.models import Amortization, Property
 from apps.reports.models import SavingsGoal
-from apps.transactions.models import Dividend, DividendSuggestion, Interest, StockSplit, Transaction
+from apps.transactions.models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
 
 from .serializers import (
     BackupAccountSerializer,
@@ -22,6 +22,7 @@ from .serializers import (
     BackupDividendSerializer,
     BackupDividendSuggestionSerializer,
     BackupInterestSerializer,
+    BackupOtherIncomeSerializer,
     BackupPortfolioSnapshotSerializer,
     BackupPropertySerializer,
     BackupSavingsGoalSerializer,
@@ -53,6 +54,7 @@ class BackupExportView(APIView):
                 DividendSuggestion.objects.filter(owner=user), many=True
             ).data,
             "interests": BackupInterestSerializer(Interest.objects.filter(owner=user), many=True).data,
+            "other_incomes": BackupOtherIncomeSerializer(OtherIncome.objects.filter(owner=user), many=True).data,
             "savings_goals": BackupSavingsGoalSerializer(SavingsGoal.objects.filter(owner=user), many=True).data,
             "properties": BackupPropertySerializer(Property.objects.filter(owner=user), many=True).data,
             "amortizations": BackupAmortizationSerializer(
@@ -101,6 +103,7 @@ class BackupImportView(APIView):
             "dividends": 0,
             "dividend_suggestions": 0,
             "interests": 0,
+            "other_incomes": 0,
             "savings_goals": 0,
             "properties": 0,
             "amortizations": 0,
@@ -203,6 +206,14 @@ class BackupImportView(APIView):
                         defaults=to_defaults(item, fk_fields=("account",)),
                     )
                     counts["interests"] += 1
+
+                for item in payload.get("other_incomes", []):
+                    OtherIncome.objects.update_or_create(
+                        id=item["id"],
+                        owner=user,
+                        defaults=to_defaults(item, fk_fields=("account",)),
+                    )
+                    counts["other_incomes"] += 1
 
                 for item in payload.get("savings_goals", []):
                     SavingsGoal.objects.update_or_create(

@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from .models import Dividend, DividendSuggestion, Interest, StockSplit, Transaction
+from .models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
 
 
 class _OwnershipValidationMixin:
@@ -156,6 +156,32 @@ class InterestSerializer(_OwnershipValidationMixin, serializers.ModelSerializer)
         if date_start and date_end and date_end < date_start:
             raise serializers.ValidationError({"date_end": "date_end must be on or after date_start."})
         return data
+
+
+class OtherIncomeSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):
+    account_name = serializers.CharField(source="account.name", read_only=True, default=None)
+
+    class Meta:
+        model = OtherIncome
+        fields = [
+            "id",
+            "date",
+            "category",
+            "description",
+            "amount",
+            "account",
+            "account_name",
+            "declared",
+            "notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "account_name", "created_at", "updated_at"]
+
+    def validate_account(self, value):
+        if value is None:
+            return value
+        return self._validate_owned_fk(value, "account")
 
 
 class StockSplitSerializer(_OwnershipValidationMixin, serializers.ModelSerializer):

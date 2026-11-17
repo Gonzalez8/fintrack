@@ -757,3 +757,61 @@ class TestInterestValidation:
         res = client.post("/api/interests/", payload, format="json")
         assert res.status_code == 400
         assert "account" in res.data
+
+
+# ---------------------------------------------------------------------------
+# Other income
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestOtherIncome:
+    def test_create_and_list_with_filters(self, client, account):
+        payload = {
+            "date": "2026-11-01",
+            "category": "RENTAL",
+            "description": "Rent flat",
+            "amount": "390.00",
+            "account": str(account.id),
+        }
+        resp = client.post("/api/other-incomes/", payload, format="json")
+        assert resp.status_code == 201
+        assert (resp.data["account_name"], resp.data["declared"]) == (account.name, False)
+        client.post(
+            "/api/other-incomes/",
+            {"date": "2025-03-01", "category": "GIFT", "description": "Birthday", "amount": "100"},
+            format="json",
+        )
+
+        assert client.get("/api/other-incomes/?year=2026").data["count"] == 1
+        assert client.get("/api/other-incomes/?category=GIFT").data["results"][0]["account_name"] is None
+        assert client.get("/api/other-incomes/?search=rent").data["count"] == 1
+        assert client.get("/api/other-incomes/?declared=false").data["count"] == 2
+
+    def test_amount_must_be_positive(self, client):
+        resp = client.post(
+            "/api/other-incomes/", {"date": "2026-11-01", "description": "X", "amount": "0"}, format="json"
+        )
+        assert resp.status_code == 400
+
+    def test_cannot_use_another_users_account(self, client, other_account):
+        resp = client.post(
+            "/api/other-incomes/",
+            {"date": "2026-11-01", "description": "X", "amount": "10", "account": str(other_account.id)},
+            format="json",
+        )
+        assert resp.status_code == 400
+
+    def test_is_private_to_its_owner(self, client, client2):
+        client.post("/api/other-incomes/", {"date": "2026-11-01", "description": "X", "amount": "10"}, format="json")
+        assert client2.get("/api/other-incomes/").data["count"] == 0
+
+    def test_deleting_the_account_keeps_the_income(self, client, user):
+        account = Account.objects.create(owner=user, name="Temp")
+        client.post(
+            "/api/other-incomes/",
+            {"date": "2026-11-01", "description": "X", "amount": "10", "account": str(account.id)},
+            format="json",
+        )
+        account.delete()
+        assert client.get("/api/other-incomes/").data["results"][0]["account"] is None

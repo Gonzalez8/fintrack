@@ -1,7 +1,7 @@
 import django_filters
 from django.db.models import Q
 
-from .models import Dividend, DividendSuggestion, Interest, StockSplit, Transaction
+from .models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
 
 
 class TransactionFilter(django_filters.FilterSet):
@@ -41,6 +41,23 @@ class InterestFilter(django_filters.FilterSet):
     class Meta:
         model = Interest
         fields = []
+
+
+class OtherIncomeFilter(django_filters.FilterSet):
+    year = django_filters.NumberFilter(field_name="date", lookup_expr="year")
+    from_date = django_filters.DateFilter(field_name="date", lookup_expr="gte")
+    to_date = django_filters.DateFilter(field_name="date", lookup_expr="lte")
+    category = django_filters.CharFilter(field_name="category")
+    declared = django_filters.BooleanFilter(field_name="declared")
+    account_id = django_filters.UUIDFilter(field_name="account_id")
+    search = django_filters.CharFilter(method="filter_search")
+
+    class Meta:
+        model = OtherIncome
+        fields = []
+
+    def filter_search(self, queryset, name, value):
+        return queryset.filter(Q(description__icontains=value) | Q(notes__icontains=value))
 
 
 class StockSplitFilter(django_filters.FilterSet):

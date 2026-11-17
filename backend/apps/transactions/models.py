@@ -120,6 +120,42 @@ class Interest(UserOwnedModel):
         return f"{self.date_start}→{self.date_end} Interest {self.account.name} {self.net}"
 
 
+class OtherIncome(UserOwnedModel):
+    """Money received outside payslips, dividends and interests (rent, freelance work, side jobs, gifts...).
+
+    ``amount`` is what was actually received. ``declared`` records whether the user reports it in their tax
+    return; undeclared income counts for savings and spending but never reaches the tax views.
+    """
+
+    class Category(models.TextChoices):
+        RENTAL = "RENTAL", "Rental"
+        SELF_EMPLOYMENT = "SELF_EMPLOYMENT", "Self-employment"
+        SIDE_JOB = "SIDE_JOB", "Side job"
+        GIFT = "GIFT", "Gift"
+        OTHER = "OTHER", "Other"
+
+    date = models.DateField()
+    category = models.CharField(max_length=20, choices=Category.choices, default=Category.OTHER)
+    description = models.CharField(max_length=200)
+    amount = models.DecimalField(max_digits=20, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))])
+    account = models.ForeignKey(
+        "assets.Account",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="other_incomes",
+    )
+    declared = models.BooleanField(default=False)
+    notes = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-date", "-created_at"]
+        indexes = [models.Index(fields=["owner", "date"], name="idx_otherinc_owner_date")]
+
+    def __str__(self):
+        return f"{self.date} {self.description} {self.amount}"
+
+
 class StockSplit(UserOwnedModel):
     """Stock split (or reverse split) of an asset.
 

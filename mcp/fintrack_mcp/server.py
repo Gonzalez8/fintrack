@@ -12,6 +12,7 @@ import logging
 import os
 import re
 import sys
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Annotated, Any, Literal
 
@@ -57,6 +58,8 @@ Rules:
 READ = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
 WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False)
 
+SPLIT_PAYMENT_WINDOW_DAYS = 120
+
 UUID_RE = re.compile(r"^[0-9a-fA-F-]{36}$")
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
@@ -76,6 +79,10 @@ def _decimal(value: str | None, field: str) -> str | None:
         return str(Decimal(str(value).replace(",", ".")))
     except InvalidOperation as exc:
         raise ToolError(f'"{field}" must be a number, got {value!r}.') from exc
+
+
+def _days_between(start: str, end: str) -> int:
+    return (date.fromisoformat(end[:10]) - date.fromisoformat(start[:10])).days
 
 
 def _page(data: Any, page: int, limit: int) -> dict[str, Any]:
@@ -229,17 +236,21 @@ def create_server(client: FintrackClient) -> MCPServer:
         return _page(await call("get", "interests/", params=params), page, limit)
 
     @mcp.tool(annotations=READ)
-    async def fintrack_get_year_summary() -> Any:
-        """Year-by-year fiscal summary: dividends, interests, realized gains and payroll totals."""
-        return await call("get", "reports/year-summary/")
+    async def fintrack_get_year_summary() -> dict[str, Any]:
+        """Year-by-year fiscal summary: dividends, interests, realized gains and payroll totals.
+
+        payroll_gross here is the taxable base (base IRPF when the payslip has it, otherwise gross), so it can differ
+        from the gross in fintrack_get_payroll_summary."""
+        return {"years": await call("get", "reports/year-summary/")}
 
     @mcp.tool(annotations=READ)
-    async def fintrack_get_net_worth_evolution() -> Any:
-        """Monthly net worth split into cash and investments."""
-        return await call("get", "reports/patrimonio-evolution/")
+    async def fintrack_get_net_worth_evolution() -> dict[str, Any]:
+        """Monthly net worth split into cash and investments. Cash comes from account balance snapshots: months
+        before the first snapshot show 0 cash, not a real zero."""
+        return {"months": await call("get", "reports/patrimonio-evolution/")}
 
     @mcp.tool(annotations=READ)
-    async def fintrack_get_tax_declaration(year: Annotated[int, Field(description="Fiscal year.")]) -> Any:
+    async def fintrack_get_tax_declaration(year: Annotated[int, Field(description="Fiscal year.")]) -> dict[str, Any]:
         """Tax-declaration helper for the user's fiscal country (Spain: Renta Web boxes for employment income,
         interests, dividends, double-taxation deduction and capital gains)."""
         return await call("get", "reports/tax-declaration/", params={"year": year})
@@ -256,7 +267,8 @@ def create_server(client: FintrackClient) -> MCPServer:
         asset: Annotated[str | None, Field(description="Limit to one asset (ticker, name or id).")] = None,
     ) -> dict[str, Any]:
         """Find dividends whose recorded share count differs from the shares the operations give on that date.
-        A mismatch usually means a missing or wrong operation (e.g. a gift or fractional buy never recorded)."""
+        A mismatch usually means a missing or wrong operation (e.g. a gift or fractional buy never recorded).
+        Dividends paid shortly after a split on the pre-split shares are listed apart as explained_by_split."""
         params: dict[str, Any] = {"page_size": 1000}
         if asset:
             a = await resolve_asset(asset)
@@ -267,33 +279,56 @@ def create_server(client: FintrackClient) -> MCPServer:
             if d.get("shares"):
                 by_asset.setdefault(d["asset"], []).append(d)
 
-        mismatches = []
+        mismatches, explained = [], []
         for asset_id, rows in by_asset.items():
             events = (await call("get", f"assets/{asset_id}/position-history/"))["events"]
             for d in rows:
                 held = Decimal("0")
+                before_splits: list[tuple[str, Decimal]] = []  # (split date, shares held just before it)
                 for e in events:  # events are in date order
                     if e["date"] > d["date"]:
                         break
-                    if e["kind"] != "SPLIT" or e.get("status") == "APPLIED":
+                    if e["kind"] == "SPLIT":
+                        if e.get("status") == "APPLIED":
+                            before_splits.append((e["date"], held))
+                            held = Decimal(e["quantity_after"])
+                    else:
                         held = Decimal(e["quantity_after"])
-                diff = Decimal(d["shares"]) - held
-                if abs(diff) > Decimal("0.0001"):
-                    mismatches.append(
-                        {
-                            "asset": d.get("asset_name"),
-                            "ticker": d.get("asset_ticker"),
-                            "dividend_date": d["date"],
-                            "dividend_shares": d["shares"],
-                            "shares_from_operations": str(held),
-                            "difference": str(diff),
-                        }
-                    )
+                shares = Decimal(d["shares"])
+                if abs(shares - held) <= Decimal("0.0001"):
+                    continue
+                row = {
+                    "asset": d.get("asset_name"),
+                    "ticker": d.get("asset_ticker"),
+                    "dividend_date": d["date"],
+                    "dividend_shares": d["shares"],
+                    "shares_from_operations": str(held),
+                    "difference": str(shares - held),
+                }
+                # Recorded on the payment date, but entitlement was fixed at the ex-date, which can fall before a
+                # split (e.g. BYD 2025: ex-date and 3:1 split on 10 June, paid on pre-split shares in July)
+                split = next(
+                    (
+                        (sd, q)
+                        for sd, q in reversed(before_splits)
+                        if _days_between(sd, d["date"]) <= SPLIT_PAYMENT_WINDOW_DAYS
+                        and abs(shares - q) <= Decimal("0.0001")
+                    ),
+                    None,
+                )
+                if split:
+                    explained.append({**row, "reason": f"paid on the shares held before the split of {split[0]}"})
+                else:
+                    mismatches.append(row)
         mismatches.sort(key=lambda m: (m["asset"] or "", m["dividend_date"]))
-        return {"checked_dividends": sum(len(r) for r in by_asset.values()), "mismatches": mismatches}
+        return {
+            "checked_dividends": sum(len(r) for r in by_asset.values()),
+            "mismatches": mismatches,
+            "explained_by_split": explained,
+        }
 
     @mcp.tool(annotations=READ)
-    async def fintrack_get_settings() -> Any:
+    async def fintrack_get_settings() -> dict[str, Any]:
         """User settings: base currency, cost-basis methods (portfolio and fiscal), gift cost mode, rounding and
         fiscal country."""
         return await call("get", "settings/")
@@ -339,15 +374,15 @@ def create_server(client: FintrackClient) -> MCPServer:
     async def fintrack_get_monthly_savings(
         from_month: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}$", description="First month, YYYY-MM.")] = None,
         to_month: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}$", description="Last month, YYYY-MM.")] = None,
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Month-by-month savings: cash at month end and its change, money newly invested (investment cost delta)
         and real savings = cash change + invested. Includes stats (average, best and worst month)."""
         return await call("get", "reports/monthly-savings/", params={"from": from_month, "to": to_month})
 
     @mcp.tool(annotations=READ)
-    async def fintrack_get_annual_savings() -> Any:
+    async def fintrack_get_annual_savings() -> dict[str, Any]:
         """Savings per year: total real savings, cash change, money invested and year-end balances."""
-        return await call("get", "reports/annual-savings/")
+        return {"years": await call("get", "reports/annual-savings/")}
 
     @mcp.tool(annotations=READ)
     async def fintrack_get_investment_flows(
@@ -535,7 +570,7 @@ def create_server(client: FintrackClient) -> MCPServer:
     async def fintrack_detect_dividend_drafts(
         asset: Annotated[str | None, Field(description="Only this asset (ticker, name or id).")] = None,
         backfill: Annotated[bool, Field(description="With asset: look back to the first purchase.")] = False,
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Ask Fintrack to look up dividends on Yahoo Finance and create drafts for the ones not recorded yet.
         Drafts are not dividends until accepted."""
         body: dict[str, Any] = {}
@@ -552,7 +587,7 @@ def create_server(client: FintrackClient) -> MCPServer:
         commission: Money = "0",
         net: Annotated[str | None, Field(description="Net received; defaults to gross − tax − commission.")] = None,
         shares: Annotated[str | None, Field(description="Shares; defaults to the draft's.")] = None,
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Turn a dividend draft into a recorded dividend with the figures confirmed by the user's broker."""
         g, t, c = (
             Decimal(_decimal(v, f))
@@ -575,14 +610,14 @@ def create_server(client: FintrackClient) -> MCPServer:
     @mcp.tool(annotations=WRITE)
     async def fintrack_dismiss_dividend_draft(
         draft_id: Annotated[str, Field(description="Id of the dividend draft.")],
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Dismiss a dividend draft; it will not be suggested again."""
         return await call("post", f"dividend-suggestions/{draft_id}/dismiss/")
 
     @mcp.tool(annotations=WRITE)
     async def fintrack_apply_split(
         split_id: Annotated[str, Field(description="Id of a pending stock split (fintrack_list_pending_reviews).")],
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Apply a detected stock split: from its date, shares are multiplied and unit costs divided."""
         return await call("post", f"splits/{split_id}/apply/")
 

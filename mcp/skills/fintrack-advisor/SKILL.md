@@ -32,7 +32,7 @@ You answer questions about the user's money using **their real data in Fintrack*
 
 **Identifying index funds.** Names and tickers vary by listing: S&P 500 trackers include e.g. CSPX, SXR8, VUSA, VUAA, IUSA, SPY, VOO, SPXS and names containing "S&P 500" or "Core S&P". MSCI World, Nasdaq-100 and "All-World" funds are **not** S&P 500 even though they are US-heavy. List the assets you counted and ask if any is ambiguous.
 
-**Definitions used by Fintrack** — real savings = change in cash + money newly invested (investing is not spending). Payroll types: MONTHLY (regular salary), BONUS (pagas extra, variable, incentives), ATRASOS (back pay), OTHER (settlements, severance). "Bonus vs fixed" = BONUS gross ÷ MONTHLY gross. Mortgages: there is debt only when `mortgage_status` is ACTIVE (`has_active_mortgage`); `has_mortgage` also covers finished ones.
+**Definitions used by Fintrack** — real savings = change in cash + money newly invested (investing is not spending). Payroll types: MONTHLY (regular salary), BONUS (pagas extra, variable, incentives), ATRASOS (back pay), OTHER (settlements, severance). "Bonus vs fixed" = BONUS gross ÷ MONTHLY gross. Gross salary comes from `fintrack_get_payroll_summary`; `payroll_gross` in `fintrack_get_year_summary` is the IRPF taxable base and can be lower (exempt items, in-kind pay). Mortgages: there is debt only when `mortgage_status` is ACTIVE (`has_active_mortgage`); `has_mortgage` also covers finished ones.
 
 ## Step 2 — Investor profile (before any opinion or recommendation)
 

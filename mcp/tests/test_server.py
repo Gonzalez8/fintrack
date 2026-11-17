@@ -199,6 +199,42 @@ async def test_check_dividend_shares_finds_a_missing_operation(api):
     ]
 
 
+async def test_dividend_paid_on_pre_split_shares_is_explained(api):
+    """BYD-like: ex-date before a 3:1 split, paid afterwards on the pre-split shares."""
+    dividends = [
+        {"asset": APPLE["id"], "asset_name": "Apple", "asset_ticker": "APC.F", "date": "2025-07-29", "shares": "15"},
+        {"asset": APPLE["id"], "asset_name": "Apple", "asset_ticker": "APC.F", "date": "2026-07-29", "shares": "15"},
+    ]
+    api.get("/dividends/").mock(return_value=httpx.Response(200, json=page(dividends)))
+    api.get(f"/assets/{APPLE['id']}/position-history/").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "quantity": "45",
+                "events": [
+                    {"kind": "BUY", "date": "2024-03-06", "quantity_after": "15"},
+                    {"kind": "SPLIT", "date": "2025-06-10", "status": "APPLIED", "quantity_after": "45"},
+                ],
+            },
+        )
+    )
+    result = payload(await call("fintrack_check_dividend_shares"))
+    assert [e["dividend_date"] for e in result["explained_by_split"]] == ["2025-07-29"]
+    assert "2025-06-10" in result["explained_by_split"][0]["reason"]
+    # A year later the pre-split count is no longer a valid explanation
+    assert [m["dividend_date"] for m in result["mismatches"]] == ["2026-07-29"]
+
+
+async def test_list_reports_return_structured_objects(api):
+    api.get("/reports/year-summary/").mock(return_value=httpx.Response(200, json=[{"year": 2025}, {"year": 2026}]))
+    api.get("/reports/annual-savings/").mock(return_value=httpx.Response(200, json=[{"year": 2026}]))
+    api.get("/reports/patrimonio-evolution/").mock(return_value=httpx.Response(200, json=[{"month": "2026-01"}]))
+    years = await call("fintrack_get_year_summary")
+    assert years.structured_content["years"] == [{"year": 2025}, {"year": 2026}]
+    assert (await call("fintrack_get_annual_savings")).structured_content == {"years": [{"year": 2026}]}
+    assert (await call("fintrack_get_net_worth_evolution")).structured_content == {"months": [{"month": "2026-01"}]}
+
+
 def test_main_requires_configuration(monkeypatch, capsys):
     monkeypatch.delenv("FINTRACK_URL", raising=False)
     monkeypatch.delenv("FINTRACK_TOKEN", raising=False)

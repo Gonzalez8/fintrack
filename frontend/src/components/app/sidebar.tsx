@@ -4,10 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, Briefcase, Landmark, Wallet, ArrowLeftRight,
-  Coins, Percent, FileText, Settings, LogOut, Moon, Sun,
-  TrendingUp, PiggyBank, UserCircle, Globe, Home, Eye, EyeOff,
-  Receipt, HandCoins,
+  LayoutDashboard, Settings, LogOut, Moon, Sun,
+  TrendingUp, UserCircle, Globe, Eye, EyeOff,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePrivacy } from "@/lib/privacy";
@@ -17,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
+import { NAV_AREAS, findArea, isSectionActive } from "@/lib/navigation";
 
 const LANGUAGES = [
   { code: "es", label: "Espanol" },
@@ -26,39 +25,10 @@ const LANGUAGES = [
   { code: "fr", label: "Francais" },
 ];
 
-function useNavSections() {
+function useNavLinks() {
   const t = useTranslations();
   return {
-    sections: [
-      {
-        label: t("nav.summary"),
-        links: [
-          { href: "/", icon: LayoutDashboard, label: t("nav.dashboard") },
-          { href: "/portfolio", icon: Briefcase, label: t("nav.portfolio") },
-        ],
-      },
-      {
-        label: t("nav.operations"),
-        links: [
-          { href: "/assets", icon: Landmark, label: t("nav.assets") },
-          { href: "/accounts", icon: Wallet, label: t("nav.accounts") },
-          { href: "/transactions", icon: ArrowLeftRight, label: t("nav.operations") },
-          { href: "/dividends", icon: Coins, label: t("nav.dividends") },
-          { href: "/interests", icon: Percent, label: t("nav.interests") },
-          { href: "/nominas", icon: Receipt, label: t("nav.payroll") },
-          { href: "/other-income", icon: HandCoins, label: t("nav.otherIncome") },
-        ],
-      },
-      {
-        label: t("nav.analysis"),
-        links: [
-          { href: "/savings", icon: PiggyBank, label: t("nav.savings") },
-          { href: "/properties", icon: Home, label: t("nav.properties") },
-        ],
-      },
-    ],
     bottomLinks: [
-      { href: "/tax", icon: FileText, label: t("nav.fiscal") },
       { href: "/settings", icon: Settings, label: t("nav.settings") },
       { href: "/profile", icon: UserCircle, label: t("nav.profile") },
     ],
@@ -70,13 +40,15 @@ function SidebarLink({
   href,
   icon: Icon,
   label,
+  active,
 }: {
   href: string;
   icon: typeof LayoutDashboard;
   label: string;
+  active?: boolean;
 }) {
   const pathname = usePathname();
-  const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = active ?? isSectionActive(href, pathname);
 
   return (
     <Link
@@ -106,7 +78,9 @@ export function Sidebar() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const isDark = mounted && resolvedTheme === "dark";
-  const { sections, bottomLinks, t } = useNavSections();
+  const { bottomLinks, t } = useNavLinks();
+  const pathname = usePathname();
+  const currentArea = findArea(pathname);
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
@@ -132,15 +106,14 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3">
-        {sections.map((section) => (
-          <div key={section.label} className="mb-3">
-            <p className="mb-1 px-4 font-mono text-[9px] tracking-[3px] uppercase text-muted-foreground/50">
-              {section.label}
-            </p>
-            {section.links.map((link) => (
-              <SidebarLink key={link.href} {...link} />
-            ))}
-          </div>
+        {NAV_AREAS.map((area) => (
+          <SidebarLink
+            key={area.key}
+            href={area.sections[0].href}
+            icon={area.icon}
+            label={t(area.labelKey)}
+            active={currentArea?.key === area.key}
+          />
         ))}
 
         <div className="my-3 h-px bg-border/60 mx-4" />

@@ -28,6 +28,9 @@
   "nav.savingsShort": "Savings",
   "nav.profileShort": "Profile",
   "nav.mainNav": "Main navigation",
+  "nav.investments": "Investments",
+  "nav.income": "Income",
+  "nav.wealth": "Net worth",
 
   "topbar.patrimony": "Net Worth",
   "topbar.pnl": "P&L",

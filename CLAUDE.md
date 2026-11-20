@@ -119,6 +119,7 @@ frontend/         Next.js 16 App Router
 - **Demo mode:** MSW-based mock data, fake JWT tokens, works without backend
 - **Mobile-first:** SwipeCard for list items, FAB for new items, stacked card layouts, responsive charts
 - **Dark/Light theme:** System-aware with manual toggle
+- **Installable (PWA):** `app/manifest.ts` (standalone, served at `/manifest.webmanifest`), icons from `app/pwa-icons/[name]/route.tsx` (192, 512, maskable 512), `viewport.themeColor` in the root layout, `appleWebApp` in `lib/seo.ts`. The middleware lets the manifest and icons through without auth. No service worker (Chrome no longer needs one to install; `/mockServiceWorker.js` is only for demo mode). Requires HTTPS
 
 ## AI Access (MCP)
 

@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.22.0] - 2026-11-20
+
+### Added
+
+- **Navigation in five areas.** Home, Investments, Income, Net worth and Tax replace the long menu. On desktop each area unfolds its pages in the sidebar (the current one always open, the rest remember your choice); on mobile the five areas are the bottom bar. The pages of the current area are tabs at the top that stay visible while scrolling. Pages, their URLs and inner tabs are unchanged. (#134)
+- **Account menu behind your avatar** at the top right (desktop top bar, now fixed while scrolling; mobile header): profile, settings, language, theme and logout, with the hide-amounts eye next to it. Language can now be changed on mobile. (#134)
+- **Cash by account on the dashboard.** A fixed card shows where your cash is: each account with its type, balance and share of the total. The cash card leaves Portfolio, which keeps market value, P&L and total cost. (#134)
+- **Invested capital chart.** Tap *Total cost* in Portfolio to see the money invested at each month end since your first operation, with what you put in (green) or took out selling (red) each month. It ends at the portfolio's total cost. (#134)
+- **Sales on the equity evolution chart.** Each sale is marked; hovering its day shows the gain it realized. A new *Unrealized | Total* selector: Total (in €) adds the gains already taken, so selling a winner no longer looks like a drop. Tap *Market value* or *Unrealized P&L* in Portfolio to open this chart. (#134)
+
+### Fixed
+
+- **False overnight spikes in the equity evolution.** Around midnight Yahoo briefly omits the day that just closed, and the price update took the close of one or two days earlier until the market opened (e.g. 30 Oct: real value 32,541 €, night snapshot 34,093 €). Prices now never step back to an older day. Snapshots already stored are not changed. (#133)
+- **Equity chart started with a false 0 %** from snapshots taken before any operation existed; they are now ignored. (#134)
+- **Asset names instead of tickers** in the pending dividend and split notices, the split detail and the sale markers. (#134)
+- **Euro axes respect hide-amounts** in the new charts. (#134)
+
+### MCP update
+
+- New read tool `fintrack_get_invested_capital_evolution` (money invested at each month end and the monthly change), backed by the new `GET /api/reports/investment-cost-evolution/`. The updated `fintrack-advisor.zip` is attached to this release — upload it again in Claude Desktop (Settings → Skills).
+
 ## [2.21.0] - 2026-11-17
 
 ### Added

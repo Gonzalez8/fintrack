@@ -575,12 +575,12 @@ def create_server(client: FintrackClient) -> MCPServer:
     def fintrack_portfolio_analysis() -> str:
         """Analyse the portfolio and each investment, with recommendations for my profile."""
         return (
-            "Analyse my investments with Fintrack and give me recommendations. Use my saved investor profile if you "
-            "keep one (age, horizon, risk tolerance, goals, emergency fund, preferences) and ask me only for what is "
-            "missing. Then review the whole portfolio (fintrack_get_portfolio, "
-            "fintrack_get_investment_flows, fintrack_get_monthly_savings) and each position: weight, concentration, "
-            "diversification by region/sector/currency, overlapping funds, costs, performance and fit with my "
-            "profile. If the fintrack-advisor skill is available, follow it."
+            "Analyse my investments with Fintrack and give me recommendations. Use my profile and financial plan "
+            "(PERFIL.md and PLAN-FINANCIERO.md, if you can read them: horizon, risk tolerance, goals, emergency fund, "
+            "strategy, rules) and ask me only for what is missing. Then review the whole portfolio "
+            "(fintrack_get_portfolio, fintrack_get_investment_flows, fintrack_get_monthly_savings) and each position: "
+            "weight, concentration, diversification by region/sector/currency, overlapping funds, costs, "
+            "performance and fit with my profile. If the fintrack-advisor skill is available, follow it."
         )
 
     # ----------------------------------------------------------------- write

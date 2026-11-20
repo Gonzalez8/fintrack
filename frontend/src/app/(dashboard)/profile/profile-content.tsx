@@ -1,14 +1,103 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api-client";
+import { toast } from "sonner";
+import { api, extractApiErrorMessage } from "@/lib/api-client";
+import { UserAvatar } from "@/components/app/user-avatar";
+import { AvatarCropper } from "@/components/app/avatar-cropper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, CheckCircle } from "lucide-react";
+import { UserCircle, CheckCircle, Camera, Trash2 } from "lucide-react";
 import { useTranslations } from "@/i18n/use-translations";
 import type { ProfileData, ChangePasswordData } from "@/types";
+
+// ---------------------------------------------------------------------------
+// Profile photo — framed by the user in AvatarCropper, sent as a data URL
+// ---------------------------------------------------------------------------
+function ProfilePhoto({ username, avatarVersion }: { username: string; avatarVersion?: number | null }) {
+  const t = useTranslations();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pickedSrc, setPickedSrc] = useState<string | null>(null);
+
+  const closeCropper = () => {
+    if (pickedSrc) URL.revokeObjectURL(pickedSrc);
+    setPickedSrc(null);
+  };
+
+  const onChanged = () => {
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
+    router.refresh(); // the avatar in the top bar comes from the server layout
+  };
+
+  const uploadMut = useMutation({
+    mutationFn: (image: string) => api.put("/auth/avatar/", { image }),
+    onSuccess: () => {
+      closeCropper();
+      onChanged();
+    },
+    onError: (err) => toast.error(extractApiErrorMessage(err, t("profile.photoUnreadable"))),
+  });
+
+  const removeMut = useMutation({
+    mutationFn: () => api.delete("/auth/avatar/"),
+    onSuccess: onChanged,
+  });
+
+  const busy = uploadMut.isPending || removeMut.isPending;
+
+  return (
+    <div className="mb-5 flex items-center gap-4">
+      <UserAvatar user={{ username, avatar_version: avatarVersion }} className="h-20 w-20 text-2xl" />
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) setPickedSrc(URL.createObjectURL(file));
+          }}
+        />
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => inputRef.current?.click()}>
+          <Camera className="h-4 w-4" />
+          {avatarVersion ? t("profile.changePhoto") : t("profile.addPhoto")}
+        </Button>
+        {avatarVersion ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy}
+            onClick={() => {
+              if (confirm(t("profile.removePhotoConfirm"))) removeMut.mutate();
+            }}
+            className="text-muted-foreground"
+          >
+            <Trash2 className="h-4 w-4" />
+            {t("profile.removePhoto")}
+          </Button>
+        ) : null}
+      </div>
+      <AvatarCropper
+        key={pickedSrc ?? "none"}
+        src={pickedSrc}
+        busy={uploadMut.isPending}
+        onCancel={closeCropper}
+        onConfirm={(image) => uploadMut.mutate(image)}
+        onError={() => {
+          closeCropper();
+          toast.error(t("profile.photoUnreadable"));
+        }}
+      />
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Profile card — view/edit toggle like v1
@@ -87,6 +176,7 @@ function ProfileCard() {
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <ProfilePhoto username={profile?.username ?? ""} avatarVersion={profile?.avatar_version} />
         {!editing ? (
           <div className="space-y-4">
             <div className="grid grid-cols-[100px_1fr] sm:grid-cols-[120px_1fr] gap-2 text-sm">

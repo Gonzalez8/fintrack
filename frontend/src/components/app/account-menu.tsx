@@ -13,6 +13,7 @@ import {
   DropdownMenuLabel, DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { useUser } from "@/components/app/providers";
+import { UserAvatar } from "@/components/app/user-avatar";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
 
@@ -49,8 +50,6 @@ export function AccountMenu() {
     router.refresh();
   };
 
-  const initial = (user.username || "?").charAt(0).toUpperCase();
-
   return (
     <div className="flex items-center gap-1">
       <button
@@ -70,9 +69,7 @@ export function AccountMenu() {
           aria-label={t("nav.profile")}
           className="flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-secondary"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-            {initial}
-          </span>
+          <UserAvatar user={user} className="h-7 w-7 text-xs" />
           <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent side="bottom" align="end" className="w-60">

@@ -17,6 +17,7 @@ urlpatterns = [
     path("google/", views.GoogleAuthView.as_view(), name="google-auth"),
     # Profile & password
     path("profile/", views.ProfileView.as_view(), name="profile"),
+    path("avatar/", views.AvatarView.as_view(), name="avatar"),
     path("change-password/", views.ChangePasswordView.as_view(), name="change-password"),
     # Personal access tokens (MCP server, scripts)
     path("", include(router.urls)),

@@ -28,7 +28,7 @@ export default async function DashboardLayout({
 }) {
   let user: User;
   try {
-    user = await djangoFetch<User>("/api/auth/me/", { revalidate: false });
+    user = await djangoFetch<User>("/api/auth/me/", { cache: "no-store" });
   } catch (err) {
     if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
       redirect("/login");

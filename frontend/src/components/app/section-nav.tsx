@@ -14,7 +14,7 @@ const STANDALONE_TITLES: Record<string, string> = {
   "/profile": "nav.profile",
 };
 
-// Sticky header with the sections of the current area as underline tabs.
+// Sticky header with the sections of the current area as underline tabs (below the sticky top bar on desktop).
 // Mobile also shows the area title and the account avatar.
 export function SectionNav() {
   const t = useTranslations();
@@ -85,7 +85,7 @@ export function SectionNav() {
       </div>
 
       {tabs && (
-        <div className="sticky top-0 z-40 hidden border-b bg-background/95 px-4 backdrop-blur md:block">
+        <div className="sticky top-[52px] z-30 hidden border-b bg-background/95 px-4 backdrop-blur md:block">
           {tabs}
         </div>
       )}

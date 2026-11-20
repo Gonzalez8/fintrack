@@ -6,6 +6,7 @@ import { Providers } from "@/components/app/providers";
 import { Sidebar } from "@/components/app/sidebar";
 import { TopBar } from "@/components/app/top-bar";
 import { MobileNav } from "@/components/app/mobile-nav";
+import { SectionNav } from "@/components/app/section-nav";
 import { getDictionary } from "@/i18n/config";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, COOKIE_ACCESS, isDemoToken } from "@/lib/constants";
 import { DemoBanner } from "@/components/app/demo-banner";
@@ -54,6 +55,7 @@ export default async function DashboardLayout({
         <Sidebar />
         <div className="flex flex-1 flex-col min-w-0">
           <TopBar />
+          <SectionNav />
           <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">{children}</main>
         </div>
       </div>

@@ -24,6 +24,7 @@ from .models import SavingsGoal
 from .serializers import SavingsGoalSerializer
 from .services import (
     annual_savings,
+    investment_cost_evolution,
     monthly_savings,
     patrimonio_evolution,
     rv_evolution,
@@ -63,6 +64,11 @@ class RVEvolutionView(APIView):
         data = rv_evolution(request.user)
         set_user_cache(request.user.pk, NS_REPORTS_RV, data, timeout=_REPORT_TTL)
         return Response(data)
+
+
+class InvestmentCostEvolutionView(APIView):
+    def get(self, request):
+        return Response(investment_cost_evolution(request.user))
 
 
 class MonthlySavingsView(APIView):

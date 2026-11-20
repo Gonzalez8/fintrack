@@ -2,88 +2,29 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  LayoutDashboard, Briefcase, Landmark, Wallet, ArrowLeftRight,
-  Coins, Percent, FileText, Settings, LogOut, Moon, Sun,
-  TrendingUp, PiggyBank, UserCircle, Globe, Home, Eye, EyeOff,
-  Receipt, HandCoins,
-} from "lucide-react";
-import { useTheme } from "next-themes";
-import { usePrivacy } from "@/lib/privacy";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, TrendingUp, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
-
-const LANGUAGES = [
-  { code: "es", label: "Espanol" },
-  { code: "en", label: "English" },
-  { code: "it", label: "Italiano" },
-  { code: "de", label: "Deutsch" },
-  { code: "fr", label: "Francais" },
-];
-
-function useNavSections() {
-  const t = useTranslations();
-  return {
-    sections: [
-      {
-        label: t("nav.summary"),
-        links: [
-          { href: "/", icon: LayoutDashboard, label: t("nav.dashboard") },
-          { href: "/portfolio", icon: Briefcase, label: t("nav.portfolio") },
-        ],
-      },
-      {
-        label: t("nav.operations"),
-        links: [
-          { href: "/assets", icon: Landmark, label: t("nav.assets") },
-          { href: "/accounts", icon: Wallet, label: t("nav.accounts") },
-          { href: "/transactions", icon: ArrowLeftRight, label: t("nav.operations") },
-          { href: "/dividends", icon: Coins, label: t("nav.dividends") },
-          { href: "/interests", icon: Percent, label: t("nav.interests") },
-          { href: "/nominas", icon: Receipt, label: t("nav.payroll") },
-          { href: "/other-income", icon: HandCoins, label: t("nav.otherIncome") },
-        ],
-      },
-      {
-        label: t("nav.analysis"),
-        links: [
-          { href: "/savings", icon: PiggyBank, label: t("nav.savings") },
-          { href: "/properties", icon: Home, label: t("nav.properties") },
-        ],
-      },
-    ],
-    bottomLinks: [
-      { href: "/tax", icon: FileText, label: t("nav.fiscal") },
-      { href: "/settings", icon: Settings, label: t("nav.settings") },
-      { href: "/profile", icon: UserCircle, label: t("nav.profile") },
-    ],
-    t,
-  };
-}
+import { NAV_AREAS, findArea, isSectionActive, type NavArea } from "@/lib/navigation";
 
 function SidebarLink({
   href,
   icon: Icon,
   label,
+  active,
 }: {
   href: string;
   icon: typeof LayoutDashboard;
   label: string;
+  active: boolean;
 }) {
-  const pathname = usePathname();
-  const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
-
   return (
     <Link
       href={href}
       className={cn(
         "flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-all duration-150 border-l-2",
-        isActive
+        active
           ? "border-primary bg-primary/[0.08] text-[#60a5fa]"
           : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
       )}
@@ -91,7 +32,7 @@ function SidebarLink({
       <Icon
         className={cn(
           "h-4 w-4 shrink-0 transition-colors",
-          isActive ? "text-[#60a5fa]" : "text-muted-foreground",
+          active ? "text-[#60a5fa]" : "text-muted-foreground",
         )}
       />
       {label}
@@ -99,23 +40,88 @@ function SidebarLink({
   );
 }
 
+const EXPANDED_KEY = "fintrack_nav_expanded";
+
+function readExpanded(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(EXPANDED_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function SidebarGroup({
+  area,
+  active,
+  open,
+  onToggle,
+}: {
+  area: NavArea;
+  active: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const t = useTranslations();
+  const pathname = usePathname();
+  const label = t(area.labelKey);
+
+  return (
+    <div>
+      <div className="relative">
+        <SidebarLink href={area.sections[0].href} icon={area.icon} label={label} active={active && !open} />
+        {!active && (
+          <button
+            onClick={onToggle}
+            aria-expanded={open}
+            aria-label={label}
+            className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="mb-1">
+          {area.sections.map((section) => {
+            const sectionActive = isSectionActive(section.href, pathname);
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                className={cn(
+                  "flex items-center py-1.5 pl-[42px] pr-4 text-[13px] border-l-2 transition-colors",
+                  sectionActive
+                    ? "border-primary bg-primary/[0.08] font-medium text-[#60a5fa]"
+                    : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                )}
+              >
+                {t(section.labelKey)}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Sidebar() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const { privacyMode, togglePrivacy } = usePrivacy();
-  const router = useRouter();
+  const t = useTranslations();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const isDark = mounted && resolvedTheme === "dark";
-  const { sections, bottomLinks, t } = useNavSections();
+  const pathname = usePathname();
+  const currentArea = findArea(pathname);
+  const [expanded, setExpanded] = useState<string[] | null>(null);
+  const expandedKeys = expanded ?? (mounted ? readExpanded() : []);
 
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
-    router.push("/login");
-  };
-
-  const handleLanguage = (code: string) => {
-    document.cookie = `fintrack_lang=${code};path=/;max-age=${365 * 86400}`;
-    router.refresh();
+  const toggleArea = (key: string) => {
+    const next = expandedKeys.includes(key)
+      ? expandedKeys.filter((k) => k !== key)
+      : [...expandedKeys, key];
+    setExpanded(next);
+    try {
+      localStorage.setItem(EXPANDED_KEY, JSON.stringify(next));
+    } catch { /* storage unavailable: keep it in memory */ }
   };
 
   return (
@@ -132,77 +138,33 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3">
-        {sections.map((section) => (
-          <div key={section.label} className="mb-3">
-            <p className="mb-1 px-4 font-mono text-[9px] tracking-[3px] uppercase text-muted-foreground/50">
-              {section.label}
-            </p>
-            {section.links.map((link) => (
-              <SidebarLink key={link.href} {...link} />
-            ))}
-          </div>
-        ))}
-
-        <div className="my-3 h-px bg-border/60 mx-4" />
-
-        {bottomLinks.map((link) => (
-          <SidebarLink key={link.href} {...link} />
-        ))}
+        {NAV_AREAS.map((area) => {
+          const active = currentArea?.key === area.key;
+          if (area.sections.length === 1) {
+            return (
+              <SidebarLink
+                key={area.key}
+                href={area.sections[0].href}
+                icon={area.icon}
+                label={t(area.labelKey)}
+                active={active}
+              />
+            );
+          }
+          // The current area is always open; the rest remember the user's choice.
+          const open = active || expandedKeys.includes(area.key);
+          return (
+            <SidebarGroup
+              key={area.key}
+              area={area}
+              active={active}
+              open={open}
+              onToggle={() => toggleArea(area.key)}
+            />
+          );
+        })}
       </nav>
 
-      {/* Footer */}
-      <div className="p-2 space-y-1 border-t border-sidebar-border">
-        {/* Language selector */}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all border-l-2 border-transparent hover:bg-secondary hover:text-foreground">
-              <Globe className="h-4 w-4 shrink-0" />
-              {t("nav.language")}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start">
-            {LANGUAGES.map((lang) => (
-              <DropdownMenuItem
-                key={lang.code}
-                onClick={() => handleLanguage(lang.code)}
-              >
-                {lang.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <button
-          onClick={togglePrivacy}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all border-l-2 border-transparent hover:bg-secondary hover:text-foreground"
-        >
-          {privacyMode ? (
-            <EyeOff className="h-4 w-4 shrink-0" />
-          ) : (
-            <Eye className="h-4 w-4 shrink-0" />
-          )}
-          {privacyMode ? t("nav.showAmounts") : t("nav.hideAmounts")}
-        </button>
-
-        <button
-          onClick={() => setTheme(isDark ? "light" : "dark")}
-          className="flex w-full items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all border-l-2 border-transparent hover:bg-secondary hover:text-foreground"
-        >
-          {isDark ? (
-            <Sun className="h-4 w-4 shrink-0" />
-          ) : (
-            <Moon className="h-4 w-4 shrink-0" />
-          )}
-          {isDark ? t("nav.lightMode") : t("nav.darkMode")}
-        </button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground px-4 rounded-none border-l-2 border-transparent hover:border-transparent"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {t("nav.logout")}
-        </Button>
-      </div>
     </aside>
   );
 }

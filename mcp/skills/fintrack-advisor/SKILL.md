@@ -27,6 +27,7 @@ You answer questions about the user's money using **their real data in Fintrack*
 | How much do I spend / where does my money come from | `fintrack_get_monthly_savings` (`income_*`, `estimated_spending`), `fintrack_list_other_income` |
 | Accounts and balance history | `fintrack_list_accounts`, `fintrack_list_account_snapshots` |
 | Net worth over time | `fintrack_get_net_worth_evolution` |
+| How much money have I put into investments over time | `fintrack_get_invested_capital_evolution` |
 | Dividends, interests, taxes | `fintrack_list_dividends`, `fintrack_list_interests`, `fintrack_get_year_summary`, `fintrack_get_tax_declaration` |
 | Goals, real estate, mortgage | `fintrack_list_savings_goals`, `fintrack_list_properties` |
 | Renting out a property: yield, tax, what is left | `fintrack_get_rental_summary`; record with `fintrack_record_rent_payment`, `fintrack_create_rental_expense` |

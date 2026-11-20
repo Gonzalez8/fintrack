@@ -119,6 +119,41 @@ class TestYearSummary:
         assert resp.status_code == 401
 
 
+# ── Investment cost evolution ─────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestInvestmentCostEvolution:
+    def test_empty_without_operations(self, client):
+        resp = client.get("/api/reports/investment-cost-evolution/")
+        assert resp.status_code == 200
+        assert resp.data == []
+
+    def test_monthly_cost_until_today(self, client, user, asset, account, transaction, other_client):
+        Transaction.objects.create(
+            owner=user,
+            date=datetime.date(2025, 5, 2),
+            type=Transaction.TransactionType.SELL,
+            asset=asset,
+            account=account,
+            quantity=Decimal("4.000000"),
+            price=Decimal("20.000000"),
+            commission=Decimal("0.00"),
+            tax=Decimal("0.00"),
+        )
+        resp = client.get("/api/reports/investment-cost-evolution/")
+        assert resp.status_code == 200
+        by_month = {p["month"]: p for p in resp.data}
+        assert resp.data[0]["month"] == "2025-03"
+        assert resp.data[-1]["month"] == datetime.date.today().strftime("%Y-%m")
+        # Buy 10 × 12.50 + 5 commission; selling 4 removes 4/10 of the lot's cost
+        assert by_month["2025-03"] == {"month": "2025-03", "cost": "130.00", "delta": "130.00"}
+        assert by_month["2025-04"] == {"month": "2025-04", "cost": "130.00", "delta": "0.00"}
+        assert by_month["2025-05"] == {"month": "2025-05", "cost": "78.00", "delta": "-52.00"}
+        # Other users never see it
+        assert other_client.get("/api/reports/investment-cost-evolution/").data == []
+
+
 # ── CSV Exports ───────────────────────────────────────────────────────────────
 
 

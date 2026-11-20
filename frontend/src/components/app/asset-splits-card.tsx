@@ -265,7 +265,7 @@ export function AssetSplitsCard({ asset }: { asset: Asset }) {
           onOpenChange={(v) => {
             if (!v) setDetail(null);
           }}
-          title={`${asset.ticker ?? asset.name} · ${formatSplitRatio(detail)}`}
+          title={`${asset.name || asset.ticker} · ${formatSplitRatio(detail)}`}
           subtitle={formatSplitDate(detail.date)}
           rows={[
             { label: t("splits.ratioLabel"), value: formatSplitRatio(detail) },

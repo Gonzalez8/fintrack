@@ -15,6 +15,7 @@ import {
   demoYearSummary,
   demoPatrimonioEvolution,
   demoRVEvolution,
+  demoInvestmentCostEvolution,
   demoMonthlySavings,
   demoMonthlySavingsStats,
   demoSnapshotStatus,
@@ -463,6 +464,11 @@ const proxyHandlers = [
   http.get("/api/proxy/reports/rv-evolution/", async () => {
     await delay(200);
     return HttpResponse.json(demoRVEvolution);
+  }),
+
+  http.get("/api/proxy/reports/investment-cost-evolution/", async () => {
+    await delay(200);
+    return HttpResponse.json(demoInvestmentCostEvolution);
   }),
 
   http.get("/api/proxy/reports/monthly-savings/", async () => {

@@ -1,4 +1,5 @@
 import type { PortfolioData } from "@/types";
+import { demoAccounts } from "./accounts";
 
 // Positions reflect net holdings after buys and sells (FIFO):
 // AAPL: bought 25+10=35, sold 10 → 25 shares (cost 4070.75)
@@ -11,6 +12,12 @@ import type { PortfolioData } from "@/types";
 // NVDA: bought 40+20=60, sold 15 → 45 shares (cost 4555.62)
 
 export const demoPortfolio: PortfolioData = {
+  accounts: demoAccounts.map((a) => ({
+    account_id: a.id,
+    account_name: a.name,
+    account_type: a.type,
+    balance: a.balance,
+  })),
   positions: [
     {
       asset_id: "a1b2c3d4-1111-4000-a000-000000000001",

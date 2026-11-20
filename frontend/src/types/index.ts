@@ -384,8 +384,16 @@ export interface RealizedSale {
   realized_pnl: string;
 }
 
+export interface PortfolioAccount {
+  account_id: string;
+  account_name: string;
+  account_type: AccountType;
+  balance: string;
+}
+
 export interface PortfolioData {
   positions: Position[];
+  accounts?: PortfolioAccount[];
   realized_sales: RealizedSale[];
   totals: {
     total_cost: string;
@@ -448,6 +456,12 @@ export interface PatrimonioPoint {
   investment_pnl: string;
   renta_variable: string;
   renta_fija: string;
+}
+
+export interface InvestmentCostPoint {
+  month: string; // YYYY-MM
+  cost: string; // invested at month end (cost of open positions)
+  delta: string; // change in the month: buys add, sales remove the cost sold
 }
 
 export interface RVEvolutionPoint {

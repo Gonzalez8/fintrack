@@ -8,7 +8,9 @@ import type {
   AnnualSavingsPoint,
   SavingsGoal,
   SavingsProjection,
+  InvestmentCostPoint,
 } from "@/types";
+import { demoTransactions } from "./transactions";
 
 // ── Year Summary ────────────────────────────────────────────────────
 // Dividends/interests match individual records. Realized PnL derived from FIFO sells.
@@ -456,3 +458,45 @@ export const demoSnapshotStatus: SnapshotStatus = {
   frequency_minutes: 60,
   total_snapshots: 1584,
 };
+
+// Average-cost replay of the demo operations, one point per month up to today.
+export const demoInvestmentCostEvolution: InvestmentCostPoint[] = (() => {
+  const txs = [...demoTransactions].sort((a, b) => a.date.localeCompare(b.date));
+  if (!txs.length) return [];
+  const held: Record<string, { qty: number; cost: number }> = {};
+  const costByMonth: Record<string, number> = {};
+  let total = 0;
+  for (const tx of txs) {
+    const pos = (held[tx.asset ?? ""] ??= { qty: 0, cost: 0 });
+    const qty = parseFloat(tx.quantity);
+    if (tx.type === "SELL") {
+      const removed = pos.qty > 0 ? (pos.cost / pos.qty) * Math.min(qty, pos.qty) : 0;
+      pos.qty -= qty;
+      pos.cost -= removed;
+      total -= removed;
+    } else {
+      const added = qty * parseFloat(tx.price ?? "0") + parseFloat(tx.commission ?? "0");
+      pos.qty += qty;
+      pos.cost += added;
+      total += added;
+    }
+    costByMonth[tx.date.slice(0, 7)] = total;
+  }
+  const points: InvestmentCostPoint[] = [];
+  const end = new Date();
+  let [y, m] = txs[0].date.split("-").map(Number);
+  let cost = 0;
+  let previous = 0;
+  while (y < end.getFullYear() || (y === end.getFullYear() && m <= end.getMonth() + 1)) {
+    const key = `${y}-${String(m).padStart(2, "0")}`;
+    cost = costByMonth[key] ?? cost;
+    points.push({ month: key, cost: cost.toFixed(2), delta: (cost - previous).toFixed(2) });
+    previous = cost;
+    m += 1;
+    if (m > 12) {
+      y += 1;
+      m = 1;
+    }
+  }
+  return points;
+})();

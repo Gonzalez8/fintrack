@@ -131,6 +131,37 @@ def rv_evolution(user):
     ]
 
 
+def investment_cost_evolution(user):
+    """Money invested (cost of open positions) at the end of each month, from the first operation to today.
+
+    ``delta`` is the change in the month: buys add their cost, sales remove the cost of the lots sold.
+    """
+    from apps.portfolio.services import investment_cost_timeline
+
+    timeline = investment_cost_timeline(user)
+    if not timeline:
+        return []
+
+    cents = Decimal("0.01")
+    cost_by_month = {day.strftime("%Y-%m"): cost for day, cost in timeline}
+    today = timezone.localdate()
+    year, month = timeline[0][0].year, timeline[0][0].month
+    cost = Decimal("0")
+    previous = Decimal("0")
+    points = []
+    while (year, month) <= (today.year, today.month):
+        key = f"{year:04d}-{month:02d}"
+        cost = cost_by_month.get(key, cost)
+        points.append(
+            {"month": key, "cost": str(cost.quantize(cents)), "delta": str((cost - previous).quantize(cents))}
+        )
+        previous = cost
+        month += 1
+        if month > 12:
+            year, month = year + 1, 1
+    return points
+
+
 def patrimonio_evolution(user):
     from apps.assets.models import AccountSnapshot, PortfolioSnapshot
     from apps.portfolio.services import calculate_portfolio

@@ -8,6 +8,7 @@ import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
 import { PendingDividendsBanner } from "@/components/app/pending-dividends-banner";
 import { PatrimonioEvolutionChart } from "@/components/app/patrimonio-evolution-chart";
 import { RVEvolutionChart } from "@/components/app/rv-evolution-chart";
+import { CashByAccountChart } from "@/components/app/cash-by-account-chart";
 import { formatMoney, formatPct } from "@/lib/utils";
 import { useChartTheme, CHART_COLORS } from "@/lib/chart-theme";
 import { useTranslations } from "@/i18n/use-translations";
@@ -175,8 +176,8 @@ export function DashboardContent() {
         </Card>
       </div>
 
-      {/* 3 Chart cards */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+      {/* 4 Chart cards */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
         {/* Allocation pie */}
         <Card className="overflow-hidden">
           <CardHeader>
@@ -340,6 +341,18 @@ export function DashboardContent() {
                 </ResponsiveContainer>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Cash by account */}
+        <Card className="overflow-hidden">
+          <CardHeader>
+            <CardTitle className="text-base">
+              {t("portfolio.cashByAccount")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CashByAccountChart accounts={portfolio?.accounts ?? []} />
           </CardContent>
         </Card>
       </div>

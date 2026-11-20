@@ -6,6 +6,11 @@ urlpatterns = [
     path("reports/year-summary/", views.YearSummaryView.as_view(), name="year-summary"),
     path("reports/patrimonio-evolution/", views.PatrimonioEvolutionView.as_view(), name="patrimonio-evolution"),
     path("reports/rv-evolution/", views.RVEvolutionView.as_view(), name="rv-evolution"),
+    path(
+        "reports/investment-cost-evolution/",
+        views.InvestmentCostEvolutionView.as_view(),
+        name="investment-cost-evolution",
+    ),
     path("reports/monthly-savings/", views.MonthlySavingsView.as_view(), name="monthly-savings"),
     path("reports/annual-savings/", views.AnnualSavingsView.as_view(), name="annual-savings"),
     path("reports/tax-declaration/", views.TaxDeclarationView.as_view(), name="tax-declaration"),

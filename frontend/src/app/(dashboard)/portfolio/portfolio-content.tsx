@@ -25,10 +25,21 @@ const PriceChart = dynamic(
   () => import("@/components/app/price-chart").then((m) => ({ default: m.PriceChart })),
   { ssr: false },
 );
+const InvestedCapitalChart = dynamic(
+  () => import("@/components/app/invested-capital-chart").then((m) => ({ default: m.InvestedCapitalChart })),
+  { ssr: false },
+);
+const RVEvolutionChart = dynamic(
+  () => import("@/components/app/rv-evolution-chart").then((m) => ({ default: m.RVEvolutionChart })),
+  { ssr: false },
+);
 import { formatMoney, moneyColor } from "@/lib/utils";
 import { ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import type { PortfolioData, Position } from "@/types";
 import { useTranslations } from "@/i18n/use-translations";
+
+const CLICKABLE_CARD =
+  "cursor-pointer transition-colors hover:ring-1 hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 export function PortfolioContent() {
   const t = useTranslations();
@@ -41,6 +52,7 @@ export function PortfolioContent() {
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(
     null,
   );
+  const [summaryChart, setSummaryChart] = useState<"rv" | "cost" | null>(null);
 
   const { data: portfolio, isLoading } = useQuery({
     queryKey: ["portfolio"],
@@ -193,10 +205,16 @@ export function PortfolioContent() {
         </p>
       )}
 
-      {/* 4 Summary cards: Mercado, P&L, Coste, Efectivo */}
+      {/* 3 Summary cards: Mercado, P&L, Coste */}
       {totals && (
-        <div className="grid gap-3 grid-cols-2 sm:gap-4 md:grid-cols-4">
-          <Card>
+        <div className="grid gap-3 grid-cols-2 sm:gap-4 md:grid-cols-3">
+          <Card
+            role="button"
+            tabIndex={0}
+            onClick={() => setSummaryChart("rv")}
+            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("rv")}
+            className={CLICKABLE_CARD}
+          >
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">
                 {t("dashboard.marketValue")}
@@ -207,11 +225,15 @@ export function PortfolioContent() {
             </CardContent>
           </Card>
           <Card
-            className={
+            role="button"
+            tabIndex={0}
+            onClick={() => setSummaryChart("rv")}
+            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("rv")}
+            className={`${CLICKABLE_CARD} ${
               totalPnl >= 0
                 ? "border-green-500/20 bg-green-500/5"
                 : "border-red-500/20 bg-red-500/5"
-            }
+            }`}
           >
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">
@@ -223,23 +245,19 @@ export function PortfolioContent() {
               <p className={`text-sm ${pnlColor}`}>{totalPnlPct}%</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            role="button"
+            tabIndex={0}
+            onClick={() => setSummaryChart("cost")}
+            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("cost")}
+            className={`col-span-2 md:col-span-1 ${CLICKABLE_CARD}`}
+          >
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">
                 {t("dashboard.totalCost")}
               </p>
               <p className="text-base sm:text-lg font-semibold">
                 {formatMoney(totals.total_cost)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">
-                {t("dashboard.cash")}
-              </p>
-              <p className="text-base sm:text-lg font-semibold">
-                {formatMoney(totals.total_cash)}
               </p>
             </CardContent>
           </Card>
@@ -398,6 +416,27 @@ export function PortfolioContent() {
           </DialogHeader>
           {selectedPosition && (
             <PriceChart assetId={selectedPosition.asset_id} ticker={selectedPosition.asset_ticker ?? null} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Market value / P&L open the equity evolution; total cost opens the money invested over time */}
+      <Dialog open={summaryChart !== null} onOpenChange={(o) => !o && setSummaryChart(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>
+              {summaryChart === "cost" ? t("portfolio.investedCapital") : t("dashboard.rvEvolution")}
+            </DialogTitle>
+          </DialogHeader>
+          {summaryChart === "rv" && (
+            <div className="[&>div]:border-0 [&>div]:shadow-none">
+              <RVEvolutionChart />
+            </div>
+          )}
+          {summaryChart === "cost" && (
+            <div className="px-4 pt-5 pb-4 sm:px-6 sm:pt-6">
+              <InvestedCapitalChart />
+            </div>
           )}
         </DialogContent>
       </Dialog>

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.24.0] - 2026-11-20
+
+### Added
+
+- **Profile photo.** Add, change or remove it in Profile; it shows on the avatar at the top right and in the mobile account menu (your initial otherwise). When you pick a picture you frame it yourself inside a circle — drag to move, zoom with the slider, the mouse wheel or pinching on mobile — and only that part is uploaded, as a small 256 px JPEG without EXIF/GPS data. It is stored in the database (no media volume needed) and included in backups. Only JPEG, PNG or WebP up to 300 KB are accepted, and API tokens can't read or change it. (#137)
+
+### Fixed
+
+- **A changed username could keep showing the old one** in the account menu until the session token rotated; the user is now always read fresh. (#137)
+
+### Migration notes
+
+- `core.0002_useravatar` adds a new table (additive).
+
 ## [2.23.0] - 2026-11-20
 
 ### Added

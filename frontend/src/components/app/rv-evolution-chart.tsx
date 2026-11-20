@@ -166,9 +166,10 @@ export function RVEvolutionChart() {
   const saleEvents = useMemo(() => groupSales(sales), [sales]);
 
   // Pre-parse all data to numeric ChartPoints, carrying the realized gains up to each point
+  // Snapshots without cost (taken before any operation was loaded) would plot a false 0%
   const allNumeric = useMemo(
     () =>
-      allData.map((p) => {
+      allData.filter((p) => parseFloat(p.cost) > 0).map((p) => {
         const { realized, soldCost } = realizedUntil(sales, pointDay(p.captured_at));
         return makeChartPoint(
           p.captured_at, parseFloat(p.value), parseFloat(p.cost), parseFloat(p.pnl), realized, soldCost,

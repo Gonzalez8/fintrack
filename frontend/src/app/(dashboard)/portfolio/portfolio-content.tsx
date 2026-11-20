@@ -25,10 +25,21 @@ const PriceChart = dynamic(
   () => import("@/components/app/price-chart").then((m) => ({ default: m.PriceChart })),
   { ssr: false },
 );
+const RVEvolutionChart = dynamic(
+  () => import("@/components/app/rv-evolution-chart").then((m) => ({ default: m.RVEvolutionChart })),
+  { ssr: false },
+);
+const CashByAccountChart = dynamic(
+  () => import("@/components/app/cash-by-account-chart").then((m) => ({ default: m.CashByAccountChart })),
+  { ssr: false },
+);
 import { formatMoney, moneyColor } from "@/lib/utils";
 import { ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import type { PortfolioData, Position } from "@/types";
 import { useTranslations } from "@/i18n/use-translations";
+
+const CLICKABLE_CARD =
+  "cursor-pointer transition-colors hover:ring-1 hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 export function PortfolioContent() {
   const t = useTranslations();
@@ -41,6 +52,7 @@ export function PortfolioContent() {
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(
     null,
   );
+  const [summaryChart, setSummaryChart] = useState<"rv" | "cash" | null>(null);
 
   const { data: portfolio, isLoading } = useQuery({
     queryKey: ["portfolio"],
@@ -196,7 +208,13 @@ export function PortfolioContent() {
       {/* 4 Summary cards: Mercado, P&L, Coste, Efectivo */}
       {totals && (
         <div className="grid gap-3 grid-cols-2 sm:gap-4 md:grid-cols-4">
-          <Card>
+          <Card
+            role="button"
+            tabIndex={0}
+            onClick={() => setSummaryChart("rv")}
+            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("rv")}
+            className={CLICKABLE_CARD}
+          >
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">
                 {t("dashboard.marketValue")}
@@ -207,11 +225,15 @@ export function PortfolioContent() {
             </CardContent>
           </Card>
           <Card
-            className={
+            role="button"
+            tabIndex={0}
+            onClick={() => setSummaryChart("rv")}
+            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("rv")}
+            className={`${CLICKABLE_CARD} ${
               totalPnl >= 0
                 ? "border-green-500/20 bg-green-500/5"
                 : "border-red-500/20 bg-red-500/5"
-            }
+            }`}
           >
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">
@@ -233,7 +255,13 @@ export function PortfolioContent() {
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            role="button"
+            tabIndex={0}
+            onClick={() => setSummaryChart("cash")}
+            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("cash")}
+            className={CLICKABLE_CARD}
+          >
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">
                 {t("dashboard.cash")}
@@ -398,6 +426,29 @@ export function PortfolioContent() {
           </DialogHeader>
           {selectedPosition && (
             <PriceChart assetId={selectedPosition.asset_id} ticker={selectedPosition.asset_ticker ?? null} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Summary card charts: market value / P&L → equity evolution, cash → by account */}
+      <Dialog open={summaryChart !== null} onOpenChange={(o) => !o && setSummaryChart(null)}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+          <DialogHeader
+            className={summaryChart === "rv" ? "sr-only" : "px-4 sm:px-6 pt-5 sm:pt-6 pb-2"}
+          >
+            <DialogTitle>
+              {summaryChart === "cash" ? t("portfolio.cashByAccount") : t("dashboard.rvEvolution")}
+            </DialogTitle>
+          </DialogHeader>
+          {summaryChart === "rv" && (
+            <div className="[&>div]:border-0 [&>div]:shadow-none">
+              <RVEvolutionChart />
+            </div>
+          )}
+          {summaryChart === "cash" && (
+            <div className="px-4 pb-5 sm:px-6 sm:pb-6">
+              <CashByAccountChart accounts={portfolio?.accounts ?? []} />
+            </div>
           )}
         </DialogContent>
       </Dialog>

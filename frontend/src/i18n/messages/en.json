@@ -179,6 +179,7 @@
   "portfolio.unrealizedPnl": "Unrealized P&L",
   "portfolio.totalCost": "Total Cost",
   "portfolio.cash": "Cash",
+  "portfolio.cashByAccount": "Cash by account",
   "portfolio.noPositions": "No active positions",
   "portfolio.quantity": "Quantity",
   "portfolio.avgCost": "Avg cost",

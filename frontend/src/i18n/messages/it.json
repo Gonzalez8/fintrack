@@ -179,6 +179,7 @@
   "portfolio.unrealizedPnl": "P&L non realizzato",
   "portfolio.totalCost": "Costo totale",
   "portfolio.cash": "Liquidità",
+  "portfolio.cashByAccount": "Liquidità per conto",
   "portfolio.noPositions": "Nessuna posizione attiva",
   "portfolio.quantity": "Quantità",
   "portfolio.avgCost": "Costo medio",

@@ -179,6 +179,7 @@
   "portfolio.unrealizedPnl": "Unrealisierte G&V",
   "portfolio.totalCost": "Gesamtkosten",
   "portfolio.cash": "Bargeld",
+  "portfolio.cashByAccount": "Bargeld nach Konto",
   "portfolio.noPositions": "Keine aktiven Positionen",
   "portfolio.quantity": "Menge",
   "portfolio.avgCost": "Durchschnittl. Kosten",

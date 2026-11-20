@@ -384,8 +384,16 @@ export interface RealizedSale {
   realized_pnl: string;
 }
 
+export interface PortfolioAccount {
+  account_id: string;
+  account_name: string;
+  account_type: AccountType;
+  balance: string;
+}
+
 export interface PortfolioData {
   positions: Position[];
+  accounts?: PortfolioAccount[];
   realized_sales: RealizedSale[];
   totals: {
     total_cost: string;

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { formatMoney, moneyColor } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
+import { AccountMenu } from "@/components/app/account-menu";
 import type { PortfolioData } from "@/types";
 
 export function TopBar() {
@@ -65,6 +66,10 @@ export function TopBar() {
         <span className="font-mono text-sm font-medium tabular-nums ml-1.5">
           {data?.totals ? formatMoney(data.totals.total_cash) : "\u2014"}
         </span>
+      </div>
+
+      <div className="ml-auto">
+        <AccountMenu />
       </div>
     </div>
   );

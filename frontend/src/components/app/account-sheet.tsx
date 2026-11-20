@@ -10,7 +10,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 import { useUser } from "@/components/app/providers";
-import { LANGUAGES, setLanguageCookie } from "@/components/app/sidebar";
+import { LANGUAGES, setLanguageCookie } from "@/components/app/account-menu";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
 

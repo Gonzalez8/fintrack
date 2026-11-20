@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,13 @@ import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
 import { PendingDividendsBanner } from "@/components/app/pending-dividends-banner";
 import { PatrimonioEvolutionChart } from "@/components/app/patrimonio-evolution-chart";
 import { RVEvolutionChart } from "@/components/app/rv-evolution-chart";
+import { CashByAccountChart } from "@/components/app/cash-by-account-chart";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { formatMoney, formatPct } from "@/lib/utils";
 import { useChartTheme, CHART_COLORS } from "@/lib/chart-theme";
 import { useTranslations } from "@/i18n/use-translations";
@@ -28,6 +36,7 @@ import {
 export function DashboardContent() {
   const t = useTranslations();
   const ct = useChartTheme();
+  const [cashOpen, setCashOpen] = useState(false);
 
   const { data: portfolio } = useQuery({
     queryKey: ["portfolio"],
@@ -103,7 +112,13 @@ export function DashboardContent() {
 
       {/* 3 Summary cards */}
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 md:grid-cols-3">
-        <Card>
+        <Card
+          role="button"
+          tabIndex={0}
+          onClick={() => setCashOpen(true)}
+          onKeyDown={(e) => e.key === "Enter" && setCashOpen(true)}
+          className="cursor-pointer transition-colors hover:ring-1 hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           <CardHeader className="pb-2">
             <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">
               {t("dashboard.totalPatrimony")}
@@ -194,6 +209,10 @@ export function DashboardContent() {
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
+                  className="cursor-pointer"
+                  onClick={(d: { name?: string }) => {
+                    if (d?.name === t("dashboard.cash")) setCashOpen(true);
+                  }}
                   label={({ percent }: { percent?: number }) =>
                     `${((percent ?? 0) * 100).toFixed(1)}%`
                   }
@@ -347,6 +366,15 @@ export function DashboardContent() {
       {/* Evolution charts */}
       <PatrimonioEvolutionChart />
       <RVEvolutionChart />
+
+      <Dialog open={cashOpen} onOpenChange={setCashOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("portfolio.cashByAccount")}</DialogTitle>
+          </DialogHeader>
+          <CashByAccountChart accounts={portfolio?.accounts ?? []} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

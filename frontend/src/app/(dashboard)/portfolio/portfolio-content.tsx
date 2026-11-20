@@ -29,10 +29,6 @@ const RVEvolutionChart = dynamic(
   () => import("@/components/app/rv-evolution-chart").then((m) => ({ default: m.RVEvolutionChart })),
   { ssr: false },
 );
-const CashByAccountChart = dynamic(
-  () => import("@/components/app/cash-by-account-chart").then((m) => ({ default: m.CashByAccountChart })),
-  { ssr: false },
-);
 import { formatMoney, moneyColor } from "@/lib/utils";
 import { ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import type { PortfolioData, Position } from "@/types";
@@ -52,7 +48,7 @@ export function PortfolioContent() {
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(
     null,
   );
-  const [summaryChart, setSummaryChart] = useState<"rv" | "cash" | null>(null);
+  const [rvOpen, setRvOpen] = useState(false);
 
   const { data: portfolio, isLoading } = useQuery({
     queryKey: ["portfolio"],
@@ -211,8 +207,8 @@ export function PortfolioContent() {
           <Card
             role="button"
             tabIndex={0}
-            onClick={() => setSummaryChart("rv")}
-            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("rv")}
+            onClick={() => setRvOpen(true)}
+            onKeyDown={(e) => e.key === "Enter" && setRvOpen(true)}
             className={CLICKABLE_CARD}
           >
             <CardContent className="pt-4 pb-3">
@@ -227,8 +223,8 @@ export function PortfolioContent() {
           <Card
             role="button"
             tabIndex={0}
-            onClick={() => setSummaryChart("rv")}
-            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("rv")}
+            onClick={() => setRvOpen(true)}
+            onKeyDown={(e) => e.key === "Enter" && setRvOpen(true)}
             className={`${CLICKABLE_CARD} ${
               totalPnl >= 0
                 ? "border-green-500/20 bg-green-500/5"
@@ -255,13 +251,7 @@ export function PortfolioContent() {
               </p>
             </CardContent>
           </Card>
-          <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => setSummaryChart("cash")}
-            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("cash")}
-            className={CLICKABLE_CARD}
-          >
+          <Card>
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">
                 {t("dashboard.cash")}
@@ -430,26 +420,15 @@ export function PortfolioContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Summary card charts: market value / P&L → equity evolution, cash → by account */}
-      <Dialog open={summaryChart !== null} onOpenChange={(o) => !o && setSummaryChart(null)}>
+      {/* Market value / P&L cards open the equity evolution chart */}
+      <Dialog open={rvOpen} onOpenChange={setRvOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
-          <DialogHeader
-            className={summaryChart === "rv" ? "sr-only" : "px-4 sm:px-6 pt-5 sm:pt-6 pb-2"}
-          >
-            <DialogTitle>
-              {summaryChart === "cash" ? t("portfolio.cashByAccount") : t("dashboard.rvEvolution")}
-            </DialogTitle>
+          <DialogHeader className="sr-only">
+            <DialogTitle>{t("dashboard.rvEvolution")}</DialogTitle>
           </DialogHeader>
-          {summaryChart === "rv" && (
-            <div className="[&>div]:border-0 [&>div]:shadow-none">
-              <RVEvolutionChart />
-            </div>
-          )}
-          {summaryChart === "cash" && (
-            <div className="px-4 pb-5 sm:px-6 sm:pb-6">
-              <CashByAccountChart accounts={portfolio?.accounts ?? []} />
-            </div>
-          )}
+          <div className="[&>div]:border-0 [&>div]:shadow-none">
+            <RVEvolutionChart />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.0] - 2026-11-20
+
+### Added
+
+- **Install Fintrack as an app.** Over HTTPS, Chrome on Android offers *Install app* (⋮ menu): Fintrack gets its own icon and opens full screen without the address bar, with the status bar in the app's colour. On iPhone: Safari → Share → *Add to Home Screen*. It is the same web, so every release reaches the installed app on its own. (#135)
+- **The AI advisor keeps your profile and financial plan in two portable files.** The `fintrack-advisor` skill no longer keeps your profile in Claude Code's memory: `PERFIL.md` (who you are — how you want to be advised, housing, horizon, risk tolerance, emergency fund, preferences, recording rules) and `PLAN-FINANCIERO.md` (goals, strategy, rules for falls, exit plan, roadmap, pending items and a dated decision log) live next to your `CLAUDE.md`, readable by any assistant. It creates them from the new `templates/` if missing and updates them in the same session. It also gives one concrete recommendation (amounts, ISIN, dates) with at most one alternative, separates money by when it will be needed, explains which period each monthly savings row really covers, treats public market data and the currency you buy in with care, and never takes a screenshot as confirmation for a write. Keep both files out of git. (#136)
+
+### MCP update
+
+- The *Portfolio analysis* prompt now reads `PERFIL.md` and `PLAN-FINANCIERO.md`; update the MCP command (Settings shows it pinned to v2.23.0). The updated `fintrack-advisor.zip`, now with `templates/`, is attached to this release — upload it again in Claude Desktop (Settings → Skills). If you had a `perfil-financiero` memory from v2.21.0, move it into `PERFIL.md` and delete it.
+
 ## [2.22.0] - 2026-11-20
 
 ### Added

@@ -27,6 +27,10 @@ node_modules/
 out/
 .vercel
 
+# Personal advisor files (fintrack-advisor skill) — never commit
+PERFIL.md
+PLAN-FINANCIERO.md
+
 # Environment
 .env
 .env.local

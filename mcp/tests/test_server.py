@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 36 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 37 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -245,10 +245,15 @@ async def test_list_reports_return_structured_objects(api):
     api.get("/reports/year-summary/").mock(return_value=httpx.Response(200, json=[{"year": 2025}, {"year": 2026}]))
     api.get("/reports/annual-savings/").mock(return_value=httpx.Response(200, json=[{"year": 2026}]))
     api.get("/reports/patrimonio-evolution/").mock(return_value=httpx.Response(200, json=[{"month": "2026-01"}]))
+    api.get("/reports/investment-cost-evolution/").mock(
+        return_value=httpx.Response(200, json=[{"month": "2026-01", "cost": "100.00", "delta": "100.00"}])
+    )
     years = await call("fintrack_get_year_summary")
     assert years.structured_content["years"] == [{"year": 2025}, {"year": 2026}]
     assert (await call("fintrack_get_annual_savings")).structured_content == {"years": [{"year": 2026}]}
     assert (await call("fintrack_get_net_worth_evolution")).structured_content == {"months": [{"month": "2026-01"}]}
+    invested = await call("fintrack_get_invested_capital_evolution")
+    assert invested.structured_content == {"months": [{"month": "2026-01", "cost": "100.00", "delta": "100.00"}]}
 
 
 def test_main_requires_configuration(monkeypatch, capsys):

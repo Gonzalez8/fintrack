@@ -72,7 +72,9 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 ### Reports & Analytics
 - **Year summary** — Dividends, interests, realized P&L, total income by year
 - **Patrimonio evolution** — Total net worth over time (cash + investments). Cash is the month's balance photo minus what was moved into investments after it, so a purchase made after the photo is not counted twice
-- **Portfolio evolution** — Market value, cost basis, unrealized P&L charts
+- **Portfolio evolution** — Market value, cost basis, unrealized P&L charts. Sales are marked on the equity chart with the gain they realized, and a **Total** mode adds the gains already taken (in €), so selling a winner no longer looks like a drop
+- **Invested capital** — Money invested at each month end since the first operation, with what was put in or taken out each month (tap *Total cost* in the portfolio)
+- **Cash by account** — Dashboard card showing where the cash is, per account with its share of the total
 - **Monthly savings** — Cashflow and savings rate analysis, with the month's income (net payslips, other income, dividends and interests) and the **estimated spending** it implies (income − real savings)
 - **Annual savings** — Yearly savings aggregates and breakdown, with yearly income and estimated spending
 - **Savings goals** — Target-based goals with 3-scenario projections (conservative, average, optimistic)
@@ -134,12 +136,16 @@ Fintrack ships **two layers** of tax reporting:
 - **Modo Renta** — "Rendimientos del capital inmobiliario" block with copyable figures per property. See [ADR-012](docs/adr/012-rental-management-and-tax.md)
 
 ### Privacy Mode
-- **One-click toggle** — Eye icon in sidebar / mobile nav masks all personal monetary amounts
+- **One-click toggle** — Eye icon next to the avatar (top bar on desktop, header on mobile) masks all personal monetary amounts
 - **Smart masking** — Only personal amounts hidden (balances, gains, dividends). Public data stays visible: asset prices, percentages, share quantities
 - **Persistent** — Stored in cookie, survives page reload
 
 ### AI Assistant (MCP)
 - **Use Fintrack from Claude** — A local MCP server lets Claude Desktop or Claude Code review your portfolio, operations, dividends and reports, find inconsistencies and, with a write-enabled token, add records. See [AI Access (MCP)](#ai-access-mcp)
+
+### Navigation
+- **Five areas** — Home, Investments, Income, Net worth and Tax in the sidebar (desktop, each one unfolds its pages) and the bottom bar (mobile); the pages of the current area are tabs at the top
+- **Account menu** — Avatar at the top right with profile, settings, language, theme and logout
 
 ### Internationalization
 - **5 languages** — Spanish, English, German, French, Italian
@@ -548,6 +554,7 @@ POST    /api/payrolls/bulk-delete/
 GET     /api/reports/year-summary/
 GET     /api/reports/patrimonio-evolution/
 GET     /api/reports/rv-evolution/
+GET     /api/reports/investment-cost-evolution/   Money invested at each month end + monthly change
 GET     /api/reports/monthly-savings/
 GET     /api/reports/annual-savings/
 GET     /api/reports/snapshot-status/

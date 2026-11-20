@@ -312,6 +312,13 @@ def create_server(client: FintrackClient) -> MCPServer:
         return {"months": await call("get", "reports/patrimonio-evolution/")}
 
     @mcp.tool(annotations=READ)
+    async def fintrack_get_invested_capital_evolution() -> dict[str, Any]:
+        """Money invested (cost of the open positions, user's cost method) at the end of every month from the first
+        operation to today. delta is the change in the month: buys add their cost, sales remove the cost of the lots
+        sold. The last month equals the portfolio's total_cost."""
+        return {"months": await call("get", "reports/investment-cost-evolution/")}
+
+    @mcp.tool(annotations=READ)
     async def fintrack_get_tax_declaration(year: Annotated[int, Field(description="Fiscal year.")]) -> dict[str, Any]:
         """Tax-declaration helper for the user's fiscal country (Spain: Renta Web boxes for employment income,
         interests, dividends, double-taxation deduction and capital gains)."""

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Settings, LogOut, Moon, Sun,
-  TrendingUp, UserCircle, Globe, Eye, EyeOff, ChevronsUpDown,
+  TrendingUp, UserCircle, Globe, Eye, EyeOff, ChevronsUpDown, ChevronRight,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePrivacy } from "@/lib/privacy";
@@ -16,7 +16,7 @@ import {
 import { useUser } from "@/components/app/providers";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
-import { NAV_AREAS, findArea } from "@/lib/navigation";
+import { NAV_AREAS, findArea, isSectionActive, type NavArea } from "@/lib/navigation";
 
 export const LANGUAGES = [
   { code: "es", label: "Español" },
@@ -62,6 +62,71 @@ function SidebarLink({
   );
 }
 
+const EXPANDED_KEY = "fintrack_nav_expanded";
+
+function readExpanded(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(EXPANDED_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function SidebarGroup({
+  area,
+  active,
+  open,
+  onToggle,
+}: {
+  area: NavArea;
+  active: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const t = useTranslations();
+  const pathname = usePathname();
+  const label = t(area.labelKey);
+
+  return (
+    <div>
+      <div className="relative">
+        <SidebarLink href={area.sections[0].href} icon={area.icon} label={label} active={active && !open} />
+        {!active && (
+          <button
+            onClick={onToggle}
+            aria-expanded={open}
+            aria-label={label}
+            className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="mb-1">
+          {area.sections.map((section) => {
+            const sectionActive = isSectionActive(section.href, pathname);
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                className={cn(
+                  "flex items-center py-1.5 pl-[42px] pr-4 text-[13px] border-l-2 transition-colors",
+                  sectionActive
+                    ? "border-primary bg-primary/[0.08] font-medium text-[#60a5fa]"
+                    : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+                )}
+              >
+                {t(section.labelKey)}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Sidebar() {
   const t = useTranslations();
   const user = useUser();
@@ -73,6 +138,18 @@ export function Sidebar() {
   const isDark = mounted && resolvedTheme === "dark";
   const pathname = usePathname();
   const currentArea = findArea(pathname);
+  const [expanded, setExpanded] = useState<string[] | null>(null);
+  const expandedKeys = expanded ?? (mounted ? readExpanded() : []);
+
+  const toggleArea = (key: string) => {
+    const next = expandedKeys.includes(key)
+      ? expandedKeys.filter((k) => k !== key)
+      : [...expandedKeys, key];
+    setExpanded(next);
+    try {
+      localStorage.setItem(EXPANDED_KEY, JSON.stringify(next));
+    } catch { /* storage unavailable: keep it in memory */ }
+  };
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
@@ -100,15 +177,31 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3">
-        {NAV_AREAS.map((area) => (
-          <SidebarLink
-            key={area.key}
-            href={area.sections[0].href}
-            icon={area.icon}
-            label={t(area.labelKey)}
-            active={currentArea?.key === area.key}
-          />
-        ))}
+        {NAV_AREAS.map((area) => {
+          const active = currentArea?.key === area.key;
+          if (area.sections.length === 1) {
+            return (
+              <SidebarLink
+                key={area.key}
+                href={area.sections[0].href}
+                icon={area.icon}
+                label={t(area.labelKey)}
+                active={active}
+              />
+            );
+          }
+          // The current area is always open; the rest remember the user's choice.
+          const open = active || expandedKeys.includes(area.key);
+          return (
+            <SidebarGroup
+              key={area.key}
+              area={area}
+              active={active}
+              open={open}
+              onToggle={() => toggleArea(area.key)}
+            />
+          );
+        })}
       </nav>
 
       {/* Account */}

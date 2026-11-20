@@ -146,6 +146,7 @@ Fintrack ships **two layers** of tax reporting:
 ### Navigation
 - **Five areas** — Home, Investments, Income, Net worth and Tax in the sidebar (desktop, each one unfolds its pages) and the bottom bar (mobile); the pages of the current area are tabs at the top
 - **Account menu** — Avatar at the top right with profile, settings, language, theme and logout
+- **Installable app** — Over HTTPS, Chrome on Android offers "Install app": Fintrack opens full screen from its own icon, like a native app (also on desktop Chrome/Edge; on iPhone, Share → Add to Home Screen). It is the same web, so every release reaches it on its own
 
 ### Internationalization
 - **5 languages** — Spanish, English, German, French, Italian

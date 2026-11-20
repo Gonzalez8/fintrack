@@ -8,7 +8,7 @@ const PUBLIC_PATHS = ["/login", "/welcome"];
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Skip API routes, static files, generated images, MSW service worker
+  // Skip API routes, static files, generated images, web app manifest, MSW service worker
   if (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
@@ -17,7 +17,9 @@ export async function middleware(req: NextRequest) {
     pathname === "/opengraph-image" ||
     pathname === "/twitter-image" ||
     pathname === "/icon" ||
-    pathname === "/apple-icon"
+    pathname === "/apple-icon" ||
+    pathname === "/manifest.webmanifest" ||
+    pathname.startsWith("/pwa-icons/")
   ) {
     return NextResponse.next();
   }

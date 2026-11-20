@@ -28,6 +28,8 @@ export function generateMetadata(
     description: messages["seo.description"],
     keywords: messages["seo.keywords"],
     metadataBase: new URL(SITE_URL),
+    applicationName: "Fintrack",
+    appleWebApp: { capable: true, title: "Fintrack", statusBarStyle: "default" },
     openGraph: {
       title: messages["seo.ogTitle"],
       description: messages["seo.ogDescription"],

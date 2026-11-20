@@ -201,9 +201,9 @@ export function PortfolioContent() {
         </p>
       )}
 
-      {/* 4 Summary cards: Mercado, P&L, Coste, Efectivo */}
+      {/* 3 Summary cards: Mercado, P&L, Coste */}
       {totals && (
-        <div className="grid gap-3 grid-cols-2 sm:gap-4 md:grid-cols-4">
+        <div className="grid gap-3 grid-cols-2 sm:gap-4 md:grid-cols-3">
           <Card
             role="button"
             tabIndex={0}
@@ -241,23 +241,13 @@ export function PortfolioContent() {
               <p className={`text-sm ${pnlColor}`}>{totalPnlPct}%</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="col-span-2 md:col-span-1">
             <CardContent className="pt-4 pb-3">
               <p className="text-xs text-muted-foreground">
                 {t("dashboard.totalCost")}
               </p>
               <p className="text-base sm:text-lg font-semibold">
                 {formatMoney(totals.total_cost)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">
-                {t("dashboard.cash")}
-              </p>
-              <p className="text-base sm:text-lg font-semibold">
-                {formatMoney(totals.total_cash)}
               </p>
             </CardContent>
           </Card>

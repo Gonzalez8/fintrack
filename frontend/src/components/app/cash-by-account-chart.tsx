@@ -29,66 +29,68 @@ export function CashByAccountChart({ accounts }: { accounts: PortfolioAccount[] 
   }
 
   return (
-    <div className="grid items-center gap-4 sm:grid-cols-[220px_1fr]">
-      <div className="relative">
-        <ResponsiveContainer width="100%" height={220}>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={62}
-              outerRadius={95}
-              paddingAngle={data.length > 1 ? 2 : 0}
-              stroke="none"
-            >
-              {data.map((d, i) => (
-                <Cell key={d.id} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(v) => formatMoney(v as number)}
-              contentStyle={ct.tooltipStyle}
-              labelStyle={ct.tooltipLabelStyle}
-              itemStyle={ct.tooltipItemStyle}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xs text-muted-foreground">{t("dashboard.cash")}</span>
-          <span className="text-base font-bold tabular-nums">{formatMoney(total)}</span>
-        </div>
-      </div>
-
-      <ul className="space-y-2">
-        {data.map((d, i) => (
-          <li key={d.id}>
-            <Link
-              href="/accounts"
-              className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-secondary"
-            >
-              <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
+    <div className="@container">
+      <div className="grid items-center gap-4 @md:grid-cols-[200px_1fr]">
+        <div className="relative">
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={62}
+                outerRadius={95}
+                paddingAngle={data.length > 1 ? 2 : 0}
+                stroke="none"
+              >
+                {data.map((d, i) => (
+                  <Cell key={d.id} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(v) => formatMoney(v as number)}
+                contentStyle={ct.tooltipStyle}
+                labelStyle={ct.tooltipLabelStyle}
+                itemStyle={ct.tooltipItemStyle}
               />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{d.name}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {ACCOUNT_TYPE_KEYS[d.type] ? t(ACCOUNT_TYPE_KEYS[d.type]) : d.type}
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xs text-muted-foreground">{t("dashboard.cash")}</span>
+            <span className="text-base font-bold tabular-nums">{formatMoney(total)}</span>
+          </div>
+        </div>
+
+        <ul className="space-y-2">
+          {data.map((d, i) => (
+            <li key={d.id}>
+              <Link
+                href="/accounts"
+                className="flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-secondary"
+              >
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{d.name}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {ACCOUNT_TYPE_KEYS[d.type] ? t(ACCOUNT_TYPE_KEYS[d.type]) : d.type}
+                  </span>
                 </span>
-              </span>
-              <span className="text-right">
-                <span className="block text-sm font-semibold tabular-nums">{formatMoney(d.value)}</span>
-                <span className="block text-xs tabular-nums text-muted-foreground">
-                  {((d.value / total) * 100).toFixed(1)}%
+                <span className="text-right">
+                  <span className="block text-sm font-semibold tabular-nums">{formatMoney(d.value)}</span>
+                  <span className="block text-xs tabular-nums text-muted-foreground">
+                    {((d.value / total) * 100).toFixed(1)}%
+                  </span>
                 </span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

@@ -180,6 +180,7 @@
   "portfolio.totalCost": "Coût Total",
   "portfolio.cash": "Liquidités",
   "portfolio.cashByAccount": "Liquidités par compte",
+  "portfolio.investedCapital": "Capital investi",
   "portfolio.noPositions": "Aucune position active",
   "portfolio.quantity": "Quantité",
   "portfolio.avgCost": "Coût moyen",

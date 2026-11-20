@@ -46,6 +46,7 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/reports/year-summary": data.demoYearSummary,
     "/api/reports/patrimonio-evolution": data.demoPatrimonioEvolution,
     "/api/reports/rv-evolution": data.demoRVEvolution,
+    "/api/reports/investment-cost-evolution": data.demoInvestmentCostEvolution,
     "/api/reports/monthly-savings": { months: data.demoMonthlySavings, stats: data.demoMonthlySavingsStats },
     "/api/reports/snapshot-status": data.demoSnapshotStatus,
     "/api/reports/annual-savings": data.demoAnnualSavings,

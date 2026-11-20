@@ -12,6 +12,7 @@ export {
   demoYearSummary,
   demoPatrimonioEvolution,
   demoRVEvolution,
+  demoInvestmentCostEvolution,
   demoMonthlySavings,
   demoMonthlySavingsStats,
   demoSnapshotStatus,

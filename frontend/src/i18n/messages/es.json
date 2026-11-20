@@ -180,6 +180,7 @@
   "portfolio.totalCost": "Coste Total",
   "portfolio.cash": "Efectivo",
   "portfolio.cashByAccount": "Efectivo por cuenta",
+  "portfolio.investedCapital": "Dinero invertido",
   "portfolio.noPositions": "Sin posiciones activas",
   "portfolio.quantity": "Cantidad",
   "portfolio.avgCost": "Coste medio",

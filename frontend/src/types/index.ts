@@ -458,6 +458,12 @@ export interface PatrimonioPoint {
   renta_fija: string;
 }
 
+export interface InvestmentCostPoint {
+  month: string; // YYYY-MM
+  cost: string; // invested at month end (cost of open positions)
+  delta: string; // change in the month: buys add, sales remove the cost sold
+}
+
 export interface RVEvolutionPoint {
   captured_at: string;
   value: string;

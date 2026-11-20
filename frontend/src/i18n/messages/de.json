@@ -180,6 +180,7 @@
   "portfolio.totalCost": "Gesamtkosten",
   "portfolio.cash": "Bargeld",
   "portfolio.cashByAccount": "Bargeld nach Konto",
+  "portfolio.investedCapital": "Investiertes Kapital",
   "portfolio.noPositions": "Keine aktiven Positionen",
   "portfolio.quantity": "Menge",
   "portfolio.avgCost": "Durchschnittl. Kosten",

@@ -8,8 +8,19 @@ from django.utils import timezone
 from .models import Asset, PortfolioSnapshot
 
 
+def _last_close(col):
+    """Last non-empty close of a price column as ``(bar_date, close)``, or None."""
+    col = col.dropna()
+    if col.empty:
+        return None
+    close = float(col.iloc[-1])
+    if math.isnan(close):
+        return None
+    return col.index[-1].date(), close
+
+
 def _fetch_batch(tickers, period="5d"):
-    """Fetch latest closing prices for a list of tickers. Returns {ticker: float}."""
+    """Fetch latest closing prices for a list of tickers. Returns {ticker: (bar_date, close)}."""
     import yfinance as yf
 
     if not tickers:
@@ -21,28 +32,21 @@ def _fetch_batch(tickers, period="5d"):
 
     prices = {}
 
-    if len(tickers) == 1:
-        ticker = tickers[0]
+    close = data["Close"]
+    for ticker in tickers:
+        # One column per ticker (a plain Series when yfinance returns a single ticker flat)
+        if hasattr(close, "columns"):
+            if ticker not in close.columns:
+                continue
+            col = close[ticker]
+        else:
+            col = close
         try:
-            col = data["Close"]
-            val = col.dropna().iloc[-1]
-            close = float(val)
-            if not math.isnan(close):
-                prices[ticker] = close
+            last = _last_close(col)
         except (IndexError, KeyError, TypeError, ValueError):
-            pass
-    else:
-        close_df = data["Close"]
-        for ticker in tickers:
-            try:
-                col = close_df[ticker].dropna()
-                if col.empty:
-                    continue
-                close = float(col.iloc[-1])
-                if not math.isnan(close):
-                    prices[ticker] = close
-            except (IndexError, KeyError, TypeError, ValueError):
-                pass
+            continue
+        if last is not None:
+            prices[ticker] = last
 
     return prices
 
@@ -115,12 +119,11 @@ def update_prices(user):
     if still_missing:
         for ticker in still_missing:
             try:
-                t = yf.Ticker(ticker)
-                h = t.history(period="5d")
+                h = yf.Ticker(ticker).history(period="5d")
                 if not h.empty:
-                    close = float(h["Close"].dropna().iloc[-1])
-                    if not math.isnan(close):
-                        prices[ticker] = close
+                    last = _last_close(h["Close"])
+                    if last is not None:
+                        prices[ticker] = last
             except Exception:
                 pass
 
@@ -130,8 +133,17 @@ def update_prices(user):
 
     for ticker, asset in ticker_map.items():
         if ticker in prices:
+            bar_date, close = prices[ticker]
+            # Around midnight Yahoo sometimes drops the day that just closed and returns an older bar.
+            # Never step a price back to a day before the last update: keep the price we have.
+            if (
+                asset.current_price is not None
+                and asset.price_updated_at is not None
+                and bar_date < timezone.localdate(asset.price_updated_at)
+            ):
+                continue
             try:
-                price = Decimal(str(round(prices[ticker], 6)))
+                price = Decimal(str(round(close, 6)))
                 asset.current_price = price
                 asset.price_source = Asset.PriceSource.YAHOO
                 asset.price_status = Asset.PriceStatus.OK

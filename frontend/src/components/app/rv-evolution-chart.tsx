@@ -89,7 +89,7 @@ function realizedUntil(sales: RealizedSale[], day: string) {
 function groupSales(sales: RealizedSale[]): SaleEvent[] {
   const byKey = new Map<string, SaleEvent>();
   for (const s of sales) {
-    const label = s.asset_ticker || s.asset_name;
+    const label = s.asset_name || s.asset_ticker || "";
     const key = `${s.date}|${label}`;
     const event = byKey.get(key) ?? { day: s.date, label, pnl: 0 };
     event.pnl += parseFloat(s.realized_pnl);

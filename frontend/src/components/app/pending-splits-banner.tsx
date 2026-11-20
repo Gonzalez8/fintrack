@@ -57,8 +57,8 @@ export function PendingSplitsBanner() {
               className="flex flex-col gap-2 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0 text-sm">
-                <Link href={`/assets/${s.asset}`} className="font-mono font-semibold text-primary hover:underline">
-                  {s.asset_ticker ?? s.asset_name}
+                <Link href={`/assets/${s.asset}`} className="font-semibold text-primary hover:underline">
+                  {s.asset_name || s.asset_ticker}
                 </Link>
                 <span className="text-muted-foreground">
                   {" "}

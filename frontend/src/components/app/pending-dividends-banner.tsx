@@ -89,7 +89,7 @@ export function PendingDividendsBanner({ onReview }: { onReview?: (s: DividendSu
               className="flex flex-col gap-2 rounded-md border border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0 text-sm">
-                <span className="font-mono font-semibold">{s.asset_ticker ?? s.asset_name}</span>
+                <span className="font-semibold">{s.asset_name || s.asset_ticker}</span>
                 <span className="text-muted-foreground">
                   {" "}
                   · {t("dividendDrafts.exDate")} {formatSplitDate(s.ex_date)} · {formatQty(s.shares)} ×{" "}

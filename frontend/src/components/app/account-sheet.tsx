@@ -10,6 +10,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
 import { useUser } from "@/components/app/providers";
+import { UserAvatar } from "@/components/app/user-avatar";
 import { LANGUAGES, setLanguageCookie } from "@/components/app/account-menu";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
@@ -45,23 +46,19 @@ export function AccountSheet() {
     router.push("/login");
   };
 
-  const initial = (user.username || "?").charAt(0).toUpperCase();
-
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         aria-label={t("nav.profile")}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary active:scale-95 transition-transform"
+        className="shrink-0 rounded-full active:scale-95 transition-transform"
       >
-        {initial}
+        <UserAvatar user={user} className="h-9 w-9 text-sm" />
       </SheetTrigger>
 
       <SheetContent side="bottom" className="pb-safe-mobile">
         <SheetHeader className="px-4 pt-2 pb-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-base font-semibold text-primary">
-              {initial}
-            </span>
+            <UserAvatar user={user} className="h-11 w-11 text-base" />
             <div className="min-w-0 text-left">
               <SheetTitle className="truncate text-base">{user.username}</SheetTitle>
               {user.email && (

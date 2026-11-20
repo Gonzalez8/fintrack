@@ -142,6 +142,16 @@ const authHandlers = [
     return HttpResponse.json({ ok: true });
   }),
 
+  http.put("/api/auth/avatar/", async () => {
+    await delay(200);
+    return HttpResponse.json({ avatar_version: null });
+  }),
+
+  http.delete("/api/auth/avatar/", async () => {
+    await delay(200);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   http.post("/api/auth/change-password/", async () => {
     await delay(200);
     return HttpResponse.json({ ok: true });

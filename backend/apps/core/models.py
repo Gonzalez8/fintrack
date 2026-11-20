@@ -62,3 +62,32 @@ class ApiToken(UserOwnedModel):
         key = cls.PREFIX + secrets.token_urlsafe(32)
         token = cls.objects.create(owner=owner, name=name, scope=scope, key_prefix=key[:10], key_hash=cls.hash_key(key))
         return token, key
+
+
+class UserAvatar(TimeStampedModel):
+    """Profile photo, stored in the database so no media volume is needed.
+
+    The browser crops and re-encodes the picture to a small square before
+    uploading it (which also drops EXIF/GPS data); the API only accepts
+    JPEG, PNG or WebP up to ``MAX_BYTES``.
+    """
+
+    MAX_BYTES = 300 * 1024
+    CONTENT_TYPES = ("image/jpeg", "image/png", "image/webp")
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="avatar")
+    content_type = models.CharField(max_length=20)
+    data = models.BinaryField()
+
+    def __str__(self):
+        return f"Avatar of {self.user}"
+
+    @property
+    def version(self) -> int:
+        """Changes on every upload; the web adds it to the image URL to bust the cache."""
+        return int(self.updated_at.timestamp())
+
+    @classmethod
+    def version_for(cls, user) -> int | None:
+        avatar = cls.objects.filter(user=user).only("updated_at").first()
+        return avatar.version if avatar else None

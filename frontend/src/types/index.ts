@@ -3,6 +3,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  avatar_version?: number | null;
 }
 
 export interface LoginCredentials {
@@ -22,6 +23,7 @@ export interface ProfileData {
   username: string;
   email: string;
   date_joined?: string;
+  avatar_version?: number | null;
 }
 
 export interface ChangePasswordData {

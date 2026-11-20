@@ -21,6 +21,8 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
   const routes: Record<string, unknown> = {
     "/api/auth/me": data.demoUser,
     "/api/auth/profile": { username: data.demoUser.username, email: data.demoUser.email },
+    // Demo has no photo storage: uploads are accepted and the initial keeps showing
+    "/api/auth/avatar": { avatar_version: null },
 
     "/api/assets": paginatedResponse(data.demoAssets),
     "/api/accounts": paginatedResponse(data.demoAccounts),

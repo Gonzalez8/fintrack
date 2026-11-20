@@ -326,3 +326,20 @@ def test_backup_round_trips_rentals(client, user):
     assert (restored.cadastral_construction_value, restored.ownership_pct) == (Decimal("48000"), Decimal("50"))
     assert Lease.objects.get(owner=user).reduction == "PRE_2023"
     assert OtherIncome.objects.get(owner=user).lease_id == lease.id
+
+
+@pytest.mark.django_db
+def test_backup_round_trips_avatar(client, user):
+    from apps.core.models import UserAvatar
+
+    png = b"\x89PNG\r\n\x1a\n" + b"\x01" * 32
+    UserAvatar.objects.create(user=user, content_type="image/png", data=png)
+    exported = json.loads(client.get("/api/backup/export/").content)
+    assert exported["avatar"]["content_type"] == "image/png"
+
+    UserAvatar.objects.all().delete()
+    file = SimpleUploadedFile("backup.json", json.dumps(exported).encode(), content_type="application/json")
+    res = client.post("/api/backup/import/", {"file": file}, format="multipart")
+    assert res.status_code == 200
+    assert res.json()["counts"]["avatar"] is True
+    assert bytes(UserAvatar.objects.get(user=user).data) == png

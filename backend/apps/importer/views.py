@@ -1,3 +1,4 @@
+import base64
 import json
 from datetime import UTC, datetime
 
@@ -10,6 +11,8 @@ from rest_framework.views import APIView
 
 from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, Settings
 from apps.assets.serializers import SettingsSerializer
+from apps.core.models import UserAvatar
+from apps.core.serializers import AvatarSerializer
 from apps.payroll.models import Employer, Payroll
 from apps.realestate.models import Amortization, Lease, Property, RentalExpense
 from apps.reports.models import SavingsGoal
@@ -35,6 +38,13 @@ from .serializers import (
     BackupStockSplitSerializer,
     BackupTransactionSerializer,
 )
+
+
+def _export_avatar(user):
+    avatar = UserAvatar.objects.filter(user=user).first()
+    if avatar is None:
+        return None
+    return {"content_type": avatar.content_type, "data": base64.b64encode(bytes(avatar.data)).decode()}
 
 
 class BackupExportView(APIView):
@@ -69,6 +79,7 @@ class BackupExportView(APIView):
             ).data,
             "leases": BackupLeaseSerializer(Lease.objects.filter(owner=user), many=True).data,
             "rental_expenses": BackupRentalExpenseSerializer(RentalExpense.objects.filter(owner=user), many=True).data,
+            "avatar": _export_avatar(user),
         }
         content = json.dumps(payload, indent=2, default=str)
         filename = datetime.now(UTC).strftime("fintrack-backup-%Y%m%d-%H%M%S.json")
@@ -121,6 +132,7 @@ class BackupImportView(APIView):
             "leases": 0,
             "rental_expenses": 0,
             "settings": False,
+            "avatar": False,
         }
 
         def to_defaults(item, fk_fields=(), exclude=()):
@@ -283,6 +295,13 @@ class BackupImportView(APIView):
                 for income_id, lease_id in income_leases.items():
                     if lease_id:
                         OtherIncome.objects.filter(id=income_id, owner=user).update(lease_id=lease_id)
+
+                avatar = payload.get("avatar")
+                if avatar:
+                    ser = AvatarSerializer(data={"image": f"data:{avatar['content_type']};base64,{avatar['data']}"})
+                    ser.is_valid(raise_exception=True)
+                    UserAvatar.objects.update_or_create(user=user, defaults=ser.validated_data["image"])
+                    counts["avatar"] = True
 
         except Exception:
             return Response(

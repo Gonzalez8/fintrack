@@ -2,6 +2,7 @@ import contextlib
 
 from django.conf import settings as django_settings
 from django.contrib.auth import authenticate
+from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -13,8 +14,8 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .mixins import OwnedByUserMixin
-from .models import ApiToken
-from .serializers import ApiTokenSerializer
+from .models import ApiToken, UserAvatar
+from .serializers import ApiTokenSerializer, AvatarSerializer
 
 # ---------------------------------------------------------------------------
 # Cookie helpers
@@ -63,7 +64,7 @@ def _delete_auth_cookies(response):
 
 
 def _user_payload(user):
-    return {"id": user.pk, "username": user.username}
+    return {"id": user.pk, "username": user.username, "avatar_version": UserAvatar.version_for(user)}
 
 
 # ---------------------------------------------------------------------------
@@ -336,6 +337,36 @@ class ProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class AvatarView(APIView):
+    """GET/PUT/DELETE /api/auth/avatar/ — the user's profile photo.
+
+    GET returns the image itself; the web requests it as ``?v=<avatar_version>``
+    so it can be cached for good and refreshed when the photo changes.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        avatar = UserAvatar.objects.filter(user=request.user).first()
+        if avatar is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        response = HttpResponse(bytes(avatar.data), content_type=avatar.content_type)
+        response["Cache-Control"] = "private, max-age=31536000, immutable"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+    def put(self, request):
+        serializer = AvatarSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        image = serializer.validated_data["image"]
+        avatar, _ = UserAvatar.objects.update_or_create(user=request.user, defaults=image)
+        return Response({"avatar_version": avatar.version})
+
+    def delete(self, request):
+        UserAvatar.objects.filter(user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ChangePasswordView(APIView):

@@ -146,6 +146,7 @@ Fintrack ships **two layers** of tax reporting:
 ### Navigation
 - **Five areas** — Home, Investments, Income, Net worth and Tax in the sidebar (desktop, each one unfolds its pages) and the bottom bar (mobile); the pages of the current area are tabs at the top
 - **Account menu** — Avatar at the top right with profile, settings, language, theme and logout
+- **Profile photo** — Add, change or remove it in Profile, framing it yourself (drag, zoom or pinch inside a circle); it shows in the account menu. Cropped in the browser, stored in the database (no media volume) and included in backups
 - **Installable app** — Over HTTPS, Chrome on Android offers "Install app": Fintrack opens full screen from its own icon, like a native app (also on desktop Chrome/Edge; on iPhone, Share → Add to Home Screen). It is the same web, so every release reaches it on its own
 
 ### Internationalization
@@ -505,6 +506,9 @@ POST    /api/auth/register/               Create account (403 if disabled)
 POST    /api/auth/google/                 Google ID-token login / register
 GET     /api/auth/profile/                User profile
 PUT     /api/auth/profile/                Update username / email
+GET     /api/auth/avatar/                 Profile photo (image; ?v=avatar_version to cache)
+PUT     /api/auth/avatar/                 Set photo { image: data URL } — JPEG/PNG/WebP ≤ 300 KB
+DELETE  /api/auth/avatar/                 Remove photo
 POST    /api/auth/change-password/        Change password + rotate JWT
 
 # Personal access tokens (browser session only)

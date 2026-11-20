@@ -114,11 +114,12 @@ frontend/         Next.js 16 App Router
 - **Implementation:** `isPublic` flag on `formatMoney(value, currency, isPublic)` and `MoneyCell` component. `PrivacyProvider` in component tree forces re-render via key change
 
 ### UX
-- **Navigation:** five areas defined once in `lib/navigation.ts` (`NAV_AREAS`: home, investments, income, wealth, fiscal → existing pages as sections). Sidebar (desktop, current area unfolded, others remember their state in localStorage), bottom bar (mobile) and `SectionNav` (sticky underline tabs of the area's pages; on mobile also the area title, privacy eye and avatar). Account menu: `AccountMenu` (desktop, sticky top bar) / `AccountSheet` (mobile). A new page = one entry in `NAV_AREAS`
+- **Navigation:** five areas defined once in `lib/navigation.ts` (`NAV_AREAS`: home, investments, income, wealth, fiscal → existing pages as sections). Sidebar (desktop, current area unfolded, others remember their state in localStorage), bottom bar (mobile) and `SectionNav` (sticky underline tabs of the area's pages; on mobile also the area title, privacy eye and avatar). Account menu: `AccountMenu` (desktop, sticky top bar) / `AccountSheet` (mobile), both with `UserAvatar` (photo or initial). A new page = one entry in `NAV_AREAS`
 - **i18n:** 5 languages (es, en, de, fr, it). All keys in all locale files
 - **Demo mode:** MSW-based mock data, fake JWT tokens, works without backend
 - **Mobile-first:** SwipeCard for list items, FAB for new items, stacked card layouts, responsive charts
 - **Dark/Light theme:** System-aware with manual toggle
+- **Profile photo:** `core.UserAvatar` (one per user, bytes in the DB — no media volume; JPEG/PNG/WebP ≤ 300 KB, declared type must match the magic bytes, never SVG). `GET/PUT/DELETE /api/auth/avatar/` (PUT takes a data URL; `AvatarCropper` lets the user drag/zoom/pinch the photo inside a circle and exports 256 px JPEG, dropping EXIF). `/me` and `/profile` return `avatar_version` (upload timestamp) and the web loads `/api/proxy/auth/avatar?v=<version>` with a long private cache. In backups as base64 (`avatar`). The dashboard layout fetches `/me` with `no-store` so a new photo or username shows after `router.refresh()`
 - **Installable (PWA):** `app/manifest.ts` (standalone, served at `/manifest.webmanifest`), icons from `app/pwa-icons/[name]/route.tsx` (192, 512, maskable 512), `viewport.themeColor` in the root layout, `appleWebApp` in `lib/seo.ts`. The middleware lets the manifest and icons through without auth. No service worker (Chrome no longer needs one to install; `/mockServiceWorker.js` is only for demo mode). Requires HTTPS
 
 ## AI Access (MCP)

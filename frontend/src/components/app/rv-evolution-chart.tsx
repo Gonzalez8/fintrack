@@ -15,6 +15,7 @@ import { api } from "@/lib/api-client";
 import { formatMoney, formatMonthYear, uiLocale } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { useChartTheme } from "@/lib/chart-theme";
+import { usePrivacy } from "@/lib/privacy";
 import { useTranslations } from "@/i18n/use-translations";
 import type { RVEvolutionPoint, PortfolioData, RealizedSale } from "@/types";
 
@@ -142,6 +143,7 @@ export function RVEvolutionChart() {
   const t = useTranslations();
   const [range, setRange] = useState<Range>("1Y");
   const [mode, setMode] = useState<Mode>("unrealized");
+  const { privacyMode } = usePrivacy();
   const [hover, setHover] = useState<ChartPoint | null>(null);
   const hoverRef = useRef<ChartPoint | null>(null);
 
@@ -214,7 +216,8 @@ export function RVEvolutionChart() {
   const displayPnlPct = mode === "total" ? (shown?.totalPct ?? 0) : (shown?.pnlPct ?? 0);
   const displayRealized = shown?.realized ?? 0;
   const displayTimestamp = hover ? hover.captured_at : null;
-  const dataKey = mode === "total" ? "totalPct" : "pnlPct";
+  // Unrealized in %, as always; Total in € so the gains taken with sales stay on the line
+  const dataKey = mode === "total" ? "totalPnl" : "pnlPct";
 
   // Sales on the hovered day, and one marker per sale on the first point on or after it
   const hoveredSales = hover
@@ -418,7 +421,13 @@ export function RVEvolutionChart() {
                 tick={ct.axisTick}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`}
+                tickFormatter={(v: number) =>
+                  mode === "total"
+                    ? privacyMode
+                      ? "•••"
+                      : `${v >= 0 ? "+" : ""}${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}€`
+                    : `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`
+                }
                 width={60}
                 domain={["auto", "auto"]}
               />

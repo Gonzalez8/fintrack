@@ -15,6 +15,7 @@ import {
 import { api } from "@/lib/api-client";
 import { formatMoney, formatMonthYear, uiLocale } from "@/lib/utils";
 import { useChartTheme } from "@/lib/chart-theme";
+import { usePrivacy } from "@/lib/privacy";
 import { useTranslations } from "@/i18n/use-translations";
 import type { InvestmentCostPoint } from "@/types";
 
@@ -45,6 +46,7 @@ export function InvestedCapitalChart() {
   const ct = useChartTheme();
   const t = useTranslations();
   const [range, setRange] = useState<Range>("MAX");
+  const { privacyMode } = usePrivacy();
   const [hover, setHover] = useState<ChartPoint | null>(null);
   const hoverRef = useRef<ChartPoint | null>(null);
 
@@ -154,7 +156,9 @@ export function InvestedCapitalChart() {
               tickLine={false}
               axisLine={false}
               width={60}
-              tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`)}
+              tickFormatter={(v: number) =>
+                privacyMode ? "•••" : v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`
+              }
             />
             <YAxis yAxisId="delta" hide domain={["dataMin", (max: number) => max * 4]} />
             <Tooltip

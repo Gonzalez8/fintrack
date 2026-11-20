@@ -9,15 +9,17 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  ReferenceDot,
 } from "recharts";
 import { api } from "@/lib/api-client";
 import { formatMoney, formatMonthYear, uiLocale } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { useChartTheme } from "@/lib/chart-theme";
 import { useTranslations } from "@/i18n/use-translations";
-import type { RVEvolutionPoint, PortfolioData } from "@/types";
+import type { RVEvolutionPoint, PortfolioData, RealizedSale } from "@/types";
 
 type Range = "1D" | "1W" | "1M" | "3M" | "1Y" | "MAX";
+type Mode = "unrealized" | "total";
 
 const RANGES: { key: Range; label: string }[] = [
   { key: "1D", label: "1D" },
@@ -35,19 +37,65 @@ interface ChartPoint {
   cost: number;
   pnl: number;
   pnlPct: number;
+  /** Gains already taken with sales up to this point, and the cost of what was sold */
+  realized: number;
+  soldCost: number;
+  /** Unrealized + realized, over everything ever invested (open + sold) */
+  totalPnl: number;
+  totalPct: number;
 }
 
-function toChartPoint(p: RVEvolutionPoint): ChartPoint {
-  const mv = parseFloat(p.value);
-  const cost = parseFloat(p.cost);
-  const pnl = parseFloat(p.pnl);
+interface SaleEvent {
+  day: string;
+  label: string;
+  pnl: number;
+}
+
+function pointDay(capturedAt: string): string {
+  return capturedAt.slice(0, 10);
+}
+
+function makeChartPoint(
+  captured_at: string, mv: number, cost: number, pnl: number, realized: number, soldCost: number,
+): ChartPoint {
+  const totalPnl = pnl + realized;
+  const totalBase = cost + soldCost;
   return {
-    captured_at: p.captured_at,
+    captured_at,
     mv,
     cost,
     pnl,
     pnlPct: cost > 0 ? (pnl / cost) * 100 : 0,
+    realized,
+    soldCost,
+    totalPnl,
+    totalPct: totalBase > 0 ? (totalPnl / totalBase) * 100 : 0,
   };
+}
+
+/** Cumulative realized gain and sold cost on or before a given day. */
+function realizedUntil(sales: RealizedSale[], day: string) {
+  let realized = 0;
+  let soldCost = 0;
+  for (const s of sales) {
+    if (s.date > day) break;
+    realized += parseFloat(s.realized_pnl);
+    soldCost += parseFloat(s.cost_basis);
+  }
+  return { realized, soldCost };
+}
+
+/** One event per day and asset (a sale can consume several lots). */
+function groupSales(sales: RealizedSale[]): SaleEvent[] {
+  const byKey = new Map<string, SaleEvent>();
+  for (const s of sales) {
+    const label = s.asset_ticker || s.asset_name;
+    const key = `${s.date}|${label}`;
+    const event = byKey.get(key) ?? { day: s.date, label, pnl: 0 };
+    event.pnl += parseFloat(s.realized_pnl);
+    byKey.set(key, event);
+  }
+  return [...byKey.values()];
 }
 
 function filterByRange(data: ChartPoint[], range: Range): ChartPoint[] {
@@ -88,19 +136,14 @@ function formatAxisDate(dateStr: string, range: Range): string {
   return d.toLocaleDateString("es-ES", { month: "short", year: "2-digit" });
 }
 
-interface HoverState {
-  mv: number;
-  pnl: number;
-  cost: number;
-  timestamp: string;
-}
 
 export function RVEvolutionChart() {
   const ct = useChartTheme();
   const t = useTranslations();
   const [range, setRange] = useState<Range>("1Y");
-  const [hover, setHover] = useState<HoverState | null>(null);
-  const hoverRef = useRef<HoverState | null>(null);
+  const [mode, setMode] = useState<Mode>("unrealized");
+  const [hover, setHover] = useState<ChartPoint | null>(null);
+  const hoverRef = useRef<ChartPoint | null>(null);
 
   const { data: allData = [], isLoading } = useQuery({
     queryKey: ["rv-evolution"],
@@ -114,8 +157,23 @@ export function RVEvolutionChart() {
     staleTime: 30 * 1000,
   });
 
-  // Pre-parse all data to numeric ChartPoints
-  const allNumeric = useMemo(() => allData.map(toChartPoint), [allData]);
+  const sales = useMemo(
+    () => [...(portfolioData?.realized_sales ?? [])].sort((a, b) => a.date.localeCompare(b.date)),
+    [portfolioData],
+  );
+  const saleEvents = useMemo(() => groupSales(sales), [sales]);
+
+  // Pre-parse all data to numeric ChartPoints, carrying the realized gains up to each point
+  const allNumeric = useMemo(
+    () =>
+      allData.map((p) => {
+        const { realized, soldCost } = realizedUntil(sales, pointDay(p.captured_at));
+        return makeChartPoint(
+          p.captured_at, parseFloat(p.value), parseFloat(p.cost), parseFloat(p.pnl), realized, soldCost,
+        );
+      }),
+    [allData, sales],
+  );
 
   const snapshotData = useMemo(
     () => filterByRange(allNumeric, range),
@@ -141,24 +199,35 @@ export function RVEvolutionChart() {
   // Append live point to chart data
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!portfolioData || snapshotData.length === 0) return snapshotData;
+    const now = new Date().toISOString();
+    const { realized, soldCost } = realizedUntil(sales, pointDay(now));
     return [
       ...snapshotData,
-      {
-        captured_at: new Date().toISOString(),
-        mv: liveMV,
-        cost: liveCost,
-        pnl: livePnl,
-        pnlPct: liveCost > 0 ? (livePnl / liveCost) * 100 : 0,
-      },
+      makeChartPoint(now, liveMV, liveCost, livePnl, realized, soldCost),
     ];
-  }, [snapshotData, portfolioData, liveMV, liveCost, livePnl]);
+  }, [snapshotData, portfolioData, liveMV, liveCost, livePnl, sales]);
 
   // Display values: hover overrides live
+  const shown = hover ?? chartData[chartData.length - 1];
   const displayMV = hover ? hover.mv : liveMV;
-  const displayPnl = hover ? hover.pnl : livePnl;
-  const displayCost = hover ? hover.cost : liveCost;
-  const displayPnlPct = displayCost > 0 ? (displayPnl / displayCost) * 100 : 0;
-  const displayTimestamp = hover ? hover.timestamp : null;
+  const displayPnl = mode === "total" ? (shown?.totalPnl ?? 0) : hover ? hover.pnl : livePnl;
+  const displayPnlPct = mode === "total" ? (shown?.totalPct ?? 0) : (shown?.pnlPct ?? 0);
+  const displayRealized = shown?.realized ?? 0;
+  const displayTimestamp = hover ? hover.captured_at : null;
+  const dataKey = mode === "total" ? "totalPct" : "pnlPct";
+
+  // Sales on the hovered day, and one marker per sale on the first point on or after it
+  const hoveredSales = hover
+    ? saleEvents.filter((e) => e.day === pointDay(hover.captured_at))
+    : [];
+  const saleMarkers = useMemo(() => {
+    if (!chartData.length) return [];
+    const firstDay = pointDay(chartData[0].captured_at);
+    return saleEvents
+      .filter((e) => e.day >= firstDay)
+      .map((e) => ({ event: e, point: chartData.find((p) => pointDay(p.captured_at) >= e.day) }))
+      .filter((m): m is { event: SaleEvent; point: ChartPoint } => m.point !== undefined);
+  }, [chartData, saleEvents]);
 
   const isPositive = displayPnl >= 0;
   const color = isPositive ? "#22c55e" : "#ef4444";
@@ -189,17 +258,11 @@ export function RVEvolutionChart() {
   const tooltipContent = useCallback(
     (props: { active?: boolean; payload?: ReadonlyArray<{ payload?: ChartPoint }> }) => {
       if (props.active && props.payload?.[0]?.payload) {
-        const p = props.payload[0].payload;
-        const next: HoverState = {
-          mv: p.mv,
-          pnl: p.pnl,
-          cost: p.cost,
-          timestamp: p.captured_at,
-        };
+        const next = props.payload[0].payload;
         // Only update state if the hovered point changed (avoid re-render loop)
         if (
           !hoverRef.current ||
-          hoverRef.current.timestamp !== next.timestamp
+          hoverRef.current.captured_at !== next.captured_at
         ) {
           hoverRef.current = next;
           // Schedule state update outside render
@@ -264,8 +327,21 @@ export function RVEvolutionChart() {
               )}
             </div>
 
-            {/* Timestamp on hover */}
-            <div className="mt-1 h-4">
+            {/* Realized part in total mode, sale on the hovered day, timestamp on hover */}
+            <div className="mt-1 min-h-4 space-y-0.5">
+              {mode === "total" && hasEnoughData && (
+                <p className="text-xs text-muted-foreground">
+                  {t("dashboard.rvRealizedPart", { amount: formatMoney(displayRealized) })}
+                </p>
+              )}
+              {hoveredSales.map((e) => (
+                <p key={e.label} className="text-xs font-medium text-amber-500">
+                  {t("dashboard.rvSale", {
+                    asset: e.label,
+                    amount: `${e.pnl >= 0 ? "+" : ""}${formatMoney(e.pnl)}`,
+                  })}
+                </p>
+              ))}
               {displayTimestamp && (
                 <p className="text-xs text-muted-foreground">
                   {formatTooltipDate(displayTimestamp)}
@@ -274,32 +350,51 @@ export function RVEvolutionChart() {
             </div>
           </div>
 
-          {/* Range selector */}
-          <div className="flex shrink-0 gap-0.5 bg-secondary/50 border border-border rounded-lg p-1">
-            {RANGES.map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => {
-                  setRange(key);
-                  setHover(null);
-                  hoverRef.current = null;
-                }}
-                className={`px-2 py-1 sm:px-3 sm:py-1.5 font-mono text-[10px] tracking-wide rounded-md transition-all duration-150 ${
-                  range === key
-                    ? "bg-background shadow-sm text-primary border border-primary/20"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {/* Mode selector */}
+            <div className="flex gap-0.5 bg-secondary/50 border border-border rounded-lg p-1">
+              {(["unrealized", "total"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 text-[11px] rounded-md transition-all duration-150 ${
+                    mode === m
+                      ? "bg-background shadow-sm text-primary border border-primary/20"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {m === "total" ? t("dashboard.rvModeTotal") : t("dashboard.rvModeUnrealized")}
+                </button>
+              ))}
+            </div>
+
+            {/* Range selector */}
+            <div className="flex shrink-0 gap-0.5 bg-secondary/50 border border-border rounded-lg p-1">
+              {RANGES.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    setRange(key);
+                    setHover(null);
+                    hoverRef.current = null;
+                  }}
+                  className={`px-2 py-1 sm:px-3 sm:py-1.5 font-mono text-[10px] tracking-wide rounded-md transition-all duration-150 ${
+                    range === key
+                      ? "bg-background shadow-sm text-primary border border-primary/20"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         <div onMouseLeave={handleMouseLeave}>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart
-              key={range}
+              key={`${range}-${mode}`}
               data={chartData}
               margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
             >
@@ -340,7 +435,7 @@ export function RVEvolutionChart() {
 
               <Area
                 type="monotone"
-                dataKey="pnlPct"
+                dataKey={dataKey}
                 stroke={color}
                 strokeWidth={2}
                 fill={`url(#${gradientId})`}
@@ -355,6 +450,19 @@ export function RVEvolutionChart() {
                 animationDuration={500}
                 animationEasing="ease-out"
               />
+
+              {saleMarkers.map(({ event, point }) => (
+                <ReferenceDot
+                  key={`${event.day}-${event.label}`}
+                  x={point.captured_at}
+                  y={point[dataKey]}
+                  r={5}
+                  fill="#f59e0b"
+                  stroke="white"
+                  strokeWidth={2}
+                  ifOverflow="extendDomain"
+                />
+              ))}
             </AreaChart>
           </ResponsiveContainer>
         </div>

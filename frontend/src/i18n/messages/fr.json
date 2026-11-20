@@ -167,6 +167,10 @@
   "dashboard.patrimonioEvolution": "Évolution du Patrimoine",
   "dashboard.rvEvolution": "Évolution Actions",
   "dashboard.insufficientData": "Données insuffisantes",
+  "dashboard.rvModeUnrealized": "Latent",
+  "dashboard.rvModeTotal": "Total",
+  "dashboard.rvRealizedPart": "Dont {amount} déjà réalisés par des ventes",
+  "dashboard.rvSale": "Vente {asset} · {amount} réalisé",
 
   "portfolio.title": "Portefeuille",
   "portfolio.positions": "Positions",

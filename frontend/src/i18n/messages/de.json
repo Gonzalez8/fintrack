@@ -167,6 +167,10 @@
   "dashboard.patrimonioEvolution": "Vermoegensentwicklung",
   "dashboard.rvEvolution": "Portfolioentwicklung",
   "dashboard.insufficientData": "Ungenuegend Daten",
+  "dashboard.rvModeUnrealized": "Nicht realisiert",
+  "dashboard.rvModeTotal": "Gesamt",
+  "dashboard.rvRealizedPart": "Inklusive {amount} bereits durch Verkäufe realisiert",
+  "dashboard.rvSale": "Verkauf {asset} · {amount} realisiert",
 
   "portfolio.title": "Portfolio",
   "portfolio.positions": "Positionen",

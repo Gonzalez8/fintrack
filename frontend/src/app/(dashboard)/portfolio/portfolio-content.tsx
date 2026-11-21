@@ -15,7 +15,7 @@ import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell, PctCell } from "@/components/app/money-cell";
 import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
 import { PortfolioSummaryCard } from "@/components/app/portfolio-summary-card";
-import { ReturnsDetails } from "@/components/app/returns-details";
+import { ReturnsDetails, useReturns } from "@/components/app/returns-details";
 import { SplitBadge } from "@/components/app/split-badge";
 import Link from "next/link";
 import { describeSplit } from "@/lib/splits";
@@ -34,7 +34,7 @@ const RVEvolutionChart = dynamic(
   () => import("@/components/app/rv-evolution-chart").then((m) => ({ default: m.RVEvolutionChart })),
   { ssr: false },
 );
-import { formatMoney, moneyColor } from "@/lib/utils";
+import { formatMoney, formatPct, moneyColor } from "@/lib/utils";
 import { ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import type { PortfolioData, Position } from "@/types";
 import { useTranslations } from "@/i18n/use-translations";
@@ -83,6 +83,15 @@ export function PortfolioContent() {
   };
 
   const totals = portfolio?.totals;
+
+  // Annual money-weighted return of each position (dividends included), from the returns endpoint
+  const { data: returns } = useReturns();
+  const annualById = new Map((returns?.assets ?? []).map((a) => [a.asset_id, a]));
+  const annualText = (assetId: string) => {
+    const a = annualById.get(assetId);
+    if (!a || a.xirr_pct == null) return null;
+    return { text: `${formatPct(a.xirr_pct)}${a.reliable ? "" : "*"}`, color: moneyColor(a.xirr_pct), reliable: a.reliable };
+  };
 
   const positionColumns: Column<Position>[] = [
     {
@@ -151,6 +160,24 @@ export function PortfolioContent() {
           </div>
         </div>
       ),
+    },
+    {
+      key: "annual",
+      header: t("portfolio.annualReturn"),
+      className: "text-right",
+      render: (p) => {
+        const a = annualText(p.asset_id);
+        return a ? (
+          <span
+            className={`font-mono text-sm tabular-nums ${a.color}`}
+            title={a.reliable ? t("portfolio.annualHint") : t("returns.notReliable")}
+          >
+            {a.text}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
+      },
     },
     {
       key: "weight",
@@ -271,6 +298,11 @@ export function PortfolioContent() {
                         {pnlPct >= 0 ? "+" : ""}
                         {pnlPct.toFixed(2)}%
                       </p>
+                      {annualText(p.asset_id) && (
+                        <p className={`text-[11px] tabular-nums ${annualText(p.asset_id)!.color}`}>
+                          {annualText(p.asset_id)!.text} {t("returns.perYear")}
+                        </p>
+                      )}
                     </div>
                   </div>
 

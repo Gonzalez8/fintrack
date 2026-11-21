@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/i18n/use-translations";
 import { cn, formatMoney, formatPct, moneyColor, uiLocale } from "@/lib/utils";
@@ -57,13 +56,12 @@ export function useReturns(benchmark = DEFAULT_BENCHMARK) {
 
 /**
  * Annualized money-weighted return (XIRR) of the portfolio, compared with the same money invested on the same
- * days in an accumulating index ETF, and the return of every asset ever held (sold ones included).
- * Rendered inside a dialog opened from the portfolio summary card.
+ * days in an accumulating index ETF. Rendered inside a dialog opened from the portfolio summary card; the annual
+ * return of each position is a column of the positions list.
  */
 export function ReturnsDetails() {
   const t = useTranslations();
   const [benchmark, setBenchmark] = useState(DEFAULT_BENCHMARK);
-  const [byAsset, setByAsset] = useState(false);
   const { data, isLoading } = useReturns(benchmark);
 
   if (isLoading) return <div className="h-56 animate-pulse rounded-lg bg-muted/30" />;
@@ -141,43 +139,6 @@ export function ReturnsDetails() {
           {bench && <p>{t("returns.indexNote", { ticker: bench.ticker, date: formatDay(bench.price_date) })}</p>}
         </div>
 
-        {data.assets.length > 0 && (
-          <div className="space-y-2">
-            <Button variant="outline" size="sm" aria-expanded={byAsset} onClick={() => setByAsset((v) => !v)}>
-              {t("returns.byAsset")}
-            </Button>
-            {byAsset && (
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{t("returns.byAssetHint")}</p>
-                <ul className="divide-y text-sm">
-                  {data.assets.map((a) => (
-                    <li key={a.asset_id} className="flex items-center justify-between gap-3 py-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{a.asset_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {t("returns.since", { date: formatDay(a.first_date) })}
-                          {!a.is_open && (
-                            <Badge variant="outline" className="ml-2 text-[10px]">{t("returns.closed")}</Badge>
-                          )}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className={cn("font-mono tabular-nums", moneyColor(a.xirr_pct))}>
-                          {a.xirr_pct == null ? "—" : formatPct(a.xirr_pct)}
-                          {!a.reliable && a.xirr_pct != null && <span title={t("returns.notReliable")}>*</span>}
-                        </p>
-                        <p className={cn("text-xs font-mono tabular-nums", moneyColor(a.total_gain))}>
-                          {formatMoney(a.total_gain)}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs text-muted-foreground">* {t("returns.notReliable")}</p>
-              </div>
-            )}
-          </div>
-        )}
     </div>
   );
 }

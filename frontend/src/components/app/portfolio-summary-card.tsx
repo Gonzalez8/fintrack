@@ -9,7 +9,7 @@ import { useReturns } from "./returns-details";
 
 /**
  * The one summary of the equity portfolio: market value, unrealized P&L (€ and %) and the annualized return.
- * The body opens the equity evolution; the footer opens the money invested over time and the returns details.
+ * The body opens the equity evolution; the footer opens the money invested over time and the index comparison.
  */
 export function PortfolioSummaryCard({
   totals,
@@ -25,16 +25,14 @@ export function PortfolioSummaryCard({
   const cost = parseFloat(totals.total_cost);
   const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
   const xirr = returns?.portfolio.xirr_pct ?? null;
-  const bench = returns?.benchmark;
 
-  const stats: { label: string; value: string; color: string; note?: string }[] = [
+  const stats: { label: string; value: string; color: string }[] = [
     { label: t("dashboard.unrealizedPnl"), value: formatMoney(totals.total_unrealized_pnl), color: moneyColor(pnl) },
     { label: t("portfolio.gainedPct"), value: formatPct(pnlPct), color: moneyColor(pnl) },
     {
       label: t("portfolio.annualReturn"),
       value: xirr == null ? "—" : `${formatPct(xirr)}`,
       color: moneyColor(xirr),
-      note: bench?.xirr_pct != null ? t("portfolio.vsIndex", { name: bench.name, pct: formatPct(bench.xirr_pct) }) : undefined,
     },
   ];
 
@@ -60,7 +58,6 @@ export function PortfolioSummaryCard({
             <div key={s.label} className="min-w-0">
               <p className="truncate text-xs text-muted-foreground">{s.label}</p>
               <p className={cn("text-base font-semibold tabular-nums sm:text-lg", s.color)}>{s.value}</p>
-              {s.note && <p className="text-[11px] leading-tight text-muted-foreground">{s.note}</p>}
             </div>
           ))}
         </div>
@@ -76,7 +73,7 @@ export function PortfolioSummaryCard({
         <button type="button" onClick={() => onOpen("returns")} className={footerBtn}>
           <span className="min-w-0">
             <span className="block truncate text-xs text-muted-foreground">{t("returns.title")}</span>
-            <span className="block truncate font-medium">{t("portfolio.compareAndByAsset")}</span>
+            <span className="block truncate font-medium">{t("portfolio.compareWithIndex")}</span>
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </button>

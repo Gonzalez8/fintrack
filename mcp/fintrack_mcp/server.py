@@ -33,6 +33,8 @@ Where to look:
 - Investments now: fintrack_get_portfolio (positions, cost, value, unrealized P&L, weight; realized sales on request).
   How a position was built: fintrack_get_position_history. Money put in per month / asset / type:
   fintrack_get_investment_flows (e.g. "how much did I invest in the S&P 500" → group_by="asset", search="S&P").
+  How well it did: fintrack_get_returns (annualized money-weighted return of the portfolio and each asset, and the
+  same money in an index ETF — "would an index fund have done better?").
 - Income: fintrack_get_payroll_summary (per year: gross, net, social security, effective IRPF, bonus and its share
   of the fixed salary) and fintrack_list_payrolls for single payslips. Payroll types: MONTHLY (regular salary),
   BONUS (pagas extra, variable, incentives), ATRASOS (back pay / regularizations), OTHER (settlements, severance).
@@ -211,6 +213,19 @@ def create_server(client: FintrackClient) -> MCPServer:
         if not include_realized_sales:
             data.pop("realized_sales", None)
         return data
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_get_returns(
+        benchmark: Annotated[
+            Literal["msci_world", "sp500", "all_world", "none"],
+            Field(description="Index to compare with (accumulating EUR ETF), or none."),
+        ] = "msci_world",
+    ) -> dict[str, Any]:
+        """Annualized money-weighted return (XIRR) of the whole portfolio and of every asset ever held (closed ones
+        too), with money put in, money taken out (sales, net dividends), value today and total gain. `reliable` is
+        false for less than a year of history (annualizing a few months exaggerates). The benchmark replays the same
+        buys and sales in an index ETF on the same days; compare its xirr_pct and total_gain with the portfolio's."""
+        return await call("get", "portfolio/returns/", params={"benchmark": benchmark})
 
     @mcp.tool(annotations=READ)
     async def fintrack_list_assets(
@@ -743,6 +758,14 @@ def create_server(client: FintrackClient) -> MCPServer:
     ) -> dict[str, Any]:
         """Dismiss a dividend draft; it will not be suggested again."""
         return await call("post", f"dividend-suggestions/{draft_id}/dismiss/")
+
+    @mcp.tool(annotations=WRITE)
+    async def fintrack_restore_dividend_draft(
+        draft_id: Annotated[str, Field(description="Id of a dismissed dividend draft.")],
+    ) -> dict[str, Any]:
+        """Undo the dismissal of a dividend draft so it is pending review again (e.g. dismissed by mistake).
+        Dismissed drafts are never suggested again by detection, so this is the only way back."""
+        return await call("post", f"dividend-suggestions/{draft_id}/restore/")
 
     @mcp.tool(annotations=WRITE)
     async def fintrack_apply_split(

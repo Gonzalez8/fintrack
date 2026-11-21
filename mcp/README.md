@@ -77,6 +77,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | Tool | Kind | Description |
 |---|---|---|
 | `fintrack_get_portfolio` | read | Totals, open positions, cash accounts; optionally realized sales |
+| `fintrack_get_returns` | read | Annualized money-weighted return (XIRR) of the portfolio and each asset, vs the same money in an index ETF (MSCI World, S&P 500, All-World) |
 | `fintrack_list_assets` | read | Assets with ticker, type, currency and price |
 | `fintrack_list_accounts` | read | Accounts with type and balance |
 | `fintrack_get_position_history` | read | Operations and splits of an asset with the shares held after each step |
@@ -109,6 +110,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_detect_dividend_drafts` | write | Look up dividends on Yahoo and create drafts |
 | `fintrack_accept_dividend_draft` | write | Turn a draft into a dividend with your broker's figures |
 | `fintrack_dismiss_dividend_draft` | write | Dismiss a draft |
+| `fintrack_restore_dividend_draft` | write | Undo a dismissal (the draft is pending again) |
 | `fintrack_apply_split` | write | Apply a detected stock split |
 | `fintrack_create_asset` | write | Add a stock, ETF, fund or crypto (ticker, ISIN, currency, AUTO/MANUAL price, countries) |
 | `fintrack_update_asset` | write (overwrites) | Change an asset's details or set the price of a MANUAL asset |

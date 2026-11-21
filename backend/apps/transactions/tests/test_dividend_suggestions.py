@@ -352,6 +352,21 @@ class TestSuggestionAPI:
         assert client.post("/api/dividend-suggestions/dismiss-all/").data == {"dismissed": 1}
         assert not DividendSuggestion.objects.filter(status="PENDING").exists()
 
+    def test_restore_dismissed_draft(self, client, user, asset):
+        s = _draft(user, asset)
+        client.post(f"/api/dividend-suggestions/{s.id}/dismiss/")
+        assert client.post(f"/api/dividend-suggestions/{s.id}/restore/").data["status"] == "PENDING"
+        # Only dismissed ones: a pending draft cannot be "restored" again
+        assert client.post(f"/api/dividend-suggestions/{s.id}/restore/").status_code == 400
+
+    def test_restore_is_owner_only(self, user2, user, asset):
+        s = _draft(user, asset)
+        s.status = DividendSuggestion.Status.DISMISSED
+        s.save()
+        c = APIClient()
+        c.force_authenticate(user=user2)
+        assert c.post(f"/api/dividend-suggestions/{s.id}/restore/").status_code == 404
+
     def test_detect_endpoint(self, client, user, asset, account):
         _buy(user, asset, account, D(2025, 1, 10), 10)
         _dividend(user, asset, D(2026, 8, 14))

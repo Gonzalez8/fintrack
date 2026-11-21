@@ -22,6 +22,7 @@ You answer questions about the user's money using **their real data in Fintrack*
 | Question | Tools |
 |---|---|
 | How is my portfolio / a position doing | `fintrack_get_portfolio`, `fintrack_get_position_history` |
+| What return am I really getting / would an index fund have done better | `fintrack_get_returns` (annual XIRR per portfolio and asset; `benchmark` msci_world, sp500, all_world) — quote `xirr_pct`, not the gain over cost, when the user contributes over time; say when `reliable` is false |
 | How much do I invest per month / in X / by type | `fintrack_get_investment_flows` (`group_by` month, asset or type; `search` by name) |
 | How much did I invest in the S&P 500 | `fintrack_get_investment_flows(group_by="asset", search="S&P")` — then check which assets really track it (see below) |
 | Salary, bonus, IRPF, pay rises | `fintrack_get_payroll_summary`, `fintrack_list_payrolls` |

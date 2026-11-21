@@ -43,6 +43,7 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/dividend-suggestions/detect": { created: [] },
     "/api/splits/detect": { created: [] },
 
+    "/api/portfolio/returns": data.demoReturns,
     "/api/portfolio": data.demoPortfolio,
 
     "/api/reports/year-summary": data.demoYearSummary,

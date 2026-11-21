@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, pollTask } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -15,16 +14,13 @@ import {
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell, PctCell } from "@/components/app/money-cell";
 import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
+import { PortfolioSummaryCard } from "@/components/app/portfolio-summary-card";
+import { PositionDetailDialog } from "@/components/app/position-detail-dialog";
+import { ReturnsDetails } from "@/components/app/returns-details";
 import { SplitBadge } from "@/components/app/split-badge";
-import Link from "next/link";
-import { describeSplit } from "@/lib/splits";
 import { RefreshCw } from "lucide-react";
 import dynamic from "next/dynamic";
 
-const PriceChart = dynamic(
-  () => import("@/components/app/price-chart").then((m) => ({ default: m.PriceChart })),
-  { ssr: false },
-);
 const InvestedCapitalChart = dynamic(
   () => import("@/components/app/invested-capital-chart").then((m) => ({ default: m.InvestedCapitalChart })),
   { ssr: false },
@@ -38,9 +34,6 @@ import { ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import type { PortfolioData, Position } from "@/types";
 import { useTranslations } from "@/i18n/use-translations";
 
-const CLICKABLE_CARD =
-  "cursor-pointer transition-colors hover:ring-1 hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
-
 export function PortfolioContent() {
   const t = useTranslations();
   const queryClient = useQueryClient();
@@ -52,7 +45,7 @@ export function PortfolioContent() {
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(
     null,
   );
-  const [summaryChart, setSummaryChart] = useState<"rv" | "cost" | null>(null);
+  const [summaryChart, setSummaryChart] = useState<"rv" | "cost" | "returns" | null>(null);
 
   const { data: portfolio, isLoading } = useQuery({
     queryKey: ["portfolio"],
@@ -85,11 +78,6 @@ export function PortfolioContent() {
   };
 
   const totals = portfolio?.totals;
-  const totalPnl = parseFloat(totals?.total_unrealized_pnl ?? "0");
-  const totalCost = parseFloat(totals?.total_cost ?? "0");
-  const totalPnlPct =
-    totalCost > 0 ? ((totalPnl / totalCost) * 100).toFixed(2) : "0";
-  const pnlColor = moneyColor(totals?.total_unrealized_pnl);
 
   const positionColumns: Column<Position>[] = [
     {
@@ -205,64 +193,8 @@ export function PortfolioContent() {
         </p>
       )}
 
-      {/* 3 Summary cards: Mercado, P&L, Coste */}
-      {totals && (
-        <div className="grid gap-3 grid-cols-2 sm:gap-4 md:grid-cols-3">
-          <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => setSummaryChart("rv")}
-            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("rv")}
-            className={CLICKABLE_CARD}
-          >
-            <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">
-                {t("dashboard.marketValue")}
-              </p>
-              <p className="text-lg sm:text-2xl font-bold">
-                {formatMoney(totals.total_market_value)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => setSummaryChart("rv")}
-            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("rv")}
-            className={`${CLICKABLE_CARD} ${
-              totalPnl >= 0
-                ? "border-green-500/20 bg-green-500/5"
-                : "border-red-500/20 bg-red-500/5"
-            }`}
-          >
-            <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">
-                {t("dashboard.unrealizedPnl")}
-              </p>
-              <p className={`text-lg sm:text-2xl font-bold ${pnlColor}`}>
-                {formatMoney(totals.total_unrealized_pnl)}
-              </p>
-              <p className={`text-sm ${pnlColor}`}>{totalPnlPct}%</p>
-            </CardContent>
-          </Card>
-          <Card
-            role="button"
-            tabIndex={0}
-            onClick={() => setSummaryChart("cost")}
-            onKeyDown={(e) => e.key === "Enter" && setSummaryChart("cost")}
-            className={`col-span-2 md:col-span-1 ${CLICKABLE_CARD}`}
-          >
-            <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-muted-foreground">
-                {t("dashboard.totalCost")}
-              </p>
-              <p className="text-base sm:text-lg font-semibold">
-                {formatMoney(totals.total_cost)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* One summary: market value, unrealized P&L, % gained and annual return */}
+      {totals && <PortfolioSummaryCard totals={totals} onOpen={setSummaryChart} />}
 
       {/* Mobile: clickable position cards */}
       <div className="space-y-3 md:hidden">
@@ -377,55 +309,19 @@ export function PortfolioContent() {
         />
       </div>
 
-      {/* Asset evolution dialog */}
-      <Dialog
-        open={!!selectedPosition}
-        onOpenChange={(open) => {
-          if (!open) setSelectedPosition(null);
-        }}
-      >
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden gap-0">
-          <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-2">
-            <DialogTitle className="flex items-center gap-2 flex-wrap min-w-0">
-              <span className="truncate">{selectedPosition?.asset_name}</span>
-              {selectedPosition?.asset_ticker && (
-                <span className="text-sm font-normal text-muted-foreground shrink-0">
-                  {selectedPosition.asset_ticker}
-                </span>
-              )}
-              {selectedPosition?.asset_type && (
-                <Badge variant="secondary" className="shrink-0">
-                  {selectedPosition.asset_type}
-                </Badge>
-              )}
-            </DialogTitle>
-            {selectedPosition?.splits?.length ? (
-              <p className="text-xs text-muted-foreground">
-                {t("splits.includes", {
-                  detail: selectedPosition.splits.map((sp) => describeSplit(sp, t)).join(" · "),
-                })}{" "}
-                ·{" "}
-                <Link
-                  href={`/assets/${selectedPosition.asset_id}#position-history`}
-                  className="text-primary hover:underline"
-                >
-                  {t("splits.viewHistory")}
-                </Link>
-              </p>
-            ) : null}
-          </DialogHeader>
-          {selectedPosition && (
-            <PriceChart assetId={selectedPosition.asset_id} ticker={selectedPosition.asset_ticker ?? null} />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Position detail: % gained and a year, figures, link to the asset and its price chart */}
+      <PositionDetailDialog position={selectedPosition} onClose={() => setSelectedPosition(null)} />
 
-      {/* Market value / P&L open the equity evolution; total cost opens the money invested over time */}
+      {/* The summary card opens the equity evolution, the money invested over time or the returns details */}
       <Dialog open={summaryChart !== null} onOpenChange={(o) => !o && setSummaryChart(null)}>
         <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0">
           <DialogHeader className="sr-only">
             <DialogTitle>
-              {summaryChart === "cost" ? t("portfolio.investedCapital") : t("dashboard.rvEvolution")}
+              {summaryChart === "cost"
+                ? t("portfolio.investedCapital")
+                : summaryChart === "returns"
+                  ? t("returns.title")
+                  : t("dashboard.rvEvolution")}
             </DialogTitle>
           </DialogHeader>
           {summaryChart === "rv" && (
@@ -436,6 +332,11 @@ export function PortfolioContent() {
           {summaryChart === "cost" && (
             <div className="px-4 pt-5 pb-4 sm:px-6 sm:pt-6">
               <InvestedCapitalChart />
+            </div>
+          )}
+          {summaryChart === "returns" && (
+            <div className="px-4 pt-5 pb-4 sm:px-6 sm:pt-6">
+              <ReturnsDetails />
             </div>
           )}
         </DialogContent>

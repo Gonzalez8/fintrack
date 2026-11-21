@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
+import { ShowAllButton, useCollapsedList } from "@/components/app/collapsed-list";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoneyCell } from "@/components/app/money-cell";
@@ -37,11 +38,13 @@ export function PositionHistoryCard({ assetId }: { assetId: string }) {
     return () => clearTimeout(timer);
   }, [data]);
 
-  if (!data?.events?.length) return null;
-
   // Newest first, like the operations list
-  const events = [...data.events].reverse();
-  const hasSplits = events.some((e) => e.kind === "SPLIT");
+  const allEvents = data?.events ? [...data.events].reverse() : [];
+  const shown = useCollapsedList(allEvents);
+  if (!data || !allEvents.length) return null;
+
+  const hasSplits = allEvents.some((e) => e.kind === "SPLIT");
+  const events = shown.items;
 
   const label = (e: PositionHistoryEvent) => (
     <Badge variant="secondary" className={TX_TYPE_BADGE_COLORS[e.kind] ?? ""}>
@@ -148,6 +151,7 @@ export function PositionHistoryCard({ assetId }: { assetId: string }) {
               </tbody>
             </table>
           </div>
+          <ShowAllButton list={shown} className="mt-2 h-8 px-2" />
         </CardContent>
       </Card>
     </div>

@@ -51,12 +51,13 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 - **Real-time pricing** — Automatic updates via Yahoo Finance
 - **Cost basis engines** — FIFO, LIFO, and Weighted Average Cost (WAC)
 - **Position tracking** — Unrealized P&L, cost basis, market value per position
+- **Real annual return vs an index** — Portfolio opens with one summary card (market value, unrealized P&L, % gained and % a year; tap it for the equity chart, *Total cost* for the money invested over time). *% a year* is the annualized money-weighted return (IRR/XIRR) of your money, taking into account when each euro went in and out; each position shows its own when you open it (dividends included), with its details and a link to the asset page, while the list keeps only the % gained. *Returns → Vs an index* compares it with putting the same money on the same days into an accumulating index ETF (MSCI World, S&P 500 or FTSE All-World, prices from Yahoo). Less than a year of history is flagged as indicative
 - **Stock splits** — Splits and reverse splits per asset, auto-detected daily from Yahoo Finance and applied after your review. The cost engine scales the lots held at the split date (more shares, same total cost); trades before and after the split keep their own figures ([ADR-009](docs/adr/009-stock-splits-and-dividend-drafts.md))
 - **Position history** — Per-asset timeline of operations and splits with the shares held after each step, so the current quantity can be reconciled with your broker. Split badges in the portfolio and split rows in the operations list ("28 → 112 today")
 
 ### Transaction Tracking
 - **Buy / Sell / Gift** transactions with commission and tax support
-- **Dividend tracking** — Gross, withholding tax, administration / custody fees, net and withholding rate per asset
+- **Dividend tracking** — Gross, withholding tax, administration / custody fees, net and withholding rate per asset; each asset's page lists its dividends with the net total
 - **Dividend drafts** — Dividends detected on Yahoo Finance become pre-filled drafts (shares held on the ex-date, estimated gross and withholding). Review each one against your broker and accept it; drafts never count in reports or tax until accepted, and existing dividends are never duplicated
 - **Type-to-search pickers** — Pick the asset of a trade or dividend by typing part of its name or ticker
 - **Interest income** — Date-range based tracking per account, with optional explicit withholding tax (NULL = inferred from gross/net, 0 = confirmed no withholding) and fees
@@ -533,6 +534,7 @@ CRUD    /api/dividends/
 CRUD    /api/interests/
 CRUD    /api/other-incomes/               Other income (?year=, ?category=, ?account_id=, ?lease=, ?property=, ?search=)
 GET     /api/portfolio/
+GET     /api/portfolio/returns/           Annualized return (XIRR) of portfolio and assets vs an index ETF (?benchmark=msci_world|sp500|all_world|none)
 
 CRUD    /api/splits/                      Stock splits (?asset_id=, ?status=PENDING|APPLIED|DISMISSED)
 POST    /api/splits/{id}/apply/           Apply a detected split
@@ -542,6 +544,7 @@ POST    /api/splits/detect/               Look up Yahoo splits → PENDING sugge
 GET     /api/dividend-suggestions/        Dividend drafts (?status=, ?asset_id=)
 POST    /api/dividend-suggestions/{id}/accept/   Create the Dividend from reviewed figures
 POST    /api/dividend-suggestions/{id}/dismiss/
+POST    /api/dividend-suggestions/{id}/restore/  Undo a dismissal (back to pending)
 POST    /api/dividend-suggestions/dismiss-all/
 POST    /api/dividend-suggestions/detect/        { asset_id?, backfill? }
 

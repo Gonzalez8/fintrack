@@ -190,14 +190,20 @@ export const demoReturns: ReturnsData = {
     first_date: "2023-01-16", invested: "52480.00", returned: "6120.40", market_value: "56350.20",
     total_gain: "9990.60", xirr_pct: "8.41", reliable: true,
   },
-  assets: [
-    { asset_id: "demo-nvda", asset_name: "NVIDIA", asset_ticker: "NVDA", is_open: true, first_date: "2023-03-01",
-      invested: "6120.00", returned: "1890.00", market_value: "7350.00", total_gain: "3120.00", xirr_pct: "31.20", reliable: true },
-    { asset_id: "demo-iwda", asset_name: "iShares Core MSCI World", asset_ticker: "IWDA.AS", is_open: true, first_date: "2023-01-16",
-      invested: "18479.60", returned: "0.00", market_value: "21240.00", total_gain: "2760.40", xirr_pct: "9.85", reliable: true },
-    { asset_id: "demo-aeem", asset_name: "Amundi MSCI Emerging Markets", asset_ticker: "AEEM.PA", is_open: true, first_date: "2025-11-03",
-      invested: "2225.00", returned: "0.00", market_value: "2140.00", total_gain: "-85.00", xirr_pct: "-11.40", reliable: false },
-  ],
+  // Same ids as the demo positions, so a position's dialog shows its "% a year" (illustrative rate)
+  assets: demoPortfolio.positions.map((p, i) => ({
+    asset_id: p.asset_id,
+    asset_name: p.asset_name,
+    asset_ticker: p.asset_ticker,
+    is_open: true,
+    first_date: `2023-0${(i % 9) + 1}-15`,
+    invested: p.cost_basis,
+    returned: "0.00",
+    market_value: p.market_value,
+    total_gain: p.unrealized_pnl,
+    xirr_pct: (parseFloat(p.unrealized_pnl_pct) / 2.6).toFixed(2),
+    reliable: true,
+  })),
   benchmark: {
     key: "msci_world", name: "MSCI World", ticker: "EUNL.DE", price_date: "2026-03-06", starts_late: false,
     first_date: "2023-01-16", invested: "52480.00", returned: "4230.00", market_value: "60120.00",
@@ -210,20 +216,39 @@ export const demoReturns: ReturnsData = {
   ],
 };
 
-// Illustrative what-if sale for the demo (the real one is computed from the user's lots)
-export const demoSaleSimulation: SaleSimulation = {
-  asset: { id: "demo", name: "NVIDIA", ticker: "NVDA", currency: "USD", held: "45", current_price: "135.00" },
-  method: "FIFO",
-  date: "2026-03-07",
-  quantity: "10",
-  price: "135.00",
-  commission: "0.00",
-  proceeds: "1350.00",
-  cost_basis: "759.27",
-  gain: "590.73",
-  lots: [{ date: "2023-03-01", quantity_held: "25", quantity_sold: "10", unit_cost: "75.93", cost: "759.27", gain: "590.73" }],
-  tax: {
-    country: "ES", year: 2026, gains_ytd: "420.00", income_ytd: "310.50",
-    tax_before: "138.70", tax_after: "250.94", tax_sale: "112.24", loss_offset: null, wash_sale: null,
-  },
-};
+// What-if sale for the demo, computed from the demo position (one averaged lot) and the requested figures
+export function demoSaleSimulation(params: URLSearchParams): SaleSimulation {
+  const pos = demoPortfolio.positions.find((p) => p.asset_id === params.get("asset_id")) ?? demoPortfolio.positions[0];
+  const held = parseFloat(pos.quantity);
+  const qty = Math.min(parseFloat(params.get("quantity") ?? "") || held, held);
+  const price = parseFloat(params.get("price") ?? "") || parseFloat(pos.current_price);
+  const commission = parseFloat(params.get("commission") ?? "") || 0;
+  const unit = parseFloat(pos.avg_cost);
+  const cost = qty * unit;
+  const proceeds = qty * price - commission;
+  const gain = proceeds - cost;
+  const gainsYtd = 420;
+  const incomeYtd = 310.5;
+  const offsetGains = gain < 0 ? Math.min(-gain, gainsYtd) : 0;
+  const offsetIncome = gain < 0 ? Math.min(-gain - offsetGains, incomeYtd * 0.25) : 0;
+  const taxSale = gain >= 0 ? gain * 0.19 : -(offsetGains + offsetIncome) * 0.19;
+  const m = (v: number) => v.toFixed(2);
+  return {
+    asset: { id: pos.asset_id, name: pos.asset_name, ticker: pos.asset_ticker, currency: pos.currency, held: pos.quantity, current_price: pos.current_price },
+    method: "FIFO",
+    date: "2026-03-07",
+    quantity: String(qty),
+    price: String(price),
+    commission: m(commission),
+    proceeds: m(proceeds),
+    cost_basis: m(cost),
+    gain: m(gain),
+    lots: [{ date: null, quantity_held: pos.quantity, quantity_sold: String(qty), unit_cost: m(unit), cost: m(cost), gain: m(gain) }],
+    tax: {
+      country: "ES", year: 2026, gains_ytd: m(gainsYtd), income_ytd: m(incomeYtd),
+      tax_before: "138.70", tax_after: m(138.7 + taxSale), tax_sale: m(taxSale),
+      loss_offset: gain < 0 ? { gains: m(offsetGains), income: m(offsetIncome), carried_forward: m(-gain - offsetGains - offsetIncome) } : null,
+      wash_sale: gain < 0 ? { recent_buys: [], rebuy_until: "2026-05-07" } : null,
+    },
+  };
+}

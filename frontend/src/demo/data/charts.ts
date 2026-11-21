@@ -66,12 +66,19 @@ function generateOHLC(config: AssetPriceConfig): OHLCBar[] {
     d.setDate(d.getDate() + 1);
   }
 
-  // Adjust last bar to match exact current price
-  if (bars.length > 0) {
-    const last = bars[bars.length - 1];
-    last.close = endPrice;
-    last.high = Math.max(last.high, endPrice);
-    last.low = Math.min(last.low, endPrice);
+  // The random walk drifts away from the current price: spread the correction over the whole series
+  // (factor grows from 1 to endPrice / lastClose) so the curve ends exactly there instead of jumping on the last day
+  if (bars.length > 1) {
+    const ratio = endPrice / bars[bars.length - 1].close;
+    const n = bars.length - 1;
+    bars.forEach((bar, i) => {
+      const f = Math.pow(ratio, i / n);
+      bar.open = +(bar.open * f).toFixed(2);
+      bar.high = +(bar.high * f).toFixed(2);
+      bar.low = +(bar.low * f).toFixed(2);
+      bar.close = +(bar.close * f).toFixed(2);
+    });
+    bars[n].close = endPrice;
   }
 
   return bars;

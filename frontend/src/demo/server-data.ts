@@ -44,7 +44,6 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/splits/detect": { created: [] },
 
     "/api/portfolio/returns": data.demoReturns,
-    "/api/portfolio/simulate-sale": data.demoSaleSimulation,
     "/api/portfolio/loss-harvesting": { date: "2026-03-07", method: "FIFO", positions: [], tax: null },
     "/api/portfolio": data.demoPortfolio,
 
@@ -65,6 +64,21 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/storage-info": { total_mb: 12.4, tables: [] },
     "/api/health": { status: "ok" },
   };
+
+  // Routes whose answer depends on the query string
+  const query = new URLSearchParams(path.split("?")[1] ?? "");
+  if (cleanPath === "/api/portfolio/simulate-sale") return data.demoSaleSimulation(query) as T;
+  const year = query.get("year");
+  const assetId = query.get("asset_id");
+  if ((year || assetId) && (cleanPath === "/api/dividends" || cleanPath === "/api/interests")) {
+    const items: { date?: string; date_end?: string; asset?: string }[] =
+      cleanPath === "/api/dividends" ? data.demoDividends : data.demoInterests;
+    return paginatedResponse(
+      items.filter(
+        (it) => (!year || (it.date ?? it.date_end ?? "").startsWith(year)) && (!assetId || it.asset === assetId),
+      ),
+    ) as T;
+  }
 
   // Direct match
   if (cleanPath in routes) {

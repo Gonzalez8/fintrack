@@ -57,6 +57,20 @@ export const demoYearSummary: YearSummary[] = [
     total_income: "788.66",
     total_with_payroll: "28688.66",
   },
+  {
+    year: 2026,
+    dividends_gross: "22.10",
+    dividends_tax: "3.32",
+    dividends_tax_domestic: "0.00",
+    dividends_net: "18.78",
+    interests_gross: "14.60",
+    interests_net: "11.83",
+    realized_pnl: "0.00",
+    payroll_gross: "9600.00",
+    payroll_net: "7150.00",
+    total_income: "30.61",
+    total_with_payroll: "7180.61",
+  },
 ];
 
 // ── Patrimonio Evolution (monthly, Jan 2023 – Feb 2026) ─────────────

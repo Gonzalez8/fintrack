@@ -256,8 +256,14 @@ const proxyHandlers = [
   // ---- Dividends ----
   http.get("/api/proxy/dividends/", async ({ request }) => {
     await delay(200);
-    const assetId = new URL(request.url).searchParams.get("asset_id");
-    return HttpResponse.json(paginated(assetId ? demoDividends.filter((d) => d.asset === assetId) : demoDividends));
+    const params = new URL(request.url).searchParams;
+    const assetId = params.get("asset_id");
+    const year = params.get("year");
+    return HttpResponse.json(
+      paginated(
+        demoDividends.filter((d) => (!assetId || d.asset === assetId) && (!year || d.date.startsWith(year))),
+      ),
+    );
   }),
 
   http.post("/api/proxy/dividends/", async () => {
@@ -276,9 +282,10 @@ const proxyHandlers = [
   }),
 
   // ---- Interests ----
-  http.get("/api/proxy/interests/", async () => {
+  http.get("/api/proxy/interests/", async ({ request }) => {
     await delay(200);
-    return HttpResponse.json(paginated(demoInterests));
+    const year = new URL(request.url).searchParams.get("year");
+    return HttpResponse.json(paginated(year ? demoInterests.filter((i) => i.date_end.startsWith(year)) : demoInterests));
   }),
 
   http.post("/api/proxy/interests/", async () => {
@@ -464,9 +471,9 @@ const proxyHandlers = [
     return HttpResponse.json({ date: "2026-03-07", method: "FIFO", positions: [], tax: null });
   }),
 
-  http.get("/api/proxy/portfolio/simulate-sale/", async () => {
+  http.get("/api/proxy/portfolio/simulate-sale/", async ({ request }) => {
     await delay(200);
-    return HttpResponse.json(demoSaleSimulation);
+    return HttpResponse.json(demoSaleSimulation(new URL(request.url).searchParams));
   }),
 
   http.get("/api/proxy/portfolio/returns/", async () => {

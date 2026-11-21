@@ -458,6 +458,12 @@ const proxyHandlers = [
   }),
 
   // ---- Portfolio ----
+  // No loss-harvesting card in the demo (no tax estimate)
+  http.get("/api/proxy/portfolio/loss-harvesting/", async () => {
+    await delay(200);
+    return HttpResponse.json({ date: "2026-03-07", method: "FIFO", positions: [], tax: null });
+  }),
+
   http.get("/api/proxy/portfolio/simulate-sale/", async () => {
     await delay(200);
     return HttpResponse.json(demoSaleSimulation);

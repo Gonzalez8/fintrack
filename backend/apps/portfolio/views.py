@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from apps.core.cache import NS_PORTFOLIO, get_user_cache, set_user_cache
 
 from .returns import BENCHMARKS, DEFAULT_BENCHMARK, calculate_returns
-from .sale_simulation import SaleSimulationError, simulate_sale
+from .sale_simulation import SaleSimulationError, loss_harvest, simulate_sale
 from .services import calculate_portfolio_full
 
 
@@ -65,3 +65,15 @@ class SimulateSaleView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(data)
+
+
+class LossHarvestingView(APIView):
+    """GET /api/portfolio/loss-harvesting/?selected=<asset_id>,<asset_id>
+
+    Positions that would be sold at a loss today and the tax each one (and the selected ones together) would save
+    this year, for supported fiscal countries. Records nothing.
+    """
+
+    def get(self, request):
+        selected = {s for s in request.query_params.get("selected", "").split(",") if s}
+        return Response(loss_harvest(request.user, selected))

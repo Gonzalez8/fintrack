@@ -1032,6 +1032,12 @@ export interface SaleSimulationLot {
   gain: string;
 }
 
+export interface LossOffset {
+  gains: string;
+  income: string;
+  carried_forward: string;
+}
+
 /** Spanish estimate (base del ahorro) of the extra tax a sale adds to the year */
 export interface SaleTaxEstimate {
   country: string;
@@ -1041,6 +1047,8 @@ export interface SaleTaxEstimate {
   tax_before: string;
   tax_after: string;
   tax_sale: string;
+  /** Only for a loss: what it offsets this year and what is carried forward to the next four years */
+  loss_offset: LossOffset | null;
   /** Only for a loss: buys of the asset in the last two months, and until when a rebuy would defer it */
   wash_sale: { recent_buys: { date: string; quantity: string }[]; rebuy_until: string } | null;
 }
@@ -1057,4 +1065,31 @@ export interface SaleSimulation {
   gain: string;
   lots: SaleSimulationLot[];
   tax: SaleTaxEstimate | null;
+}
+
+export interface LossHarvestPosition {
+  asset_id: string;
+  asset_name: string;
+  asset_ticker: string | null;
+  currency: string;
+  quantity: string;
+  price: string;
+  cost_basis: string;
+  /** Loss to declare if the whole position were sold today (positive amount) */
+  loss: string;
+}
+
+export interface LossHarvest {
+  date: string;
+  method: CostBasisMethod;
+  positions: LossHarvestPosition[];
+  /** Spanish estimate; null for fiscal countries without it */
+  tax: {
+    year: number;
+    gains_ytd: string;
+    income_ytd: string;
+    per_asset: Record<string, { tax_saving: string; wash_sale: { recent_buys: { date: string; quantity: string }[]; rebuy_until: string } }>;
+    max_saving: string;
+    selection: { loss: string; tax_saving: string; loss_offset: LossOffset };
+  } | null;
 }

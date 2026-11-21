@@ -112,12 +112,14 @@ class AssetViewSet(OwnedByUserMixin, viewsets.ModelViewSet):
         asset.price_source = Asset.PriceSource.MANUAL
         asset.price_status = Asset.PriceStatus.OK
         asset.price_updated_at = now
+        asset.price_date = None
         asset.save(
             update_fields=[
                 "current_price",
                 "price_source",
                 "price_status",
                 "price_updated_at",
+                "price_date",
                 "updated_at",
             ]
         )

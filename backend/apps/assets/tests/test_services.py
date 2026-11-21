@@ -100,7 +100,7 @@ class TestCreatePortfolioSnapshotNow:
 class TestUpdatePrices:
     """Prices never step back to an older bar (Yahoo drops the day that just closed around midnight)."""
 
-    def _auto_asset(self, user, price, updated_at):
+    def _auto_asset(self, user, price, updated_at, price_date=None, source=Asset.PriceSource.YAHOO):
         return Asset.objects.create(
             owner=user,
             name="Stock B",
@@ -110,6 +110,8 @@ class TestUpdatePrices:
             price_mode=Asset.PriceMode.AUTO,
             current_price=price,
             price_updated_at=updated_at,
+            price_date=price_date,
+            price_source=source,
         )
 
     def _patch_fetch(self, bar_date, close):
@@ -151,6 +153,44 @@ class TestUpdatePrices:
             update_prices(user)
         asset.refresh_from_db()
         assert asset.current_price == Decimal("110.0")
+
+    def test_stores_bar_date(self, user):
+        asset = self._auto_asset(user, None, None)
+        with self._patch_fetch(datetime.date(2026, 10, 29), 110.0):
+            update_prices(user)
+        asset.refresh_from_db()
+        assert asset.price_date == datetime.date(2026, 10, 29)
+
+    def test_late_fund_nav_still_updates(self, user):
+        # Fetched on 29 Oct, the price was the 27 Oct NAV; the 28 Oct NAV arrives a day late and is newer
+        updated_at = timezone.make_aware(datetime.datetime(2026, 10, 29, 10, 0))
+        asset = self._auto_asset(user, Decimal("100.00"), updated_at, price_date=datetime.date(2026, 10, 27))
+        with self._patch_fetch(datetime.date(2026, 10, 28), 101.0):
+            result = update_prices(user)
+        asset.refresh_from_db()
+        assert result["updated"] == 1
+        assert asset.current_price == Decimal("101.0")
+        assert asset.price_date == datetime.date(2026, 10, 28)
+
+    def test_older_bar_than_stored_bar_keeps_price(self, user):
+        updated_at = timezone.make_aware(datetime.datetime(2026, 10, 31, 0, 30))
+        asset = self._auto_asset(user, Decimal("100.00"), updated_at, price_date=datetime.date(2026, 10, 30))
+        with self._patch_fetch(datetime.date(2026, 10, 29), 110.0):
+            result = update_prices(user)
+        asset.refresh_from_db()
+        assert result["updated"] == 0
+        assert asset.current_price == Decimal("100.00")
+        assert asset.price_date == datetime.date(2026, 10, 30)
+
+    def test_manual_price_accepts_older_bar(self, user):
+        # Switched from a manual price set today back to AUTO: the last Yahoo close replaces it
+        updated_at = timezone.make_aware(datetime.datetime(2026, 10, 31, 12, 0))
+        asset = self._auto_asset(user, Decimal("100.00"), updated_at, source=Asset.PriceSource.MANUAL)
+        with self._patch_fetch(datetime.date(2026, 10, 30), 97.0):
+            update_prices(user)
+        asset.refresh_from_db()
+        assert asset.current_price == Decimal("97.0")
+        assert asset.price_source == Asset.PriceSource.YAHOO
 
 
 class TestFetchBatch:

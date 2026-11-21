@@ -51,6 +51,7 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 - **Real-time pricing** — Automatic updates via Yahoo Finance
 - **Cost basis engines** — FIFO, LIFO, and Weighted Average Cost (WAC)
 - **Position tracking** — Unrealized P&L, cost basis, market value per position
+- **Sale simulator** — *Simulate sale* in a position (Portfolio) or on its asset page: which lots would go out with your fiscal cost method (FIFO, mandatory in Spain), what you would receive, the gain or loss to declare and, for Spain, the extra income tax it adds to the year (savings scale, counting this year's gains, dividends and interests) plus the two-month rule warning on losses. For a loss it says what it offsets (this year's gains first, then up to 25 % of dividends and interests, the rest carried forward 4 years) and that it never lowers the tax on salary. Fiscal → *Offset losses* (current year) lists the positions at a loss with what each would save and, ticking several, the combined saving with the offset limit applied. Nothing is recorded
 - **Real annual return vs an index** — Portfolio opens with one summary card (market value, unrealized P&L, % gained and % a year; tap it for the equity chart, *Total cost* for the money invested over time). *% a year* is the annualized money-weighted return (IRR/XIRR) of your money, taking into account when each euro went in and out; each position shows its own when you open it (dividends included), with its details and a link to the asset page, while the list keeps only the % gained. *Returns → Vs an index* compares it with putting the same money on the same days into an accumulating index ETF (MSCI World, S&P 500 or FTSE All-World, prices from Yahoo). Less than a year of history is flagged as indicative
 - **Stock splits** — Splits and reverse splits per asset, auto-detected daily from Yahoo Finance and applied after your review. The cost engine scales the lots held at the split date (more shares, same total cost); trades before and after the split keep their own figures ([ADR-009](docs/adr/009-stock-splits-and-dividend-drafts.md))
 - **Position history** — Per-asset timeline of operations and splits with the shares held after each step, so the current quantity can be reconciled with your broker. Split badges in the portfolio and split rows in the operations list ("28 → 112 today")
@@ -534,6 +535,8 @@ CRUD    /api/dividends/
 CRUD    /api/interests/
 CRUD    /api/other-incomes/               Other income (?year=, ?category=, ?account_id=, ?lease=, ?property=, ?search=)
 GET     /api/portfolio/
+GET     /api/portfolio/loss-harvesting/   Positions at a loss and the tax they would save this year (?selected=<asset_id>,…)
+GET     /api/portfolio/simulate-sale/     What-if sale (?asset_id=&quantity=&price=&commission=): lots out, gain, tax estimate; records nothing
 GET     /api/portfolio/returns/           Annualized return (XIRR) of portfolio and assets vs an index ETF (?benchmark=msci_world|sp500|all_world|none)
 
 CRUD    /api/splits/                      Stock splits (?asset_id=, ?status=PENDING|APPLIED|DISMISSED)

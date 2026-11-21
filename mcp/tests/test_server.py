@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 39 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 41 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -91,6 +91,27 @@ async def test_portfolio_hides_realized_sales_unless_asked(api):
     )
     assert "realized_sales" not in payload(await call("fintrack_get_portfolio"))
     assert payload(await call("fintrack_get_portfolio", {"include_realized_sales": True}))["realized_sales"] == [1]
+
+
+async def test_simulate_sale_resolves_the_asset(api):
+    api.get("/assets/").mock(
+        return_value=httpx.Response(200, json=page([{"id": "a1", "name": "Intel", "ticker": "INL.DE"}]))
+    )
+    route = api.get("/portfolio/simulate-sale/").mock(return_value=httpx.Response(200, json={"gain": "12.00"}))
+    assert payload(await call("fintrack_simulate_sale", {"asset": "Intel", "quantity": "10"}))["gain"] == "12.00"
+    params = route.calls.last.request.url.params
+    assert params["asset_id"] == "a1" and params["quantity"] == "10" and "price" not in params
+
+
+async def test_loss_harvesting_sends_the_selected_assets(api):
+    api.get("/assets/").mock(
+        return_value=httpx.Response(200, json=page([{"id": "a1", "name": "Li Auto", "ticker": "LI"}]))
+    )
+    route = api.get("/portfolio/loss-harvesting/").mock(return_value=httpx.Response(200, json={"positions": []}))
+    await call("fintrack_get_loss_harvesting")
+    assert "selected" not in route.calls.last.request.url.params
+    await call("fintrack_get_loss_harvesting", {"assets": ["Li Auto"]})
+    assert route.calls.last.request.url.params["selected"] == "a1"
 
 
 async def test_restore_dividend_draft(api):

@@ -33,6 +33,8 @@ Where to look:
 - Investments now: fintrack_get_portfolio (positions, cost, value, unrealized P&L, weight; realized sales on request).
   How a position was built: fintrack_get_position_history. Money put in per month / asset / type:
   fintrack_get_investment_flows (e.g. "how much did I invest in the S&P 500" → group_by="asset", search="S&P").
+  Before selling: fintrack_simulate_sale (lots out, gain to declare, Spanish tax estimate, two-month rule);
+  offsetting this year's gains with losses: fintrack_get_loss_harvesting.
   How well it did: fintrack_get_returns (annualized money-weighted return of the portfolio and each asset, and the
   same money in an index ETF — "would an index fund have done better?").
 - Income: fintrack_get_payroll_summary (per year: gross, net, social security, effective IRPF, bonus and its share
@@ -226,6 +228,43 @@ def create_server(client: FintrackClient) -> MCPServer:
         false for less than a year of history (annualizing a few months exaggerates). The benchmark replays the same
         buys and sales in an index ETF on the same days; compare its xirr_pct and total_gain with the portfolio's."""
         return await call("get", "portfolio/returns/", params={"benchmark": benchmark})
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_simulate_sale(
+        asset: AssetRef,
+        quantity: Annotated[str, Field(description="Shares to sell, e.g. '10' or '2.5'.")],
+        price: Annotated[str | None, Field(description="Sale price per share; default the current price.")] = None,
+        commission: Annotated[str | None, Field(description="Sale commission in the asset's currency.")] = None,
+    ) -> dict[str, Any]:
+        """What-if sale (records nothing): which lots would go out with the user's fiscal cost method (FIFO by
+        default, mandatory in Spain), proceeds, cost and the gain to declare. For Spain, `tax` estimates the extra
+        income tax this sale adds to the year (savings scale, counting this year's realized gains, dividends and
+        interests; ignores losses carried over) and flags the two-month rule when the sale is a loss."""
+        a = await resolve_asset(asset)
+        params = {"asset_id": a["id"], "quantity": _decimal(quantity, "quantity")}
+        if price is not None:
+            params["price"] = _decimal(price, "price")
+        if commission is not None:
+            params["commission"] = _decimal(commission, "commission")
+        return await call("get", "portfolio/simulate-sale/", params=params)
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_get_loss_harvesting(
+        assets: Annotated[
+            list[str] | None,
+            Field(description="Assets (ticker or name) to evaluate selling together; omit to only list candidates."),
+        ] = None,
+    ) -> dict[str, Any]:
+        """Tax-loss harvesting this year (records nothing): positions that would be sold at a loss today (whole
+        position, current price, fiscal cost method). For Spain, each one's tax saving, the most the year can give
+        (`max_saving`) and, for the given assets together, the saving and where the loss goes (this year's gains,
+        up to 25 % of dividends and interests, rest carried forward 4 years) plus the two-month rule per asset.
+        A loss never lowers the tax on salary."""
+        params = {}
+        if assets:
+            ids = [(await resolve_asset(ref))["id"] for ref in assets]
+            params["selected"] = ",".join(ids)
+        return await call("get", "portfolio/loss-harvesting/", params=params)
 
     @mcp.tool(annotations=READ)
     async def fintrack_list_assets(

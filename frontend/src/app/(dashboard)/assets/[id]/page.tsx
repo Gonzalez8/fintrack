@@ -368,7 +368,7 @@ export default function AssetDetailPage({
             </Card>
           </div>
 
-          <PositionHistoryCard assetId={asset.id} />
+          <PositionHistoryCard asset={asset} />
 
           <AssetSplitsCard asset={asset} />
 

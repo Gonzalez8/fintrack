@@ -1,4 +1,4 @@
-import type { PortfolioData, ReturnsData } from "@/types";
+import type { PortfolioData, ReturnsData, SaleSimulation } from "@/types";
 import { demoAccounts } from "./accounts";
 
 // Positions reflect net holdings after buys and sells (FIFO):
@@ -208,4 +208,22 @@ export const demoReturns: ReturnsData = {
     { key: "sp500", name: "S&P 500", ticker: "SXR8.DE" },
     { key: "all_world", name: "FTSE All-World", ticker: "VWCE.DE" },
   ],
+};
+
+// Illustrative what-if sale for the demo (the real one is computed from the user's lots)
+export const demoSaleSimulation: SaleSimulation = {
+  asset: { id: "demo", name: "NVIDIA", ticker: "NVDA", currency: "USD", held: "45", current_price: "135.00" },
+  method: "FIFO",
+  date: "2026-03-07",
+  quantity: "10",
+  price: "135.00",
+  commission: "0.00",
+  proceeds: "1350.00",
+  cost_basis: "759.27",
+  gain: "590.73",
+  lots: [{ date: "2023-03-01", quantity_held: "25", quantity_sold: "10", unit_cost: "75.93", cost: "759.27", gain: "590.73" }],
+  tax: {
+    country: "ES", year: 2026, gains_ytd: "420.00", income_ytd: "310.50",
+    tax_before: "138.70", tax_after: "250.94", tax_sale: "112.24", loss_offset: null, wash_sale: null,
+  },
 };

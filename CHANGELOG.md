@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.26.0] - 2026-11-21
+
+### Added
+
+- **Real annual return and comparison with an index.** Fintrack now calculates what your money has earned per year (IRR), taking into account when each euro went in and out, dividends included. Portfolio shows it small under the % gained; open a position to see its own. *Returns → Vs an index* compares it with putting the same money, on the same days, into an accumulating index ETF (MSCI World, S&P 500 or FTSE All-World, prices from Yahoo): value, total gain and points a year ahead or behind. Less than a year of history is marked as indicative. (#142)
+- **Asset page: dividends and their drafts.** The Dividends card lists the dividends recorded for that asset with the net total, its pending drafts (*Review* opens the review straight away, *Dismiss*) and the dismissed ones, which can now be **restored** (until now a dismissed draft was gone for good). Long lists show the 5 most recent with *Show all*. (#142)
+- **Position detail.** Opening a position shows % gained, % a year, quantity, average cost, cost, value, P&L, weight, since when you hold it and a link to the asset page. (#142)
+
+### Changed
+
+- **A lighter Portfolio page.** One summary card replaces the three cards: market value with a mini chart of the last year (tap it for the full chart), unrealized P&L and % gained as the main figure. Its footer opens the money invested over time and the index comparison. (#142)
+- **Invested capital chart**: without hovering, the header shows what you invested (net) in the visible range — last 12 months, 3 years or since the start. (#142)
+- The price chart labels its % as the price change over the chosen range, so it is not confused with your gain. (#142)
+
+### MCP update
+
+- New tools `fintrack_get_returns` (annual return of the portfolio and each asset vs an index) and `fintrack_restore_dividend_draft`. Update the MCP command (Settings shows it pinned to v2.26.0) and upload the new `fintrack-advisor.zip` attached to this release in Claude Desktop (Settings → Skills).
+
 ## [2.25.1] - 2026-11-21
 
 ### Fixed

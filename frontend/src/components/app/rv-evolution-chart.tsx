@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { api } from "@/lib/api-client";
 import { formatMoney, formatMonthYear, uiLocale } from "@/lib/utils";
+import { includesSale, realizedUntil } from "@/lib/realized";
 import { Card, CardContent } from "@/components/ui/card";
 import { useChartTheme } from "@/lib/chart-theme";
 import { usePrivacy } from "@/lib/privacy";
@@ -50,6 +51,8 @@ interface SaleEvent {
   day: string;
   label: string;
   pnl: number;
+  /** Latest time one of its lots was recorded, if known */
+  recordedAt?: string;
 }
 
 function pointDay(capturedAt: string): string {
@@ -74,26 +77,15 @@ function makeChartPoint(
   };
 }
 
-/** Cumulative realized gain and sold cost on or before a given day. */
-function realizedUntil(sales: RealizedSale[], day: string) {
-  let realized = 0;
-  let soldCost = 0;
-  for (const s of sales) {
-    if (s.date > day) break;
-    realized += parseFloat(s.realized_pnl);
-    soldCost += parseFloat(s.cost_basis);
-  }
-  return { realized, soldCost };
-}
-
 /** One event per day and asset (a sale can consume several lots). */
 function groupSales(sales: RealizedSale[]): SaleEvent[] {
   const byKey = new Map<string, SaleEvent>();
   for (const s of sales) {
     const label = s.asset_name || s.asset_ticker || "";
     const key = `${s.date}|${label}`;
-    const event = byKey.get(key) ?? { day: s.date, label, pnl: 0 };
+    const event: SaleEvent = byKey.get(key) ?? { day: s.date, label, pnl: 0 };
     event.pnl += parseFloat(s.realized_pnl);
+    if (s.recorded_at && (!event.recordedAt || s.recorded_at > event.recordedAt)) event.recordedAt = s.recorded_at;
     byKey.set(key, event);
   }
   return [...byKey.values()];
@@ -170,7 +162,7 @@ export function RVEvolutionChart() {
   const allNumeric = useMemo(
     () =>
       allData.filter((p) => parseFloat(p.cost) > 0).map((p) => {
-        const { realized, soldCost } = realizedUntil(sales, pointDay(p.captured_at));
+        const { realized, soldCost } = realizedUntil(sales, p.captured_at);
         return makeChartPoint(
           p.captured_at, parseFloat(p.value), parseFloat(p.cost), parseFloat(p.pnl), realized, soldCost,
         );
@@ -203,7 +195,7 @@ export function RVEvolutionChart() {
   const chartData = useMemo<ChartPoint[]>(() => {
     if (!portfolioData || snapshotData.length === 0) return snapshotData;
     const now = new Date().toISOString();
-    const { realized, soldCost } = realizedUntil(sales, pointDay(now));
+    const { realized, soldCost } = realizedUntil(sales, now);
     return [
       ...snapshotData,
       makeChartPoint(now, liveMV, liveCost, livePnl, realized, soldCost),
@@ -220,7 +212,7 @@ export function RVEvolutionChart() {
   // Unrealized in %, as always; Total in € so the gains taken with sales stay on the line
   const dataKey = mode === "total" ? "totalPnl" : "pnlPct";
 
-  // Sales on the hovered day, and one marker per sale on the first point on or after it
+  // Sales on the hovered day, and one marker per sale on the first point that already includes it
   const hoveredSales = hover
     ? saleEvents.filter((e) => e.day === pointDay(hover.captured_at))
     : [];
@@ -229,7 +221,10 @@ export function RVEvolutionChart() {
     const firstDay = pointDay(chartData[0].captured_at);
     return saleEvents
       .filter((e) => e.day >= firstDay)
-      .map((e) => ({ event: e, point: chartData.find((p) => pointDay(p.captured_at) >= e.day) }))
+      .map((e) => ({
+        event: e,
+        point: chartData.find((p) => includesSale({ date: e.day, recorded_at: e.recordedAt }, p.captured_at)),
+      }))
       .filter((m): m is { event: SaleEvent; point: ChartPoint } => m.point !== undefined);
   }, [chartData, saleEvents]);
 

@@ -283,6 +283,7 @@ def _process_lot_based(user, lifo=False):
                     "proceeds": str(sell_total),
                     "realized_pnl": str(pnl),
                     "oversell_quantity": str(remaining),
+                    "recorded_at": tx.created_at.isoformat(),
                 }
             )
 
@@ -359,6 +360,7 @@ def _process_wac(user):
                     "proceeds": str(sell_total),
                     "realized_pnl": str(pnl),
                     "oversell_quantity": str(oversell_qty),
+                    "recorded_at": tx.created_at.isoformat(),
                 }
             )
 

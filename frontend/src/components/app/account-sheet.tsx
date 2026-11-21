@@ -13,6 +13,7 @@ import { useUser } from "@/components/app/providers";
 import { UserAvatar } from "@/components/app/user-avatar";
 import { LANGUAGES, setLanguageCookie } from "@/components/app/account-menu";
 import { cn } from "@/lib/utils";
+import { clearOfflineData } from "@/lib/offline";
 import { useTranslations } from "@/i18n/use-translations";
 
 // Mobile account menu behind the avatar: profile, settings, language, theme and logout.
@@ -43,6 +44,7 @@ export function AccountSheet() {
   const handleLogout = async () => {
     setOpen(false);
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
+    await clearOfflineData();
     router.push("/login");
   };
 

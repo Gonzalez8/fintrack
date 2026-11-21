@@ -107,6 +107,8 @@
   "common.deleted": "Erfolgreich geloescht",
   "common.name": "Name",
   "common.date": "Datum",
+  "offline.banner": "Offline: du siehst die Daten vom {time}. Änderungen können erst gespeichert werden, wenn die Verbindung zurück ist.",
+  "offline.bannerNoTime": "Offline: du siehst die zuletzt gespeicherte Kopie. Änderungen können erst gespeichert werden, wenn die Verbindung zurück ist.",
   "common.showAll": "Alle anzeigen ({count})",
   "common.showLess": "Weniger anzeigen",
   "common.type": "Typ",

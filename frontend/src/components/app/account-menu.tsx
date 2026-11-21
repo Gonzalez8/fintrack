@@ -15,6 +15,7 @@ import {
 import { useUser } from "@/components/app/providers";
 import { UserAvatar } from "@/components/app/user-avatar";
 import { cn } from "@/lib/utils";
+import { clearOfflineData } from "@/lib/offline";
 import { useTranslations } from "@/i18n/use-translations";
 
 export const LANGUAGES = [
@@ -42,6 +43,7 @@ export function AccountMenu() {
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout/", { method: "POST", credentials: "include" });
+    await clearOfflineData();
     router.push("/login");
   };
 

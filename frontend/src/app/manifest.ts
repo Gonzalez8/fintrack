@@ -15,6 +15,13 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#0b0f18",
     theme_color: "#0b0f18",
     categories: ["finance"],
+    // Android: Fintrack appears in "Share" for PDFs; public/sw.js receives them and opens the payroll import
+    share_target: {
+      action: "/share-target",
+      method: "POST",
+      enctype: "multipart/form-data",
+      params: { files: [{ name: "file", accept: ["application/pdf", ".pdf"] }] },
+    },
     icons: [
       { src: "/pwa-icons/192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/pwa-icons/512.png", sizes: "512x512", type: "image/png", purpose: "any" },

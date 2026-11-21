@@ -22,6 +22,7 @@ If you discover a security vulnerability, please report it responsibly:
 - **JWT tokens** stored in `httpOnly` cookies — not accessible to JavaScript (XSS-safe)
 - **SameSite=Lax** cookie attribute prevents CSRF attacks
 - **Token rotation**: refresh tokens are rotated on each use and old tokens are blacklisted
+- **Offline copy on the device**: the service worker (`public/sw.js`) keeps the last pages and `GET /api/proxy/*` responses in the browser cache so the installed app works without connection. Sign-in (`/api/auth/*`), account data (`/api/proxy/auth/*`: profile, tokens, avatar) and backups are never cached; the copy is deleted on login and on logout (`clearOfflineData()`), so a new session never sees a previous one's copy, and the device's own lock protects it otherwise. Cache names carry the app version, so each release drops the previous one's files
 - **Session endpoints ignore the access cookie**: login, register, Google sign-in, refresh and logout run without authentication (`authentication_classes = []`), so a stale or invalid access cookie never blocks signing in, and logout always clears the cookies. Every other endpoint still rejects an invalid token with 401
 - **Rate limiting**: Authentication endpoints have per-scope throttling (login, register, password change)
 - **Multi-tenancy isolation**: Every database query is filtered by the authenticated user's `owner` FK

@@ -15,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 import { authApi, ApiClientError } from "@/lib/api-client";
+import { clearOfflineData } from "@/lib/offline";
 
 import { useTranslations } from "@/i18n/use-translations";
 
@@ -256,7 +257,11 @@ export default function LoginPage() {
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoError, setDemoError] = useState("");
 
-  const onSuccess = () => router.push("/");
+  // A new session never sees the offline copy of a previous one (shared device, expired session)
+  const onSuccess = async () => {
+    await clearOfflineData();
+    router.push("/");
+  };
 
   const handleDemo = async () => {
     setDemoLoading(true);

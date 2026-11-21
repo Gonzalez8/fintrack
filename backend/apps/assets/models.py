@@ -39,6 +39,8 @@ class Asset(UserOwnedModel):
     price_source = models.CharField(max_length=10, choices=PriceSource.choices, default=PriceSource.YAHOO)
     price_status = models.CharField(max_length=10, choices=PriceStatus.choices, null=True, blank=True)
     price_updated_at = models.DateTimeField(null=True, blank=True)
+    # Market day of the Yahoo bar behind current_price (None for manual prices).
+    price_date = models.DateField(null=True, blank=True)
 
     class Meta:
         ordering = ["name"]

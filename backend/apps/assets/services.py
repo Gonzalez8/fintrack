@@ -1,3 +1,4 @@
+import datetime
 import math
 import uuid
 from decimal import Decimal, InvalidOperation
@@ -91,6 +92,20 @@ def create_portfolio_snapshot_now(user) -> None:
         )
 
 
+def _stored_bar_date(asset):
+    """Market day of the price we hold, to compare with a new bar. ``date.min`` accepts any bar.
+
+    Compared with the bar's own day, not with when it was fetched: a fund whose NAV arrives a day or two
+    late would otherwise skip every bar older than the last fetch. Manual prices accept any bar; prices
+    saved before ``price_date`` existed fall back to the day they were fetched.
+    """
+    if asset.price_date is not None:
+        return asset.price_date
+    if asset.price_source == Asset.PriceSource.YAHOO and asset.price_updated_at is not None:
+        return timezone.localdate(asset.price_updated_at)
+    return datetime.date.min
+
+
 def update_prices(user):
     """Fetch latest prices from Yahoo Finance for all AUTO-mode assets of `user`."""
     import yfinance as yf
@@ -135,12 +150,8 @@ def update_prices(user):
         if ticker in prices:
             bar_date, close = prices[ticker]
             # Around midnight Yahoo sometimes drops the day that just closed and returns an older bar.
-            # Never step a price back to a day before the last update: keep the price we have.
-            if (
-                asset.current_price is not None
-                and asset.price_updated_at is not None
-                and bar_date < timezone.localdate(asset.price_updated_at)
-            ):
+            # Never step a price back to an older bar than the one we have: keep the price.
+            if asset.current_price is not None and bar_date < _stored_bar_date(asset):
                 continue
             try:
                 price = Decimal(str(round(close, 6)))
@@ -148,6 +159,7 @@ def update_prices(user):
                 asset.price_source = Asset.PriceSource.YAHOO
                 asset.price_status = Asset.PriceStatus.OK
                 asset.price_updated_at = now
+                asset.price_date = bar_date
                 updated_assets.append(asset)
                 results["updated"] += 1
                 results["prices"].append(
@@ -168,7 +180,7 @@ def update_prices(user):
             error_assets.append(asset)
             results["errors"].append(f"{ticker}: no price data found")
 
-    update_fields = ["current_price", "price_source", "price_status", "price_updated_at", "updated_at"]
+    update_fields = ["current_price", "price_source", "price_status", "price_updated_at", "price_date", "updated_at"]
     if updated_assets:
         Asset.objects.bulk_update(updated_assets, update_fields, batch_size=100)
     if error_assets:

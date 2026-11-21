@@ -49,6 +49,7 @@ class BackupTransactionSerializer(serializers.ModelSerializer):
             "tax",
             "notes",
             "import_hash",
+            "created_at",
         ]
         extra_kwargs = {"id": {"read_only": False}}
 

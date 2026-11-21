@@ -103,7 +103,7 @@ Fintrack ships **two layers** of tax reporting:
 - **Data retention** — Automated purge of old snapshots (configurable: 1y, 5y, 10y, never)
 - **Storage monitoring** — Per-user database space tracking
 - **Bulk snapshots** — Update all account balances at once
-- **JSON backup/restore** — Full data export and import: settings, assets, accounts and snapshots, operations, splits, dividends and drafts, interests, other income, employers and payslips, savings goals, properties and amortizations (API tokens are never exported)
+- **JSON backup/restore** — Full data export and import: settings, assets, accounts and snapshots, operations, splits, dividends and drafts, interests, other income, employers and payslips, savings goals, properties and amortizations (API tokens are never exported). Importing **replaces** all your data with the backup's in one transaction (if anything fails, nothing changes) after a confirmation; operations keep when they were recorded
 
 ### Payroll Tracking
 - **Digitised payslips** — Track monthly net, gross, Social Security contributions and income tax withheld per employer. Feeds the Spanish Modo Renta tab as "Rendimientos del trabajo".

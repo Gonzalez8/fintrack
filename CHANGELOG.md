@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.25.1] - 2026-11-21
+
+### Fixed
+
+- **Signing in failed with an expired or broken session cookie** (401 until the browser's cookies were cleared). Login, register, Google sign-in, session refresh and logout no longer check the old cookie, and logout always clears it. (#141)
+- **With the market closed, Yahoo was asked for prices every minute all weekend**: the snapshot is skipped when nothing moved, so the next run was due straight away. The update interval now counts from the last snapshot or the last price check. (#141)
+- **Snapshots taken just after midnight counted as the previous day** in the equity chart (UTC instead of your time zone), and its axis dates were always in Spanish. (#141)
+
+### Added
+
+- **Warning when automatic prices stop updating.** If no automatic price has been updated for a day (or two update cycles), the dashboard says since when and suggests checking the server's background tasks (Celery). Not shown when automatic updates are off. (#141)
+
 ## [2.25.0] - 2026-11-21
 
 ### Changed

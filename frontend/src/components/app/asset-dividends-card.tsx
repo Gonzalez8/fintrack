@@ -1,23 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HandCoins } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
+import { ShowAllButton, useCollapsedList } from "@/components/app/collapsed-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations } from "@/i18n/use-translations";
-import { cn, formatMoney, uiLocale } from "@/lib/utils";
+import { cn, formatDate, formatMoney } from "@/lib/utils";
 import type { Asset, Dividend, DividendSuggestion, PaginatedResponse } from "@/types";
-
-const VISIBLE = 5; // most recent payments shown before "show all"
-
-function formatDay(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" });
-}
 
 /**
  * Dividends of one asset: its drafts (pending to review or dismiss, dismissed to restore), the recorded ones
@@ -28,7 +22,6 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
   const t = useTranslations();
   const queryClient = useQueryClient();
   const canBackfill = Boolean(asset.ticker) && asset.price_mode === "AUTO";
-  const [showAll, setShowAll] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["dividends", { asset_id: asset.id }],
@@ -68,6 +61,7 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
   });
 
   const dividends = [...(data?.results ?? [])].sort((a, b) => b.date.localeCompare(a.date));
+  const shown = useCollapsedList(dividends);
   const byDate = (a: DividendSuggestion, b: DividendSuggestion) => b.ex_date.localeCompare(a.ex_date);
   const pending = (drafts?.results ?? []).filter((d) => d.status === "PENDING").sort(byDate);
   const dismissed = (drafts?.results ?? []).filter((d) => d.status === "DISMISSED").sort(byDate);
@@ -104,7 +98,7 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
                 <li key={d.id} className={cn("flex items-center justify-between gap-3 px-3 py-2", !isPending && "opacity-60")}>
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-x-2 font-medium">
-                      <span className="whitespace-nowrap">{formatDay(d.ex_date)}</span>
+                      <span className="whitespace-nowrap">{formatDate(d.ex_date)}</span>
                       <Badge variant={isPending ? "secondary" : "outline"} className="text-[10px]">
                         {isPending ? t("dividendDrafts.statusPending") : t("dividendDrafts.statusDismissed")}
                       </Badge>
@@ -143,12 +137,12 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
               <span className="font-semibold tabular-nums text-green-500">{formatMoney(totalNet, asset.currency)}</span>
             </p>
             <ul className="divide-y text-sm">
-              {(showAll ? dividends : dividends.slice(0, VISIBLE)).map((d) => {
+              {shown.items.map((d) => {
                 const withheld = parseFloat(d.tax) + parseFloat(d.domestic_tax || "0");
                 return (
                   <li key={d.id} className="flex items-center justify-between gap-3 py-2">
                     <div className="min-w-0">
-                      <p className="font-medium">{formatDay(d.date)}</p>
+                      <p className="font-medium">{formatDate(d.date)}</p>
                       <p className="text-xs text-muted-foreground tabular-nums">
                         {t("dividends.gross")} {formatMoney(d.gross, asset.currency)} · {t("dividends.retention")}{" "}
                         {formatMoney(withheld, asset.currency)}
@@ -159,11 +153,7 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
                 );
               })}
             </ul>
-            {dividends.length > VISIBLE && (
-              <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setShowAll((v) => !v)}>
-                {showAll ? t("common.showLess") : t("common.showAll", { count: dividends.length })}
-              </Button>
-            )}
+            <ShowAllButton list={shown} />
           </>
         ) : (
           <p className="text-xs text-muted-foreground">{t("dividendDrafts.assetCardHelp")}</p>

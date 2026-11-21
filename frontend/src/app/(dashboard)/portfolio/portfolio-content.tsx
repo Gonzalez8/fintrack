@@ -15,18 +15,12 @@ import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell, PctCell } from "@/components/app/money-cell";
 import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
 import { PortfolioSummaryCard } from "@/components/app/portfolio-summary-card";
-import { ReturnsDetails, useReturns } from "@/components/app/returns-details";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PositionDetailDialog } from "@/components/app/position-detail-dialog";
+import { ReturnsDetails } from "@/components/app/returns-details";
 import { SplitBadge } from "@/components/app/split-badge";
-import Link from "next/link";
-import { describeSplit } from "@/lib/splits";
-import { ArrowRight, Info, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import dynamic from "next/dynamic";
 
-const PriceChart = dynamic(
-  () => import("@/components/app/price-chart").then((m) => ({ default: m.PriceChart })),
-  { ssr: false },
-);
 const InvestedCapitalChart = dynamic(
   () => import("@/components/app/invested-capital-chart").then((m) => ({ default: m.InvestedCapitalChart })),
   { ssr: false },
@@ -35,7 +29,7 @@ const RVEvolutionChart = dynamic(
   () => import("@/components/app/rv-evolution-chart").then((m) => ({ default: m.RVEvolutionChart })),
   { ssr: false },
 );
-import { formatMoney, formatPct, moneyColor, uiLocale } from "@/lib/utils";
+import { formatMoney, moneyColor } from "@/lib/utils";
 import { ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import type { PortfolioData, Position } from "@/types";
 import { useTranslations } from "@/i18n/use-translations";
@@ -84,12 +78,6 @@ export function PortfolioContent() {
   };
 
   const totals = portfolio?.totals;
-
-  // Annual money-weighted return of each position (dividends included): shown only in the position dialog
-  const { data: returns } = useReturns();
-  const selectedAnnual = selectedPosition
-    ? returns?.assets.find((a) => a.asset_id === selectedPosition.asset_id)
-    : undefined;
 
   const positionColumns: Column<Position>[] = [
     {
@@ -321,115 +309,8 @@ export function PortfolioContent() {
         />
       </div>
 
-      {/* Asset evolution dialog */}
-      <Dialog
-        open={!!selectedPosition}
-        onOpenChange={(open) => {
-          if (!open) setSelectedPosition(null);
-        }}
-      >
-        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] p-0 overflow-hidden gap-0">
-          <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-2">
-            <DialogTitle className="flex items-center gap-2 flex-wrap min-w-0">
-              <span className="truncate">{selectedPosition?.asset_name}</span>
-              {selectedPosition?.asset_ticker && (
-                <span className="text-sm font-normal text-muted-foreground shrink-0">
-                  {selectedPosition.asset_ticker}
-                </span>
-              )}
-              {selectedPosition?.asset_type && (
-                <Badge variant="secondary" className="shrink-0">
-                  {selectedPosition.asset_type}
-                </Badge>
-              )}
-            </DialogTitle>
-            {selectedPosition?.splits?.length ? (
-              <p className="text-xs text-muted-foreground">
-                {t("splits.includes", {
-                  detail: selectedPosition.splits.map((sp) => describeSplit(sp, t)).join(" · "),
-                })}{" "}
-                ·{" "}
-                <Link
-                  href={`/assets/${selectedPosition.asset_id}#position-history`}
-                  className="text-primary hover:underline"
-                >
-                  {t("splits.viewHistory")}
-                </Link>
-              </p>
-            ) : null}
-            {selectedPosition && (
-              <div className="space-y-2 pt-1">
-                <div className="flex flex-wrap items-end gap-x-5 gap-y-1">
-                  <div>
-                    <p className="text-[11px] text-muted-foreground">{t("portfolio.gainedPct")}</p>
-                    <p className={`text-lg font-bold leading-tight tabular-nums ${moneyColor(selectedPosition.unrealized_pnl_pct)}`}>
-                      {formatPct(selectedPosition.unrealized_pnl_pct)}
-                    </p>
-                  </div>
-                  {selectedAnnual?.xirr_pct != null && (
-                    <div>
-                      <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                        {t("portfolio.annualReturn")}
-                        <TooltipProvider delay={150}>
-                          <Tooltip>
-                            <TooltipTrigger className="inline-flex" aria-label={t("portfolio.annualHint")}>
-                              <Info className="h-3 w-3 cursor-help text-muted-foreground/70" />
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              {t("portfolio.annualHint")}
-                              {!selectedAnnual.reliable && ` ${t("returns.notReliable")}`}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </p>
-                      <p className={`text-lg font-bold leading-tight tabular-nums ${moneyColor(selectedAnnual.xirr_pct)}`}>
-                        {formatPct(selectedAnnual.xirr_pct)}
-                        {!selectedAnnual.reliable && "*"}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <dl className="grid grid-cols-3 gap-x-3 gap-y-1">
-                  {[
-                    [t("portfolio.quantity"), parseFloat(selectedPosition.quantity).toFixed(4)],
-                    [t("portfolio.avgCost"), formatMoney(selectedPosition.avg_cost, selectedPosition.currency)],
-                    [t("portfolio.weight"), `${parseFloat(selectedPosition.weight).toFixed(1)}%`],
-                    [t("portfolio.cost"), formatMoney(selectedPosition.cost_basis, selectedPosition.currency)],
-                    [t("portfolio.value"), formatMoney(selectedPosition.market_value, selectedPosition.currency)],
-                    ["P&L", formatMoney(selectedPosition.unrealized_pnl, selectedPosition.currency), moneyColor(selectedPosition.unrealized_pnl)],
-                  ].map(([label, value, color]) => (
-                    <div key={label} className="min-w-0">
-                      <dt className="truncate text-[11px] text-muted-foreground">{label}</dt>
-                      <dd className={`truncate text-[13px] font-medium tabular-nums ${color ?? ""}`}>{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
-                  {selectedAnnual?.first_date && (
-                    <span>
-                      {t("portfolio.heldSince")}{" "}
-                      {new Date(`${selectedAnnual.first_date}T00:00:00`).toLocaleDateString(uiLocale(), {
-                        day: "numeric", month: "short", year: "numeric",
-                      })}
-                      {" ·"}
-                    </span>
-                  )}
-                  <Link
-                    href={`/assets/${selectedPosition.asset_id}`}
-                    className="inline-flex items-center gap-1 text-primary hover:underline"
-                  >
-                    {t("portfolio.openAsset")}
-                    <ArrowRight className="h-3 w-3" aria-hidden="true" />
-                  </Link>
-                </p>
-              </div>
-            )}
-          </DialogHeader>
-          {selectedPosition && (
-            <PriceChart assetId={selectedPosition.asset_id} ticker={selectedPosition.asset_ticker ?? null} />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Position detail: % gained and a year, figures, link to the asset and its price chart */}
+      <PositionDetailDialog position={selectedPosition} onClose={() => setSelectedPosition(null)} />
 
       {/* The summary card opens the equity evolution, the money invested over time or the returns details */}
       <Dialog open={summaryChart !== null} onOpenChange={(o) => !o && setSummaryChart(null)}>

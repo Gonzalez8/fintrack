@@ -17,6 +17,7 @@ Rates are floats (they are ratios, not money); amounts stay Decimal.
 
 import datetime
 import logging
+from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.cache import cache
@@ -75,9 +76,9 @@ def _pct(rate: float | None) -> str | None:
 
 
 def _trade_flows(user):
-    """(date, asset_id, amount) per operation, from the investor's side."""
-    flows = []
-    for tx in Transaction.objects.filter(owner=user).order_by("date", "created_at"):
+    """(date, asset_id, amount) per operation, from the investor's side, and {asset_id: (name, ticker)}."""
+    flows, names = [], {}
+    for tx in Transaction.objects.filter(owner=user).select_related("asset").order_by("date", "created_at"):
         gross = tx.quantity * (tx.price or Decimal("0"))
         if tx.type == Transaction.TransactionType.BUY:
             amount = -(gross + tx.commission + tx.tax)
@@ -86,7 +87,8 @@ def _trade_flows(user):
         else:  # SELL
             amount = gross - tx.commission - tx.tax
         flows.append((tx.date, tx.asset_id, amount))
-    return flows
+        names[tx.asset_id] = (tx.asset.name, tx.asset.ticker)
+    return flows, names
 
 
 def _summary(flows, market_value, today, money_exp):
@@ -182,23 +184,23 @@ def calculate_returns(user, benchmark: str | None = DEFAULT_BENCHMARK, today: da
     settings = Settings.load(user)
     money_exp = Decimal(10) ** -settings.rounding_money
 
-    trades = _trade_flows(user)
+    trades, names = _trade_flows(user)
     dividends = list(Dividend.objects.filter(owner=user).values_list("date", "asset_id", "net"))
     portfolio = calculate_portfolio(user)
     values = {p["asset_id"]: Decimal(p["market_value"]) for p in portfolio["positions"]}
     total_value = Decimal(portfolio["totals"]["total_market_value"])
 
-    all_flows = [(d, a) for d, _, a in trades] + [(d, n) for d, _, n in dividends]
+    # One pass: every flow goes to the whole portfolio and to its asset
+    all_flows = []
+    by_asset = defaultdict(list)
+    for day, asset_id, amount in [*trades, *dividends]:
+        all_flows.append((day, amount))
+        by_asset[asset_id].append((day, amount))
     all_flows.sort(key=lambda f: f[0])
 
-    names = {}
-    for tx in Transaction.objects.filter(owner=user).select_related("asset"):
-        names[tx.asset_id] = (tx.asset.name, tx.asset.ticker)
     assets = []
     for asset_id, (name, ticker) in names.items():
-        flows = [(d, a) for d, aid, a in trades if aid == asset_id]
-        flows += [(d, n) for d, aid, n in dividends if aid == asset_id]
-        flows.sort(key=lambda f: f[0])
+        flows = sorted(by_asset[asset_id], key=lambda f: f[0])
         value = values.get(str(asset_id), Decimal("0"))
         row = _summary(flows, value, today, money_exp)
         row.update({"asset_id": str(asset_id), "asset_name": name, "asset_ticker": ticker, "is_open": value > 0})

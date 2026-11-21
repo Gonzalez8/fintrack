@@ -1,8 +1,10 @@
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.cache import NS_PORTFOLIO, get_user_cache, set_user_cache
 
+from .returns import BENCHMARKS, DEFAULT_BENCHMARK, calculate_returns
 from .services import calculate_portfolio_full
 
 
@@ -25,9 +27,10 @@ class ReturnsView(APIView):
     """
 
     def get(self, request):
-        from .returns import BENCHMARKS, DEFAULT_BENCHMARK, calculate_returns
-
         benchmark = request.query_params.get("benchmark", DEFAULT_BENCHMARK)
         if benchmark != "none" and benchmark not in BENCHMARKS:
-            return Response({"detail": f"Unknown benchmark. Use one of: {', '.join(BENCHMARKS)}, none."}, status=400)
+            return Response(
+                {"detail": f"Unknown benchmark. Use one of: {', '.join(BENCHMARKS)}, none."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(calculate_returns(request.user, None if benchmark == "none" else benchmark))

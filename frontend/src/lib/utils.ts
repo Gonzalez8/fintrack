@@ -76,6 +76,12 @@ export function uiLocale(): string {
  * Format a "YYYY-MM" month key as "Month YYYY" in the UI locale,
  * capitalizing only the first letter (e.g. es: "Agosto de 2026").
  */
+/** A calendar day (YYYY-MM-DD) as "1 ene 2024" in the UI locale; "—" when missing. */
+export function formatDate(day: string | null | undefined, locale = uiLocale()): string {
+  if (!day) return "—";
+  return new Date(`${day}T00:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
+}
+
 export function formatMonthYear(month: string, locale = uiLocale()): string {
   const [y, m] = month.split("-").map(Number);
   if (!y || !m) return month;

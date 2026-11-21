@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatMoney, formatPct, formatQty, moneyColor, formatMonthYear, uiLocale } from "./utils";
+import { formatDate, formatMoney, formatPct, formatQty, moneyColor, formatMonthYear, uiLocale } from "./utils";
 
 describe("formatMoney", () => {
   it("formats positive numbers", () => {
@@ -114,5 +114,17 @@ describe("formatMonthYear", () => {
 
   it("returns the input when it is not a month key", () => {
     expect(formatMonthYear("foo")).toBe("foo");
+  });
+});
+
+describe("formatDate", () => {
+  it("formats a calendar day without shifting it by time zone", () => {
+    expect(formatDate("2024-01-01", "es-ES")).toBe("1 ene 2024");
+    expect(formatDate("2026-11-21", "en-GB")).toBe("21 Nov 2026");
+  });
+
+  it("shows a dash when there is no date", () => {
+    expect(formatDate(null)).toBe("—");
+    expect(formatDate(undefined)).toBe("—");
   });
 });

@@ -5,13 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/i18n/use-translations";
-import { cn, formatMoney, formatPct, moneyColor, uiLocale } from "@/lib/utils";
+import { cn, formatDate, formatMoney, formatPct, moneyColor } from "@/lib/utils";
 import type { ReturnsData, ReturnsSummary } from "@/types";
-
-function formatDay(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(`${iso}T00:00:00`).toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" });
-}
 
 function Figures({
   data, t, returnedKey = "returns.returned",
@@ -48,7 +43,8 @@ export const DEFAULT_BENCHMARK = "msci_world";
 /** Returns of the portfolio vs one benchmark; the same cache feeds the summary card and the details. */
 export function useReturns(benchmark = DEFAULT_BENCHMARK) {
   return useQuery({
-    queryKey: ["portfolio-returns", benchmark],
+    // Under "portfolio" so every mutation that refreshes the portfolio refreshes the returns too
+    queryKey: ["portfolio", "returns", benchmark],
     queryFn: () => api.get<ReturnsData>(`/portfolio/returns/?benchmark=${benchmark}`),
     staleTime: 5 * 60 * 1000,
   });
@@ -101,7 +97,7 @@ export function ReturnsDetails() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 rounded-md border p-3">
             <p className="text-xs text-muted-foreground">
-              {t("returns.yourPortfolio")} · {t("returns.since", { date: formatDay(mine.first_date) })}
+              {t("returns.yourPortfolio")} · {t("returns.since", { date: formatDate(mine.first_date) })}
             </p>
             <Rate data={mine} t={t} />
             <Figures data={mine} t={t} />
@@ -136,7 +132,7 @@ export function ReturnsDetails() {
         <div className="space-y-1 text-xs text-muted-foreground">
           {!mine.reliable && <p>{t("returns.notReliable")}</p>}
           {bench?.starts_late && <p>{t("returns.startsLate", { name: bench.name })}</p>}
-          {bench && <p>{t("returns.indexNote", { ticker: bench.ticker, date: formatDay(bench.price_date) })}</p>}
+          {bench && <p>{t("returns.indexNote", { ticker: bench.ticker, date: formatDate(bench.price_date) })}</p>}
         </div>
 
     </div>

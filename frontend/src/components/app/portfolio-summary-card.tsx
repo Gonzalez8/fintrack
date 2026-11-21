@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useTranslations } from "@/i18n/use-translations";
 import { cn, formatMoney, formatPct, moneyColor } from "@/lib/utils";
 import type { PortfolioData, RVEvolutionPoint } from "@/types";
-import { useReturns } from "./returns-details";
+import { useReturns } from "@/components/app/returns-details";
 
 const SPARK_POINTS = 120;
 

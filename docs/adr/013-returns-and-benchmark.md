@@ -19,7 +19,8 @@ Fintrack showed the gain over cost (+20 %), which says nothing about time: money
 - **Less than a year** is flagged (`reliable: false`) instead of hidden: annualizing a few weeks exaggerates.
 - **Benchmark as a ghost portfolio**: each buy/gift buys units of an accumulating EUR ETF (MSCI World EUNL.DE, S&P 500 SXR8.DE, FTSE All-World VWCE.DE) for the same amount on that day, each sale sells units for the same proceeds (never more than held). Dividends are not replayed: an accumulating ETF already reinvests its own, so the user's flows (dividends included) vs the ETF's is like for like. Fund fees are in the ETF price.
 - **Prices from Yahoo**, fetched on request and cached globally for 6 hours (public data, not per user). If unavailable the response has `benchmark: null` and the UI says so; nothing else fails. Operations older than the ETF are priced at its first close and flagged (`starts_late`).
-- No stored setting for the benchmark: the user switches it in the card; the API takes `?benchmark=`.
+- No stored setting for the benchmark: the user switches it in the comparison dialog; the API takes `?benchmark=`.
+- **UI kept light**: the % gained stays the main figure. The Portfolio summary card shows the portfolio's % a year small under it; a position's own annual return appears when it is opened (`PositionDetailDialog`), and the index comparison lives in its own dialog (`ReturnsDetails`). The API still returns sold assets, used by the AI assistant.
 
 ## Consequences
 

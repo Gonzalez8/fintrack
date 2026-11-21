@@ -53,6 +53,9 @@ class SimulateSaleView(APIView):
             quantity = Decimal(params.get("quantity", ""))
             price = Decimal(params["price"]) if params.get("price") else None
             commission = Decimal(params.get("commission") or "0")
+            # Decimal accepts "NaN" and "Infinity", and comparing NaN raises
+            if not all(v.is_finite() for v in (quantity, commission, price or Decimal("0"))):
+                raise ValueError
         except (InvalidOperation, ValueError):
             return Response(
                 {"detail": "quantity, price and commission must be numbers."}, status=status.HTTP_400_BAD_REQUEST

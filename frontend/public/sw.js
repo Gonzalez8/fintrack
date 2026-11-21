@@ -3,13 +3,16 @@
  *
  * 1. Offline copy: every page and every GET to /api/proxy/* goes to the network first; the last good response is
  *    kept and served when there is no connection (the page is told, so it can say how old the data is).
- *    Sign-in and backups are never stored. The copy is deleted on logout (see lib/offline.ts).
+ *    Sign-in, account data and backups are never stored. The copy is deleted on login and logout (lib/offline.ts).
  * 2. Share target: payslip PDFs shared from other apps (Android) arrive as a POST to /share-target; they are kept
  *    in a cache and the payroll page picks them up (/nominas?shared=1).
  *
- * Registered with ?dev=1 in development, where /_next/static files change without changing name.
+ * Registered as /sw.js?v=<app version>, plus &dev=1 in development, where /_next/static files change without
+ * changing name.
  */
-const VERSION = "v1";
+// Cache names carry the app version (registered as /sw.js?v=<version>): a new release gets fresh caches and the
+// old ones, with the previous build's files, are deleted on activate
+const VERSION = new URL(self.location.href).searchParams.get("v") || "v1";
 const PAGES = `fintrack-pages-${VERSION}`;
 const DATA = `fintrack-data-${VERSION}`;
 const ASSETS = `fintrack-assets-${VERSION}`;
@@ -17,7 +20,14 @@ const SHARE = "fintrack-share";
 const DEV = new URL(self.location.href).searchParams.get("dev") === "1";
 const CACHED_AT = "x-fintrack-cached-at";
 
-const NEVER_CACHED = [/^\/api\/auth\//, /^\/api\/proxy\/backup\//, /^\/mockServiceWorker\.js$/, /^\/sw\.js$/];
+// Sign-in, account (profile, tokens, avatar) and backups are never stored
+const NEVER_CACHED = [
+  /^\/api\/auth\//,
+  /^\/api\/proxy\/auth\//,
+  /^\/api\/proxy\/backup\//,
+  /^\/mockServiceWorker\.js$/,
+  /^\/sw\.js$/,
+];
 
 self.addEventListener("install", () => self.skipWaiting());
 

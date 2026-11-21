@@ -17,8 +17,10 @@ export function OfflineSupport() {
 
   useEffect(() => {
     if (IS_DEMO || !("serviceWorker" in navigator)) return;
+    const params = new URLSearchParams({ v: process.env.NEXT_PUBLIC_APP_VERSION ?? "dev" });
+    if (process.env.NODE_ENV === "development") params.set("dev", "1");
     navigator.serviceWorker
-      .register(process.env.NODE_ENV === "development" ? "/sw.js?dev=1" : "/sw.js")
+      .register(`/sw.js?${params}`)
       .catch(() => {}); // e.g. plain http on a LAN address: the app works, just without offline copy
 
     const onMessage = (event: MessageEvent) => {

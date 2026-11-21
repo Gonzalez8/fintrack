@@ -44,7 +44,7 @@ describe("offline helpers", () => {
     const share = await fake.api.open("fintrack-share");
     await share.put(
       "/shared/0",
-      new Response(new Blob(["%PDF"], { type: "application/pdf" }), {
+      new Response("%PDF-1.4", {
         // Same headers public/sw.js stores with each shared file
         headers: { "Content-Type": "application/pdf", "X-File-Name": encodeURIComponent("nómina octubre.pdf") },
       }),

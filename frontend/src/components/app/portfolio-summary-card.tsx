@@ -8,7 +8,8 @@ import type { PortfolioData } from "@/types";
 import { useReturns } from "./returns-details";
 
 /**
- * The one summary of the equity portfolio: market value, unrealized P&L (€ and %) and the annualized return.
+ * The one summary of the equity portfolio: market value, unrealized P&L in € and % (the main figure) and, small
+ * under it, the annualized return.
  * The body opens the equity evolution; the footer opens the money invested over time and the index comparison.
  */
 export function PortfolioSummaryCard({
@@ -25,16 +26,6 @@ export function PortfolioSummaryCard({
   const cost = parseFloat(totals.total_cost);
   const pnlPct = cost > 0 ? (pnl / cost) * 100 : 0;
   const xirr = returns?.portfolio.xirr_pct ?? null;
-
-  const stats: { label: string; value: string; color: string }[] = [
-    { label: t("dashboard.unrealizedPnl"), value: formatMoney(totals.total_unrealized_pnl), color: moneyColor(pnl) },
-    { label: t("portfolio.gainedPct"), value: formatPct(pnlPct), color: moneyColor(pnl) },
-    {
-      label: t("portfolio.annualReturn"),
-      value: xirr == null ? "—" : `${formatPct(xirr)}`,
-      color: moneyColor(xirr),
-    },
-  ];
 
   const footerBtn =
     "flex min-w-0 flex-1 basis-0 items-center justify-between gap-1 px-3 py-2.5 text-left text-[13px] sm:gap-2 sm:px-4 sm:text-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring";
@@ -53,13 +44,22 @@ export function PortfolioSummaryCard({
           </div>
           <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {stats.map((s) => (
-            <div key={s.label} className="min-w-0">
-              <p className="truncate text-xs text-muted-foreground">{s.label}</p>
-              <p className={cn("text-base font-semibold tabular-nums sm:text-lg", s.color)}>{s.value}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-xs text-muted-foreground">{t("dashboard.unrealizedPnl")}</p>
+            <p className={cn("text-lg font-semibold tabular-nums", moneyColor(pnl))}>
+              {formatMoney(totals.total_unrealized_pnl)}
+            </p>
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-xs text-muted-foreground">{t("portfolio.gainedPct")}</p>
+            <p className={cn("text-lg font-semibold tabular-nums", moneyColor(pnl))}>{formatPct(pnlPct)}</p>
+            {xirr != null && (
+              <p className="text-xs tabular-nums text-muted-foreground">
+                {t("portfolio.perYearShort", { pct: formatPct(xirr) })}
+              </p>
+            )}
+          </div>
         </div>
       </button>
       <div className="flex divide-x border-t">

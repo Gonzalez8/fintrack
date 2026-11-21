@@ -188,6 +188,9 @@ export function PriceChart({ assetId, ticker }: PriceChartProps) {
                 {perf.isPositive ? "+" : ""}
                 {perf.pct.toFixed(2)}%
               </span>
+              <span className="text-xs text-muted-foreground">
+                {t("priceChart.priceChange", { period: PERIODS.find((p) => p.key === period)?.label ?? "" })}
+              </span>
               <span className="font-mono text-[9px] tracking-[1.5px] uppercase text-muted-foreground">
                 {ticker}
               </span>

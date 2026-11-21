@@ -84,14 +84,11 @@ export function PortfolioContent() {
 
   const totals = portfolio?.totals;
 
-  // Annual money-weighted return of each position (dividends included), from the returns endpoint
+  // Annual money-weighted return of each position (dividends included): shown only in the position dialog
   const { data: returns } = useReturns();
-  const annualById = new Map((returns?.assets ?? []).map((a) => [a.asset_id, a]));
-  const annualText = (assetId: string) => {
-    const a = annualById.get(assetId);
-    if (!a || a.xirr_pct == null) return null;
-    return { text: `${formatPct(a.xirr_pct)}${a.reliable ? "" : "*"}`, color: moneyColor(a.xirr_pct), reliable: a.reliable };
-  };
+  const selectedAnnual = selectedPosition
+    ? returns?.assets.find((a) => a.asset_id === selectedPosition.asset_id)
+    : undefined;
 
   const positionColumns: Column<Position>[] = [
     {
@@ -160,24 +157,6 @@ export function PortfolioContent() {
           </div>
         </div>
       ),
-    },
-    {
-      key: "annual",
-      header: t("portfolio.annualReturn"),
-      className: "text-right",
-      render: (p) => {
-        const a = annualText(p.asset_id);
-        return a ? (
-          <span
-            className={`font-mono text-sm tabular-nums ${a.color}`}
-            title={a.reliable ? t("portfolio.annualHint") : t("returns.notReliable")}
-          >
-            {a.text}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        );
-      },
     },
     {
       key: "weight",
@@ -298,11 +277,6 @@ export function PortfolioContent() {
                         {pnlPct >= 0 ? "+" : ""}
                         {pnlPct.toFixed(2)}%
                       </p>
-                      {annualText(p.asset_id) && (
-                        <p className={`text-[11px] tabular-nums ${annualText(p.asset_id)!.color}`}>
-                          {annualText(p.asset_id)!.text} {t("returns.perYear")}
-                        </p>
-                      )}
                     </div>
                   </div>
 
@@ -382,6 +356,30 @@ export function PortfolioContent() {
                 </Link>
               </p>
             ) : null}
+            {selectedPosition && (
+              <div className="flex flex-wrap items-end gap-x-6 gap-y-1 pt-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">{t("portfolio.gainedPct")}</p>
+                  <p className={`text-xl font-bold tabular-nums ${moneyColor(selectedPosition.unrealized_pnl_pct)}`}>
+                    {formatPct(selectedPosition.unrealized_pnl_pct)}
+                  </p>
+                </div>
+                {selectedAnnual?.xirr_pct != null && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t("portfolio.annualReturn")}</p>
+                    <p className={`text-xl font-bold tabular-nums ${moneyColor(selectedAnnual.xirr_pct)}`}>
+                      {formatPct(selectedAnnual.xirr_pct)}
+                    </p>
+                  </div>
+                )}
+                {selectedAnnual?.xirr_pct != null && (
+                  <p className="basis-full text-xs text-muted-foreground">
+                    {t("portfolio.annualHint")}
+                    {!selectedAnnual.reliable && ` ${t("returns.notReliable")}`}
+                  </p>
+                )}
+              </div>
+            )}
           </DialogHeader>
           {selectedPosition && (
             <PriceChart assetId={selectedPosition.asset_id} ticker={selectedPosition.asset_ticker ?? null} />

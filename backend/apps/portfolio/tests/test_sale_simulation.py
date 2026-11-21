@@ -174,6 +174,9 @@ class TestSimulateSaleEndpoint:
         assert c.get(self.URL, {"asset_id": asset.id, "quantity": "abc"}).status_code == 400
         assert c.get(self.URL, {"asset_id": asset.id, "quantity": "99"}).status_code == 400
         assert c.get(self.URL, {"asset_id": "not-a-uuid", "quantity": "1"}).status_code == 400
+        for bad in ("NaN", "Infinity"):
+            assert c.get(self.URL, {"asset_id": asset.id, "quantity": bad}).status_code == 400
+            assert c.get(self.URL, {"asset_id": asset.id, "quantity": "1", "price": bad}).status_code == 400
 
     def test_other_users_asset(self, user, asset, three_lots):
         other = User.objects.create_user(username="other", password="testpass123")

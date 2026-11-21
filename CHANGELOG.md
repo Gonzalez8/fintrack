@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.27.1] - 2026-11-21
+
+### Changed
+
+- **Welcome page: the AI assistant gets its own section.** What it does once connected through MCP — investor profile and plan, portfolio, real returns, savings and payslips, sale and loss-offset simulations, recording with your confirmation, answers about the app — with an example conversation and a privacy note; linked from the menu and mentioned in the main subtitle. (#148)
+- **README screenshots refreshed** from demo mode, with two new ones: returns vs an index and the sale simulator. (#147)
+
+### Fixed
+
+- **Demo mode**: the price chart ended with a jump, 2026 showed zeros, the position dialog lacked "% a year", the sale simulator gave a fixed answer, and dividend/interest filters by year and asset were ignored (the demo proxy dropped the query string). (#147)
+
 ## [2.27.0] - 2026-11-21
 
 ### Added

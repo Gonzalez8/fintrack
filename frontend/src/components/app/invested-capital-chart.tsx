@@ -41,7 +41,7 @@ function formatAxisMonth(month: string): string {
 }
 
 // Money invested over time (cost of open positions at each month end) with the monthly change as bars.
-// The header follows the hovered month, like the equity evolution chart.
+// The header follows the hovered month, like the equity evolution chart; at rest it shows the visible range.
 export function InvestedCapitalChart() {
   const ct = useChartTheme();
   const t = useTranslations();
@@ -68,6 +68,8 @@ export function InvestedCapitalChart() {
 
   const last = chartData[chartData.length - 1];
   const shown = hover ?? last;
+  // Without hover the header sums the visible range: what was invested (net) in the last 12 months, 3 years…
+  const rangeDelta = useMemo(() => chartData.reduce((sum, p) => sum + p.delta, 0), [chartData]);
 
   const tooltipContent = useCallback(
     (props: { active?: boolean; payload?: ReadonlyArray<{ payload?: ChartPoint }> }) => {
@@ -91,8 +93,15 @@ export function InvestedCapitalChart() {
     return <p className="py-8 text-center text-sm text-muted-foreground">{t("common.noData")}</p>;
   }
 
-  const deltaClass =
-    shown.delta > 0 ? "text-green-500" : shown.delta < 0 ? "text-red-500" : "text-muted-foreground";
+  const delta = hover ? hover.delta : rangeDelta;
+  const deltaClass = delta > 0 ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted-foreground";
+  const period = hover
+    ? formatMonthYear(hover.month)
+    : range === "1Y"
+      ? t("portfolio.investedLast12Months")
+      : range === "3Y"
+        ? t("portfolio.investedLast3Years")
+        : t("portfolio.investedSince", { month: formatMonthYear(chartData[0].month) });
 
   return (
     <div>
@@ -106,10 +115,10 @@ export function InvestedCapitalChart() {
           </p>
           <p className="mt-1.5 text-sm tabular-nums">
             <span className={`font-semibold ${deltaClass}`}>
-              {shown.delta > 0 ? "+" : ""}
-              {formatMoney(shown.delta)}
+              {delta > 0 ? "+" : ""}
+              {formatMoney(delta)}
             </span>{" "}
-            <span className="text-xs text-muted-foreground">· {formatMonthYear(shown.month)}</span>
+            <span className="text-xs text-muted-foreground">· {period}</span>
           </p>
         </div>
 

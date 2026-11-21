@@ -1019,3 +1019,42 @@ export interface ReturnsData {
   benchmark: BenchmarkReturn | null;
   benchmarks: { key: string; name: string; ticker: string }[];
 }
+
+// ---- Sale simulation ----
+
+export interface SaleSimulationLot {
+  /** Purchase date; null with the average-cost (WAC) method */
+  date: string | null;
+  quantity_held: string;
+  quantity_sold: string;
+  unit_cost: string;
+  cost: string;
+  gain: string;
+}
+
+/** Spanish estimate (base del ahorro) of the extra tax a sale adds to the year */
+export interface SaleTaxEstimate {
+  country: string;
+  year: number;
+  gains_ytd: string;
+  income_ytd: string;
+  tax_before: string;
+  tax_after: string;
+  tax_sale: string;
+  /** Only for a loss: buys of the asset in the last two months, and until when a rebuy would defer it */
+  wash_sale: { recent_buys: { date: string; quantity: string }[]; rebuy_until: string } | null;
+}
+
+export interface SaleSimulation {
+  asset: { id: string; name: string; ticker: string | null; currency: string; held: string; current_price: string | null };
+  method: CostBasisMethod;
+  date: string;
+  quantity: string;
+  price: string;
+  commission: string;
+  proceeds: string;
+  cost_basis: string;
+  gain: string;
+  lots: SaleSimulationLot[];
+  tax: SaleTaxEstimate | null;
+}

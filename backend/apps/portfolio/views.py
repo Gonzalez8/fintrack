@@ -1,3 +1,6 @@
+from decimal import Decimal, InvalidOperation
+
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -5,6 +8,7 @@ from rest_framework.views import APIView
 from apps.core.cache import NS_PORTFOLIO, get_user_cache, set_user_cache
 
 from .returns import BENCHMARKS, DEFAULT_BENCHMARK, calculate_returns
+from .sale_simulation import SaleSimulationError, simulate_sale
 from .services import calculate_portfolio_full
 
 
@@ -34,3 +38,30 @@ class ReturnsView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(calculate_returns(request.user, None if benchmark == "none" else benchmark))
+
+
+class SimulateSaleView(APIView):
+    """GET /api/portfolio/simulate-sale/?asset_id=&quantity=&price=&commission=
+
+    What-if sale: lots that would go out with the fiscal cost method, the gain and, for supported fiscal countries,
+    the estimated tax. Records nothing.
+    """
+
+    def get(self, request):
+        params = request.query_params
+        try:
+            quantity = Decimal(params.get("quantity", ""))
+            price = Decimal(params["price"]) if params.get("price") else None
+            commission = Decimal(params.get("commission") or "0")
+        except (InvalidOperation, ValueError):
+            return Response(
+                {"detail": "quantity, price and commission must be numbers."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            data = simulate_sale(request.user, params.get("asset_id"), quantity, price, commission)
+        except (SaleSimulationError, DjangoValidationError) as exc:
+            return Response(
+                {"detail": str(exc) if isinstance(exc, SaleSimulationError) else "Unknown asset."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(data)

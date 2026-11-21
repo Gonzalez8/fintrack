@@ -13,7 +13,7 @@ from decimal import Decimal
 from apps.portfolio.services import calculate_realized_pnl_fiscal
 from apps.transactions.models import Dividend, Interest
 
-from . import es_rental, register
+from . import es_rental, es_sale, register
 from .common import (
     NET_MISMATCH_TOLERANCE,
     asset_country,
@@ -45,6 +45,9 @@ class SpanishTaxAdapter:
 
     def rental_simulate(self, data: dict) -> dict:
         return es_rental.compute_rental(es_rental.RentalInputs.from_dict(data))
+
+    def estimate_sale_tax(self, user, asset, gain, today) -> dict:
+        return es_sale.estimate_sale_tax(user, asset, gain, today)
 
     def declare(self, user, year: int) -> dict:
         from apps.assets.models import Settings as UserSettings

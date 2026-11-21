@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { ShowAllButton, useCollapsedList } from "@/components/app/collapsed-list";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { SaleSimulatorDialog } from "@/components/app/sale-simulator-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoneyCell } from "@/components/app/money-cell";
 import { useTranslations } from "@/i18n/use-translations";
 import { TRANSACTION_TYPE_KEYS, TX_TYPE_BADGE_COLORS } from "@/lib/constants";
 import { formatSplitDate, formatSplitRatio } from "@/lib/splits";
 import { cn, formatQty } from "@/lib/utils";
-import type { PositionHistory, PositionHistoryEvent } from "@/types";
+import type { Asset, PositionHistory, PositionHistoryEvent } from "@/types";
 
 export const POSITION_HISTORY_ANCHOR = "position-history";
 
@@ -19,7 +21,8 @@ export const POSITION_HISTORY_ANCHOR = "position-history";
  * Timeline of an asset's operations and splits with the shares held after
  * each step, so the current quantity can be reconciled with the broker.
  */
-export function PositionHistoryCard({ assetId }: { assetId: string }) {
+export function PositionHistoryCard({ asset }: { asset: Asset }) {
+  const assetId = asset.id;
   const t = useTranslations();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -41,9 +44,11 @@ export function PositionHistoryCard({ assetId }: { assetId: string }) {
   // Newest first, like the operations list
   const allEvents = data?.events ? [...data.events].reverse() : [];
   const shown = useCollapsedList(allEvents);
+  const [simOpen, setSimOpen] = useState(false);
   if (!data || !allEvents.length) return null;
 
   const hasSplits = allEvents.some((e) => e.kind === "SPLIT");
+  const held = parseFloat(data.quantity);
   const events = shown.items;
 
   const label = (e: PositionHistoryEvent) => (
@@ -70,10 +75,15 @@ export function PositionHistoryCard({ assetId }: { assetId: string }) {
   return (
     <div ref={ref} id={POSITION_HISTORY_ANCHOR} className="scroll-mt-20">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
           <CardTitle className="font-mono text-[9px] tracking-[2px] uppercase text-muted-foreground">
             {t("positionHistory.title")}
           </CardTitle>
+          {held > 0 && (
+            <Button variant="outline" size="sm" className="h-8" onClick={() => setSimOpen(true)}>
+              {t("saleSim.button")}
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
@@ -154,6 +164,13 @@ export function PositionHistoryCard({ assetId }: { assetId: string }) {
           <ShowAllButton list={shown} className="mt-2 h-8 px-2" />
         </CardContent>
       </Card>
+      {held > 0 && (
+        <SaleSimulatorDialog
+          asset={{ id: asset.id, name: asset.name, currency: asset.currency, held, currentPrice: asset.current_price }}
+          open={simOpen}
+          onOpenChange={setSimOpen}
+        />
+      )}
     </div>
   );
 }

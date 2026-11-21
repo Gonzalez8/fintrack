@@ -19,11 +19,14 @@ import { usePrivacy } from "@/lib/privacy";
 import { useTranslations } from "@/i18n/use-translations";
 import type { InvestmentCostPoint } from "@/types";
 
-type Range = "1Y" | "3Y" | "MAX";
+type Range = "6M" | "1Y" | "2Y" | "5Y" | "MAX";
 
+// Same ranges and labels as the price chart (monthly data, so no 1D/1W/1M); opens on 1A like the other charts
 const RANGES: { key: Range; label: string; months: number | null }[] = [
+  { key: "6M", label: "6M", months: 6 },
   { key: "1Y", label: "1A", months: 12 },
-  { key: "3Y", label: "3A", months: 36 },
+  { key: "2Y", label: "2A", months: 24 },
+  { key: "5Y", label: "5A", months: 60 },
   { key: "MAX", label: "MAX", months: null },
 ];
 
@@ -45,7 +48,7 @@ function formatAxisMonth(month: string): string {
 export function InvestedCapitalChart() {
   const ct = useChartTheme();
   const t = useTranslations();
-  const [range, setRange] = useState<Range>("MAX");
+  const [range, setRange] = useState<Range>("1Y");
   const { privacyMode } = usePrivacy();
   const [hover, setHover] = useState<ChartPoint | null>(null);
   const hoverRef = useRef<ChartPoint | null>(null);
@@ -95,13 +98,16 @@ export function InvestedCapitalChart() {
 
   const delta = hover ? hover.delta : rangeDelta;
   const deltaClass = delta > 0 ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted-foreground";
+  const months = RANGES.find((r) => r.key === range)?.months;
   const period = hover
     ? formatMonthYear(hover.month)
-    : range === "1Y"
-      ? t("portfolio.investedLast12Months")
-      : range === "3Y"
-        ? t("portfolio.investedLast3Years")
-        : t("portfolio.investedSince", { month: formatMonthYear(chartData[0].month) });
+    : !months
+      ? t("portfolio.investedSince", { month: formatMonthYear(chartData[0].month) })
+      : months < 12
+        ? t("portfolio.investedLastMonths", { count: months })
+        : months === 12
+          ? t("portfolio.investedLastYear")
+          : t("portfolio.investedLastYears", { count: months / 12 });
 
   return (
     <div>

@@ -134,7 +134,8 @@ export function DashboardContent() {
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold tabular-nums">
-              {formatMoney(currentYearData?.total_income ?? "0")}
+              {/* "—" until the summary loads, like the other cards (a "0" here differs from the masked value) */}
+              {yearSummary ? formatMoney(currentYearData?.total_income ?? "0") : formatMoney(null)}
             </div>
             {currentYearData && (
               <div className="text-[10px] sm:text-xs text-muted-foreground mt-1 space-y-0.5">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { ArrowRight, Info } from "lucide-react";
@@ -25,6 +26,9 @@ export function PositionDetailDialog({ position, onClose }: { position: Position
   const t = useTranslations();
   const { data: returns } = useReturns();
   const annual = position ? returns?.assets.find((a) => a.asset_id === position.asset_id) : undefined;
+  // Hover shows the tooltip; a tap (touch screens) shows the same text under the figures
+  const [showHint, setShowHint] = useState(false);
+  const hint = `${t("portfolio.annualHint")}${annual && !annual.reliable ? ` ${t("returns.notReliable")}` : ""}`;
 
   return (
   <Dialog
@@ -77,12 +81,16 @@ export function PositionDetailDialog({ position, onClose }: { position: Position
                     {t("portfolio.annualReturn")}
                     <TooltipProvider delay={150}>
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex" aria-label={t("portfolio.annualHint")}>
+                        <TooltipTrigger
+                          className="inline-flex"
+                          aria-label={t("portfolio.annualHint")}
+                          aria-expanded={showHint}
+                          onClick={() => setShowHint((v) => !v)}
+                        >
                           <Info className="h-3 w-3 cursor-help text-muted-foreground/70" />
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs">
-                          {t("portfolio.annualHint")}
-                          {!annual.reliable && ` ${t("returns.notReliable")}`}
+                          {hint}
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -94,6 +102,7 @@ export function PositionDetailDialog({ position, onClose }: { position: Position
                 </div>
               )}
             </div>
+            {showHint && annual?.xirr_pct != null && <p className="text-xs text-muted-foreground">{hint}</p>}
             <dl className="grid grid-cols-3 gap-x-3 gap-y-1">
               {[
                 [t("portfolio.quantity"), parseFloat(position.quantity).toFixed(4)],

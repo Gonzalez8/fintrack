@@ -47,9 +47,11 @@ export default async function DashboardLayout({
     ? (langCookie as Locale)
     : DEFAULT_LOCALE;
   const dictionary = await getDictionary(locale);
+  // Same value the browser reads, so the first render matches (no hydration mismatch on the eye icon)
+  const privacy = cookieStore.get("fintrack_privacy")?.value === "1";
 
   return (
-    <Providers user={user} dictionary={dictionary}>
+    <Providers user={user} dictionary={dictionary} initialPrivacy={privacy}>
       {isDemo && <DemoBanner />}
       <div className="flex min-h-screen">
         <Sidebar />

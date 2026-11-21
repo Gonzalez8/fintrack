@@ -107,6 +107,8 @@
   "common.deleted": "Erfolgreich geloescht",
   "common.name": "Name",
   "common.date": "Datum",
+  "common.showAll": "Alle anzeigen ({count})",
+  "common.showLess": "Weniger anzeigen",
   "common.type": "Typ",
   "common.currency": "Waehrung",
   "common.account": "Konto",

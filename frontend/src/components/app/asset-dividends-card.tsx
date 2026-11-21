@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HandCoins } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatMoney, uiLocale } from "@/lib/utils";
 import type { Asset, Dividend, DividendSuggestion, PaginatedResponse } from "@/types";
+
+const VISIBLE = 5; // most recent payments shown before "show all"
 
 function formatDay(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" });
@@ -23,6 +26,7 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
   const t = useTranslations();
   const queryClient = useQueryClient();
   const canBackfill = Boolean(asset.ticker) && asset.price_mode === "AUTO";
+  const [showAll, setShowAll] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["dividends", { asset_id: asset.id }],
@@ -76,7 +80,7 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
               <span className="font-semibold tabular-nums text-green-500">{formatMoney(totalNet, asset.currency)}</span>
             </p>
             <ul className="divide-y text-sm">
-              {dividends.map((d) => {
+              {(showAll ? dividends : dividends.slice(0, VISIBLE)).map((d) => {
                 const withheld = parseFloat(d.tax) + parseFloat(d.domestic_tax || "0");
                 return (
                   <li key={d.id} className="flex items-center justify-between gap-3 py-2">
@@ -92,6 +96,11 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
                 );
               })}
             </ul>
+            {dividends.length > VISIBLE && (
+              <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setShowAll((v) => !v)}>
+                {showAll ? t("common.showLess") : t("common.showAll", { count: dividends.length })}
+              </Button>
+            )}
           </>
         ) : (
           <p className="text-xs text-muted-foreground">{t("dividendDrafts.assetCardHelp")}</p>

@@ -358,17 +358,17 @@ export function PortfolioContent() {
               </p>
             ) : null}
             {selectedPosition && (
-              <div className="space-y-3 pt-2">
-                <div className="flex flex-wrap items-end gap-x-6 gap-y-1">
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-wrap items-end gap-x-5 gap-y-1">
                   <div>
-                    <p className="text-xs text-muted-foreground">{t("portfolio.gainedPct")}</p>
-                    <p className={`text-xl font-bold tabular-nums ${moneyColor(selectedPosition.unrealized_pnl_pct)}`}>
+                    <p className="text-[11px] text-muted-foreground">{t("portfolio.gainedPct")}</p>
+                    <p className={`text-lg font-bold leading-tight tabular-nums ${moneyColor(selectedPosition.unrealized_pnl_pct)}`}>
                       {formatPct(selectedPosition.unrealized_pnl_pct)}
                     </p>
                   </div>
                   {selectedAnnual?.xirr_pct != null && (
                     <div>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                         {t("portfolio.annualReturn")}
                         <TooltipProvider delay={150}>
                           <Tooltip>
@@ -382,38 +382,46 @@ export function PortfolioContent() {
                           </Tooltip>
                         </TooltipProvider>
                       </p>
-                      <p className={`text-xl font-bold tabular-nums ${moneyColor(selectedAnnual.xirr_pct)}`}>
+                      <p className={`text-lg font-bold leading-tight tabular-nums ${moneyColor(selectedAnnual.xirr_pct)}`}>
                         {formatPct(selectedAnnual.xirr_pct)}
                         {!selectedAnnual.reliable && "*"}
                       </p>
                     </div>
                   )}
                 </div>
-                <dl className="grid grid-cols-3 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+                <dl className="grid grid-cols-3 gap-x-3 gap-y-1">
                   {[
                     [t("portfolio.quantity"), parseFloat(selectedPosition.quantity).toFixed(4)],
                     [t("portfolio.avgCost"), formatMoney(selectedPosition.avg_cost, selectedPosition.currency)],
+                    [t("portfolio.weight"), `${parseFloat(selectedPosition.weight).toFixed(1)}%`],
                     [t("portfolio.cost"), formatMoney(selectedPosition.cost_basis, selectedPosition.currency)],
                     [t("portfolio.value"), formatMoney(selectedPosition.market_value, selectedPosition.currency)],
                     ["P&L", formatMoney(selectedPosition.unrealized_pnl, selectedPosition.currency), moneyColor(selectedPosition.unrealized_pnl)],
-                    [t("portfolio.weight"), `${parseFloat(selectedPosition.weight).toFixed(1)}%`],
-                    ...(selectedAnnual?.first_date
-                      ? [[t("portfolio.heldSince"), new Date(`${selectedAnnual.first_date}T00:00:00`).toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" })]]
-                      : []),
                   ].map(([label, value, color]) => (
                     <div key={label} className="min-w-0">
-                      <dt className="truncate text-xs text-muted-foreground">{label}</dt>
-                      <dd className={`truncate font-medium tabular-nums ${color ?? ""}`}>{value}</dd>
+                      <dt className="truncate text-[11px] text-muted-foreground">{label}</dt>
+                      <dd className={`truncate text-[13px] font-medium tabular-nums ${color ?? ""}`}>{value}</dd>
                     </div>
                   ))}
                 </dl>
-                <Link
-                  href={`/assets/${selectedPosition.asset_id}`}
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  {t("portfolio.openAsset")}
-                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </Link>
+                <p className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                  {selectedAnnual?.first_date && (
+                    <span>
+                      {t("portfolio.heldSince")}{" "}
+                      {new Date(`${selectedAnnual.first_date}T00:00:00`).toLocaleDateString(uiLocale(), {
+                        day: "numeric", month: "short", year: "numeric",
+                      })}
+                      {" ·"}
+                    </span>
+                  )}
+                  <Link
+                    href={`/assets/${selectedPosition.asset_id}`}
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                  >
+                    {t("portfolio.openAsset")}
+                    <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                  </Link>
+                </p>
               </div>
             )}
           </DialogHeader>

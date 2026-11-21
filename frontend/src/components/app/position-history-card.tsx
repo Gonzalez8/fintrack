@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoneyCell } from "@/components/app/money-cell";
 import { useTranslations } from "@/i18n/use-translations";
@@ -13,6 +14,7 @@ import { cn, formatQty } from "@/lib/utils";
 import type { PositionHistory, PositionHistoryEvent } from "@/types";
 
 export const POSITION_HISTORY_ANCHOR = "position-history";
+const VISIBLE = 5; // most recent steps shown before "show all"
 
 /**
  * Timeline of an asset's operations and splits with the shares held after
@@ -21,6 +23,7 @@ export const POSITION_HISTORY_ANCHOR = "position-history";
 export function PositionHistoryCard({ assetId }: { assetId: string }) {
   const t = useTranslations();
   const ref = useRef<HTMLDivElement>(null);
+  const [showAll, setShowAll] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["position-history", assetId],
@@ -40,8 +43,9 @@ export function PositionHistoryCard({ assetId }: { assetId: string }) {
   if (!data?.events?.length) return null;
 
   // Newest first, like the operations list
-  const events = [...data.events].reverse();
-  const hasSplits = events.some((e) => e.kind === "SPLIT");
+  const allEvents = [...data.events].reverse();
+  const hasSplits = allEvents.some((e) => e.kind === "SPLIT");
+  const events = showAll ? allEvents : allEvents.slice(0, VISIBLE);
 
   const label = (e: PositionHistoryEvent) => (
     <Badge variant="secondary" className={TX_TYPE_BADGE_COLORS[e.kind] ?? ""}>
@@ -148,6 +152,11 @@ export function PositionHistoryCard({ assetId }: { assetId: string }) {
               </tbody>
             </table>
           </div>
+          {allEvents.length > VISIBLE && (
+            <Button variant="ghost" size="sm" className="mt-2 h-8 px-2" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? t("common.showLess") : t("common.showAll", { count: allEvents.length })}
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>

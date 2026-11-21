@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.25.0] - 2026-11-21
+
+### Changed
+
+- **Importing a backup replaces your data instead of merging it.** Before, records missing from the backup stayed and an asset with the same ticker but another id made the whole import fail, so restoring needed an empty account. Now Settings → Backup asks for confirmation, deletes all your data and restores the backup's in one step: if anything fails, nothing changes. Settings and AI-access tokens are kept, other users are untouched, the app shows the restored data at once (the cache is cleared) and operations keep the time they were recorded. The empty "Hist. posiciones por activo" line is gone. (#140)
+
+### Fixed
+
+- **The *Total* line of the equity chart jumped on the day of a sale.** The realized gain was added to every snapshot of that day, also those taken before the sale was recorded, which still held the position's gain — counted twice (e.g. a false +528 € hump all day). It now counts from the moment the sale was recorded, and the sale marker sits on the first point that includes it. (#139)
+- **Funds whose NAV arrives a day or two late updated only every other day.** The guard against Yahoo's older closes around midnight compared the new close with the day the price was fetched; it now compares it with the market day of the price held. (#138)
+
+### Migration notes
+
+- `assets.0009_asset_price_date` adds a nullable column (additive).
+- Backups made from this version include when each operation was recorded; older backups still restore, with the import time instead.
+
 ## [2.24.0] - 2026-11-20
 
 ### Added

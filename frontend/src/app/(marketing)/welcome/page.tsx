@@ -18,6 +18,15 @@ import {
   Receipt,
   Landmark,
   ChevronRight,
+  Bot,
+  UserRound,
+  Sparkles,
+  Plug,
+  Target,
+  Scale,
+  PencilLine,
+  MessageCircleQuestion,
+  ShieldCheck,
 } from "lucide-react";
 import { useTranslations } from "@/i18n/use-translations";
 import type { LucideIcon } from "lucide-react";
@@ -33,6 +42,16 @@ const featureKeys: { icon: LucideIcon; titleKey: string; descKey: string }[] = [
   { icon: Shield, titleKey: "marketing.featurePrivacy", descKey: "marketing.featurePrivacyDesc" },
   { icon: Landmark, titleKey: "marketing.featureAccounts", descKey: "marketing.featureAccountsDesc" },
   { icon: Receipt, titleKey: "marketing.featureSavings", descKey: "marketing.featureSavingsDesc" },
+];
+
+// ── AI advisor (MCP) ────────────────────────────────────────────────
+const aiKeys: { icon: LucideIcon; titleKey: string; descKey: string }[] = [
+  { icon: Plug, titleKey: "marketing.aiConnect", descKey: "marketing.aiConnectDesc" },
+  { icon: Target, titleKey: "marketing.aiProfile", descKey: "marketing.aiProfileDesc" },
+  { icon: LineChart, titleKey: "marketing.aiAnalysis", descKey: "marketing.aiAnalysisDesc" },
+  { icon: Scale, titleKey: "marketing.aiSales", descKey: "marketing.aiSalesDesc" },
+  { icon: PencilLine, titleKey: "marketing.aiRecords", descKey: "marketing.aiRecordsDesc" },
+  { icon: MessageCircleQuestion, titleKey: "marketing.aiHelp", descKey: "marketing.aiHelpDesc" },
 ];
 
 // ── Step config ─────────────────────────────────────────────────────
@@ -76,6 +95,9 @@ export default function MarketingPage() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               {t("marketing.navFeatures")}
+            </a>
+            <a href="#ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {t("marketing.navAi")}
             </a>
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               {t("marketing.navHowItWorks")}
@@ -271,6 +293,89 @@ export default function MarketingPage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── AI advisor (MCP) ── */}
+      <section id="ai" className="relative py-24 sm:py-32 border-t border-border/30">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_70%_30%,rgba(59,130,246,0.10),transparent_70%)]" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 mb-6">
+              <Sparkles className="h-3 w-3 text-primary" />
+              <span className="font-mono text-[10px] tracking-[2px] uppercase text-primary">{t("marketing.aiTag")}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+              {t("marketing.aiTitle1")}{" "}
+              <span className="bg-gradient-to-r from-[#1d4ed8] to-[#60a5fa] bg-clip-text text-transparent">
+                {t("marketing.aiTitle2")}
+              </span>
+            </h2>
+            <p className="mt-4 text-muted-foreground text-lg leading-relaxed">{t("marketing.aiSubtitle")}</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {aiKeys.map((item) => (
+                <div
+                  key={item.titleKey}
+                  className="rounded-xl border border-border/50 bg-card/50 p-5 hover:border-primary/25 hover:bg-card/80 transition-all duration-300"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary mb-3">
+                    <item.icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="text-sm font-semibold mb-1.5">{t(item.titleKey)}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{t(item.descKey)}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Example conversation (illustrative figures); first on phones, right column on desktop */}
+            <div className="order-first lg:order-last rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-card overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
+                <Bot className="h-4 w-4 text-primary" />
+                <span className="font-mono text-[10px] text-muted-foreground tracking-wider">{t("marketing.aiChatTitle")}</span>
+              </div>
+              <div className="p-5 sm:p-6 space-y-4 text-sm">
+                <div className="flex justify-end gap-2">
+                  <p className="max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-4 py-2.5 text-primary-foreground">
+                    {t("marketing.aiChatUser")}
+                  </p>
+                  <UserRound className="mt-1 h-5 w-5 shrink-0 text-muted-foreground" />
+                </div>
+                <div className="flex gap-2">
+                  <Bot className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                  <div className="max-w-[90%] space-y-2 rounded-2xl rounded-tl-sm border border-border/50 bg-muted/30 px-4 py-3 leading-relaxed">
+                    <p>{t("marketing.aiChatAnswer1")}</p>
+                    <p>{t("marketing.aiChatAnswer2")}</p>
+                    <p className="text-muted-foreground">{t("marketing.aiChatAnswer3")}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {["fintrack_get_loss_harvesting", "fintrack_simulate_sale", "fintrack_get_returns"].map((tool) => (
+                    <code key={tool} className="rounded-md border border-border/50 bg-muted/50 px-2 py-1 font-mono text-[10px] text-primary">
+                      {tool}
+                    </code>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-start gap-2 border-t border-border/50 bg-muted/20 px-5 py-3 text-xs text-muted-foreground">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>{t("marketing.aiPrivacy")}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 text-center">
+            <a
+              href="https://github.com/Gonzalez8/fintrack/tree/main/mcp"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+            >
+              {t("marketing.aiCta")} <ChevronRight className="h-4 w-4" />
+            </a>
           </div>
         </div>
       </section>

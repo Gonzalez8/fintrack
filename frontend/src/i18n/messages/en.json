@@ -194,6 +194,7 @@
   "portfolio.noPositions": "No active positions",
   "portfolio.quantity": "Quantity",
   "portfolio.avgCost": "Avg cost",
+  "portfolio.heldSince": "Held since",
   "portfolio.currentPrice": "Current price",
   "portfolio.cost": "Cost",
   "portfolio.value": "Value",

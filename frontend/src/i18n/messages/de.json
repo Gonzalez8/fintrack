@@ -194,6 +194,7 @@
   "portfolio.noPositions": "Keine aktiven Positionen",
   "portfolio.quantity": "Menge",
   "portfolio.avgCost": "Durchschnittl. Kosten",
+  "portfolio.heldSince": "Gehalten seit",
   "portfolio.currentPrice": "Aktueller Preis",
   "portfolio.cost": "Kosten",
   "portfolio.value": "Wert",

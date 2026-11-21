@@ -16,10 +16,11 @@ import { MoneyCell, PctCell } from "@/components/app/money-cell";
 import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
 import { PortfolioSummaryCard } from "@/components/app/portfolio-summary-card";
 import { ReturnsDetails, useReturns } from "@/components/app/returns-details";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { SplitBadge } from "@/components/app/split-badge";
 import Link from "next/link";
 import { describeSplit } from "@/lib/splits";
-import { RefreshCw } from "lucide-react";
+import { Info, RefreshCw } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const PriceChart = dynamic(
@@ -34,7 +35,7 @@ const RVEvolutionChart = dynamic(
   () => import("@/components/app/rv-evolution-chart").then((m) => ({ default: m.RVEvolutionChart })),
   { ssr: false },
 );
-import { formatMoney, formatPct, moneyColor } from "@/lib/utils";
+import { formatMoney, formatPct, moneyColor, uiLocale } from "@/lib/utils";
 import { ASSET_TYPE_BADGE_COLORS } from "@/lib/constants";
 import type { PortfolioData, Position } from "@/types";
 import { useTranslations } from "@/i18n/use-translations";
@@ -357,27 +358,55 @@ export function PortfolioContent() {
               </p>
             ) : null}
             {selectedPosition && (
-              <div className="flex flex-wrap items-end gap-x-6 gap-y-1 pt-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">{t("portfolio.gainedPct")}</p>
-                  <p className={`text-xl font-bold tabular-nums ${moneyColor(selectedPosition.unrealized_pnl_pct)}`}>
-                    {formatPct(selectedPosition.unrealized_pnl_pct)}
-                  </p>
-                </div>
-                {selectedAnnual?.xirr_pct != null && (
+              <div className="space-y-3 pt-2">
+                <div className="flex flex-wrap items-end gap-x-6 gap-y-1">
                   <div>
-                    <p className="text-xs text-muted-foreground">{t("portfolio.annualReturn")}</p>
-                    <p className={`text-xl font-bold tabular-nums ${moneyColor(selectedAnnual.xirr_pct)}`}>
-                      {formatPct(selectedAnnual.xirr_pct)}
+                    <p className="text-xs text-muted-foreground">{t("portfolio.gainedPct")}</p>
+                    <p className={`text-xl font-bold tabular-nums ${moneyColor(selectedPosition.unrealized_pnl_pct)}`}>
+                      {formatPct(selectedPosition.unrealized_pnl_pct)}
                     </p>
                   </div>
-                )}
-                {selectedAnnual?.xirr_pct != null && (
-                  <p className="basis-full text-xs text-muted-foreground">
-                    {t("portfolio.annualHint")}
-                    {!selectedAnnual.reliable && ` ${t("returns.notReliable")}`}
-                  </p>
-                )}
+                  {selectedAnnual?.xirr_pct != null && (
+                    <div>
+                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                        {t("portfolio.annualReturn")}
+                        <TooltipProvider delay={150}>
+                          <Tooltip>
+                            <TooltipTrigger className="inline-flex" aria-label={t("portfolio.annualHint")}>
+                              <Info className="h-3 w-3 cursor-help text-muted-foreground/70" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              {t("portfolio.annualHint")}
+                              {!selectedAnnual.reliable && ` ${t("returns.notReliable")}`}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </p>
+                      <p className={`text-xl font-bold tabular-nums ${moneyColor(selectedAnnual.xirr_pct)}`}>
+                        {formatPct(selectedAnnual.xirr_pct)}
+                        {!selectedAnnual.reliable && "*"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <dl className="grid grid-cols-3 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+                  {[
+                    [t("portfolio.quantity"), parseFloat(selectedPosition.quantity).toFixed(4)],
+                    [t("portfolio.avgCost"), formatMoney(selectedPosition.avg_cost, selectedPosition.currency)],
+                    [t("portfolio.cost"), formatMoney(selectedPosition.cost_basis, selectedPosition.currency)],
+                    [t("portfolio.value"), formatMoney(selectedPosition.market_value, selectedPosition.currency)],
+                    ["P&L", formatMoney(selectedPosition.unrealized_pnl, selectedPosition.currency), moneyColor(selectedPosition.unrealized_pnl)],
+                    [t("portfolio.weight"), `${parseFloat(selectedPosition.weight).toFixed(1)}%`],
+                    ...(selectedAnnual?.first_date
+                      ? [[t("portfolio.heldSince"), new Date(`${selectedAnnual.first_date}T00:00:00`).toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" })]]
+                      : []),
+                  ].map(([label, value, color]) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="truncate text-xs text-muted-foreground">{label}</dt>
+                      <dd className={`truncate font-medium tabular-nums ${color ?? ""}`}>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             )}
           </DialogHeader>

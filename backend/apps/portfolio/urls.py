@@ -4,4 +4,5 @@ from . import views
 
 urlpatterns = [
     path("portfolio/", views.PortfolioView.as_view(), name="portfolio"),
+    path("portfolio/returns/", views.ReturnsView.as_view(), name="portfolio-returns"),
 ]

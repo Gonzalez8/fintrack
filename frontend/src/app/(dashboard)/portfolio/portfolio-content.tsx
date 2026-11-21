@@ -15,6 +15,7 @@ import {
 import { DataTable, type Column } from "@/components/app/data-table";
 import { MoneyCell, PctCell } from "@/components/app/money-cell";
 import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
+import { ReturnsCard } from "@/components/app/returns-card";
 import { SplitBadge } from "@/components/app/split-badge";
 import Link from "next/link";
 import { describeSplit } from "@/lib/splits";
@@ -263,6 +264,9 @@ export function PortfolioContent() {
           </Card>
         </div>
       )}
+
+      {/* Annualized return vs an index */}
+      {totals && <ReturnsCard />}
 
       {/* Mobile: clickable position cards */}
       <div className="space-y-3 md:hidden">

@@ -1,4 +1,4 @@
-import type { PortfolioData } from "@/types";
+import type { PortfolioData, ReturnsData } from "@/types";
 import { demoAccounts } from "./accounts";
 
 // Positions reflect net holdings after buys and sells (FIFO):
@@ -181,4 +181,31 @@ export const demoPortfolio: PortfolioData = {
     total_cash: "9486.18",
     grand_total: "76177.48",
   },
+};
+
+// Illustrative returns for the demo (not computed from the operations above)
+export const demoReturns: ReturnsData = {
+  as_of: "2026-03-07",
+  portfolio: {
+    first_date: "2023-01-16", invested: "52480.00", returned: "6120.40", market_value: "56350.20",
+    total_gain: "9990.60", xirr_pct: "8.41", reliable: true,
+  },
+  assets: [
+    { asset_id: "demo-nvda", asset_name: "NVIDIA", asset_ticker: "NVDA", is_open: true, first_date: "2023-03-01",
+      invested: "6120.00", returned: "1890.00", market_value: "7350.00", total_gain: "3120.00", xirr_pct: "31.20", reliable: true },
+    { asset_id: "demo-iwda", asset_name: "iShares Core MSCI World", asset_ticker: "IWDA.AS", is_open: true, first_date: "2023-01-16",
+      invested: "18479.60", returned: "0.00", market_value: "21240.00", total_gain: "2760.40", xirr_pct: "9.85", reliable: true },
+    { asset_id: "demo-aeem", asset_name: "Amundi MSCI Emerging Markets", asset_ticker: "AEEM.PA", is_open: true, first_date: "2025-11-03",
+      invested: "2225.00", returned: "0.00", market_value: "2140.00", total_gain: "-85.00", xirr_pct: "-11.40", reliable: false },
+  ],
+  benchmark: {
+    key: "msci_world", name: "MSCI World", ticker: "EUNL.DE", price_date: "2026-03-06", starts_late: false,
+    first_date: "2023-01-16", invested: "52480.00", returned: "4230.00", market_value: "60120.00",
+    total_gain: "11870.00", xirr_pct: "9.62", reliable: true,
+  },
+  benchmarks: [
+    { key: "msci_world", name: "MSCI World", ticker: "EUNL.DE" },
+    { key: "sp500", name: "S&P 500", ticker: "SXR8.DE" },
+    { key: "all_world", name: "FTSE All-World", ticker: "VWCE.DE" },
+  ],
 };

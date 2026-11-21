@@ -977,3 +977,45 @@ export type {
   TaxSummary,
   TaxNotice,
 } from "./tax";
+
+// ---- Returns (XIRR) and benchmark ----
+
+/** Money-weighted figures of the portfolio, one asset or the benchmark replay */
+export interface ReturnsSummary {
+  first_date: string | null;
+  /** Money put in (buys with costs, gifts at their value) */
+  invested: string;
+  /** Money taken out (sales, net dividends) */
+  returned: string;
+  market_value: string;
+  /** market_value + returned − invested */
+  total_gain: string;
+  /** Annualized money-weighted return (XIRR), % */
+  xirr_pct: string | null;
+  /** False with less than a year of history */
+  reliable: boolean;
+}
+
+export interface AssetReturn extends ReturnsSummary {
+  asset_id: string;
+  asset_name: string;
+  asset_ticker: string | null;
+  is_open: boolean;
+}
+
+export interface BenchmarkReturn extends ReturnsSummary {
+  key: string;
+  name: string;
+  ticker: string;
+  price_date: string;
+  /** Some operations are older than the ETF; they were priced at its first close */
+  starts_late: boolean;
+}
+
+export interface ReturnsData {
+  as_of: string;
+  portfolio: ReturnsSummary;
+  assets: AssetReturn[];
+  benchmark: BenchmarkReturn | null;
+  benchmarks: { key: string; name: string; ticker: string }[];
+}

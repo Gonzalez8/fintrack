@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 37 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 38 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -90,6 +90,16 @@ async def test_portfolio_hides_realized_sales_unless_asked(api):
     )
     assert "realized_sales" not in payload(await call("fintrack_get_portfolio"))
     assert payload(await call("fintrack_get_portfolio", {"include_realized_sales": True}))["realized_sales"] == [1]
+
+
+async def test_returns_passes_the_benchmark(api):
+    route = api.get("/portfolio/returns/").mock(
+        return_value=httpx.Response(200, json={"portfolio": {"xirr_pct": "13.62"}, "benchmark": None})
+    )
+    assert payload(await call("fintrack_get_returns"))["portfolio"]["xirr_pct"] == "13.62"
+    assert route.calls.last.request.url.params["benchmark"] == "msci_world"
+    await call("fintrack_get_returns", {"benchmark": "sp500"})
+    assert route.calls.last.request.url.params["benchmark"] == "sp500"
 
 
 async def test_list_transactions_uses_backend_filter_names(api):

@@ -253,9 +253,10 @@ const proxyHandlers = [
   }),
 
   // ---- Dividends ----
-  http.get("/api/proxy/dividends/", async () => {
+  http.get("/api/proxy/dividends/", async ({ request }) => {
     await delay(200);
-    return HttpResponse.json(paginated(demoDividends));
+    const assetId = new URL(request.url).searchParams.get("asset_id");
+    return HttpResponse.json(paginated(assetId ? demoDividends.filter((d) => d.asset === assetId) : demoDividends));
   }),
 
   http.post("/api/proxy/dividends/", async () => {

@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { SplitBadge } from "@/components/app/split-badge";
 import Link from "next/link";
 import { describeSplit } from "@/lib/splits";
-import { Info, RefreshCw } from "lucide-react";
+import { ArrowRight, Info, RefreshCw } from "lucide-react";
 import dynamic from "next/dynamic";
 
 const PriceChart = dynamic(
@@ -407,6 +407,13 @@ export function PortfolioContent() {
                     </div>
                   ))}
                 </dl>
+                <Link
+                  href={`/assets/${selectedPosition.asset_id}`}
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  {t("portfolio.openAsset")}
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </Link>
               </div>
             )}
           </DialogHeader>

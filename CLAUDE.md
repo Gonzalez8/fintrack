@@ -70,7 +70,7 @@ frontend/         Next.js 16 App Router
 
 ### Investment Tracking
 - **Portfolio:** FIFO/LIFO/WAC cost basis engine, positions with P&L, realized sales
-- **Assets:** Stock, ETF, Fund, Crypto with Yahoo Finance price sync
+- **Assets:** Stock, ETF, Fund, Crypto with Yahoo Finance price sync. Prices are checked every `snapshot_frequency` minutes, counted from the last snapshot **or** the last price check (with the market closed snapshots are skipped because nothing moved). No currency conversion: amounts are summed as entered, so AUTO tickers must quote in the asset's currency. `snapshot-status` returns `prices_updated_at`/`prices_stale` (no successful update for a day or two cycles) and the dashboard shows `StalePricesBanner`. Charts bucket snapshots by the viewer's local day (`localDay()` in `lib/realized.ts`), not the UTC one
 - **Accounts:** Checking, savings, investment, deposits, alternatives with balance snapshots
 - **Transactions:** Buy/Sell/Gift with commission and tax tracking
 - **Stock splits:** `StockSplit` per asset (date + `ratio_to:ratio_from`, e.g. 4:1 or reverse 1:10). The FIFO/LIFO/WAC engine applies APPLIED splits chronologically (before same-day trades): open lots get `qty × factor` and `unit cost ÷ factor`, total cost unchanged, nothing realized. Auto-detection reads Yahoo Finance splits for AUTO-priced assets (daily Celery task + `POST /api/splits/detect/`) and creates PENDING suggestions only when the split is after the first purchase and shares were held; the user applies or dismisses them from the dashboard/portfolio banner or the asset detail card. Dismissed splits are never suggested again. Included in JSON backup/restore. Design in [ADR-009](docs/adr/009-stock-splits-and-dividend-drafts.md).

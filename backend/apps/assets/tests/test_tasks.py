@@ -11,7 +11,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from apps.assets.models import PortfolioSnapshot, Settings
+from apps.assets.models import Asset, PortfolioSnapshot, Settings
 from apps.assets.tasks import purge_old_snapshots_task, snapshot_all_users_task
 
 User = get_user_model()
@@ -50,6 +50,37 @@ class TestSnapshotAllUsersTask:
         )
         snapshot_all_users_task()
         mock_task.delay.assert_not_called()
+
+    def _auto_asset(self, user, price_updated_at):
+        return Asset.objects.create(
+            owner=user,
+            name="Auto",
+            ticker="AUT",
+            type=Asset.AssetType.ETF,
+            price_mode=Asset.PriceMode.AUTO,
+            price_updated_at=price_updated_at,
+        )
+
+    @patch("apps.assets.tasks.snapshot_single_user_task")
+    def test_skips_when_prices_were_just_checked(self, mock_task, user, settings_with_freq):
+        # Market closed: the last snapshot is old (nothing moved), but prices were checked 5 minutes ago
+        PortfolioSnapshot.objects.create(
+            owner=user,
+            captured_at=timezone.now() - datetime.timedelta(days=1),
+            batch_id=uuid.uuid4(),
+            total_market_value=Decimal("1000"),
+            total_cost=Decimal("800"),
+            total_unrealized_pnl=Decimal("200"),
+        )
+        self._auto_asset(user, timezone.now() - datetime.timedelta(minutes=5))
+        snapshot_all_users_task()
+        mock_task.delay.assert_not_called()
+
+    @patch("apps.assets.tasks.snapshot_single_user_task")
+    def test_dispatches_when_prices_are_due(self, mock_task, user, settings_with_freq):
+        self._auto_asset(user, timezone.now() - datetime.timedelta(minutes=61))
+        snapshot_all_users_task()
+        mock_task.delay.assert_called_once_with(user.pk)
 
     @patch("apps.assets.tasks.snapshot_single_user_task")
     def test_skips_disabled_user(self, mock_task, user):

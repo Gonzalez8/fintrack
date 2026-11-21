@@ -498,6 +498,10 @@ export interface SnapshotStatus {
   next_snapshot: string | null;
   frequency_minutes: number;
   total_snapshots: number;
+  /** Last successful automatic price update */
+  prices_updated_at?: string | null;
+  /** Automatic prices overdue (background tasks not running) */
+  prices_stale?: boolean;
 }
 
 // ── Tasks ────────────────────────────────────────────────────────

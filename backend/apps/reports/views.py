@@ -101,13 +101,39 @@ class SnapshotStatusView(APIView):
             cycles = math.floor(elapsed / freq)
             next_snapshot = (last.captured_at + timedelta(minutes=freq * (cycles + 1))).isoformat()
 
+        prices_updated_at, prices_stale = _price_freshness(request.user, freq)
         return Response(
             {
                 "frequency_minutes": freq,
                 "last_snapshot": last.captured_at.isoformat() if last else None,
                 "next_snapshot": next_snapshot,
+                "prices_updated_at": prices_updated_at.isoformat() if prices_updated_at else None,
+                "prices_stale": prices_stale,
             }
         )
+
+
+def _price_freshness(user, freq):
+    """Last successful automatic price update and whether it is overdue.
+
+    Prices are fetched every ``freq`` minutes, also with the market closed (Yahoo returns the last close),
+    so nothing for a day — or for two cycles if longer — means the background tasks are not running.
+    Never stale when automatic updates are off or there are no AUTO assets.
+    """
+    from django.db.models import Max
+
+    from apps.assets.models import Asset
+
+    auto = (
+        Asset.objects.filter(owner=user, price_mode=Asset.PriceMode.AUTO)
+        .exclude(ticker__isnull=True)
+        .exclude(ticker="")
+    )
+    if freq <= 0 or not auto.exists():
+        return None, False
+    updated_at = auto.filter(price_status=Asset.PriceStatus.OK).aggregate(t=Max("price_updated_at"))["t"]
+    limit = max(timedelta(days=1), timedelta(minutes=2 * freq))
+    return updated_at, updated_at is None or timezone.now() - updated_at > limit
 
 
 class TaxDeclarationView(APIView):

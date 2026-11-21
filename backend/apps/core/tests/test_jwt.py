@@ -191,6 +191,35 @@ class TestLogout:
 
 
 # ===========================================================================
+# A stale or invalid access cookie never blocks the session endpoints
+# ===========================================================================
+
+
+class TestStaleAccessCookie:
+    STALE = "basura.vieja.token"
+
+    def test_login_works_with_a_stale_access_cookie(self, api_client, user):
+        api_client.cookies[ACCESS_COOKIE] = self.STALE
+        resp = api_client.post(LOGIN_URL, {"username": "testuser", "password": "securepass123"}, format="json")
+        assert resp.status_code == 200
+
+    def test_refresh_works_with_a_stale_access_cookie(self, api_client, auth_response):
+        api_client.cookies[ACCESS_COOKIE] = self.STALE
+        api_client.cookies[REFRESH_COOKIE] = auth_response.cookies[REFRESH_COOKIE].value
+        assert api_client.post(REFRESH_URL).status_code == 200
+
+    def test_logout_clears_cookies_with_a_stale_access_cookie(self, api_client):
+        api_client.cookies[ACCESS_COOKIE] = self.STALE
+        resp = api_client.post(LOGOUT_URL)
+        assert resp.status_code == 200
+        assert resp.cookies[ACCESS_COOKIE]["max-age"] == 0
+
+    def test_protected_endpoints_still_reject_it(self, api_client):
+        api_client.cookies[ACCESS_COOKIE] = self.STALE
+        assert api_client.get(ME_URL).status_code == 401
+
+
+# ===========================================================================
 # Me (MeView)
 # ===========================================================================
 

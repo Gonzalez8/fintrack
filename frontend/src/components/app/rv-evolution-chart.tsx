@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { api } from "@/lib/api-client";
 import { formatMoney, formatMonthYear, uiLocale } from "@/lib/utils";
-import { includesSale, realizedUntil } from "@/lib/realized";
+import { includesSale, localDay, realizedUntil } from "@/lib/realized";
 import { Card, CardContent } from "@/components/ui/card";
 import { useChartTheme } from "@/lib/chart-theme";
 import { usePrivacy } from "@/lib/privacy";
@@ -55,9 +55,7 @@ interface SaleEvent {
   recordedAt?: string;
 }
 
-function pointDay(capturedAt: string): string {
-  return capturedAt.slice(0, 10);
-}
+const pointDay = localDay;
 
 function makeChartPoint(
   captured_at: string, mv: number, cost: number, pnl: number, realized: number, soldCost: number,
@@ -121,12 +119,12 @@ function formatAxisDate(dateStr: string, range: Range): string {
   if (range === "1D")
     return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
   if (range === "1W")
-    return d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric" });
+    return d.toLocaleDateString(uiLocale(), { weekday: "short", day: "numeric" });
   if (range === "1M")
-    return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+    return d.toLocaleDateString(uiLocale(), { day: "2-digit", month: "short" });
   if (range === "3M")
-    return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
-  return d.toLocaleDateString("es-ES", { month: "short", year: "2-digit" });
+    return d.toLocaleDateString(uiLocale(), { day: "numeric", month: "short" });
+  return d.toLocaleDateString(uiLocale(), { month: "short", year: "2-digit" });
 }
 
 

@@ -170,6 +170,9 @@
   "dashboard.rvModeUnrealized": "No realizado",
   "dashboard.rvModeTotal": "Total",
   "dashboard.rvRealizedPart": "Incluye {amount} ya realizados con ventas",
+  "dashboard.pricesStale": "Los precios automáticos no se actualizan desde el {since}",
+  "dashboard.pricesNeverUpdated": "Los precios automáticos no se han podido actualizar",
+  "dashboard.pricesStaleHint": "Las cifras usan esos precios. Comprueba que las tareas en segundo plano (Celery) del servidor están en marcha.",
   "dashboard.rvSale": "Venta {asset} · {amount} realizado",
 
   "portfolio.title": "Cartera",

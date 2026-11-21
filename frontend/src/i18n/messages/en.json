@@ -170,6 +170,9 @@
   "dashboard.rvModeUnrealized": "Unrealized",
   "dashboard.rvModeTotal": "Total",
   "dashboard.rvRealizedPart": "Includes {amount} already realized through sales",
+  "dashboard.pricesStale": "Automatic prices have not been updated since {since}",
+  "dashboard.pricesNeverUpdated": "Automatic prices could not be updated",
+  "dashboard.pricesStaleHint": "Figures use those prices. Check that the server's background tasks (Celery) are running.",
   "dashboard.rvSale": "Sale {asset} · {amount} realized",
 
   "portfolio.title": "Portfolio",

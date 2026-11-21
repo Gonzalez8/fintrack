@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoneyCell } from "@/components/app/money-cell";
 import { PendingSplitsBanner } from "@/components/app/pending-splits-banner";
 import { PendingDividendsBanner } from "@/components/app/pending-dividends-banner";
+import { StalePricesBanner } from "@/components/app/stale-prices-banner";
 import { PatrimonioEvolutionChart } from "@/components/app/patrimonio-evolution-chart";
 import { RVEvolutionChart } from "@/components/app/rv-evolution-chart";
 import { CashByAccountChart } from "@/components/app/cash-by-account-chart";
@@ -99,6 +100,7 @@ export function DashboardContent() {
     <div className="space-y-6">
       <h1 className="text-lg font-semibold">{t("dashboard.title")}</h1>
 
+      <StalePricesBanner />
       <PendingSplitsBanner />
       <PendingDividendsBanner />
 

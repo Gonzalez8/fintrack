@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.27.0] - 2026-11-21
+
+### Added
+
+- **Sale simulator.** *Simulate sale* in a position (Portfolio) or on its asset page: pick the shares, price and commission and see which lots go out with your fiscal cost method (FIFO, mandatory in Spain), what you would receive and the gain or loss to declare. For Spain it estimates the extra income tax the sale adds to the year, counting this year's gains, dividends and interests; for a loss it shows what you save and what it offsets (gains first, then up to 25 % of dividends and interests, the rest carried forward 4 years) — it never lowers the tax on salary — and warns about the two-month rule. Nothing is recorded. (#146)
+- **Offset losses this year** (Fiscal, current year): the positions you could sell at a loss with what each would save and, ticking several, the real combined saving with the offset limit applied. (#146)
+- **The app works offline.** The installed app keeps a copy of what you last saw; without connection (e.g. VPN off) it shows it with a banner saying how old the data is. Changes need the connection. Account data and backups are never stored, and the copy is deleted when you sign in or out. (#145)
+- **Share payslips from your phone.** On Android, share a payslip PDF from email or Drive to Fintrack: it opens the payroll import with the PDF read and ready to review. (#145)
+
+### Fixed
+
+- **Privacy mode logged a React warning on every page** (the server rendered without it); the first frame now matches. (#143)
+- The ⓘ of the annual return now opens with a tap on phones. (#143)
+
+### Changed
+
+- The invested capital chart uses the same ranges as the other charts (6M, 1A, 2A, 5A, MAX) and opens on 1A. (#143)
+
+### MCP update
+
+- New tools `fintrack_simulate_sale` and `fintrack_get_loss_harvesting`. Update the MCP command (Settings shows it pinned to v2.27.0) and upload the new `fintrack-advisor.zip` attached to this release in Claude Desktop (Settings → Skills).
+
 ## [2.26.0] - 2026-11-21
 
 ### Added

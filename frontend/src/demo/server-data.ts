@@ -44,6 +44,7 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/splits/detect": { created: [] },
 
     "/api/portfolio/returns": data.demoReturns,
+    "/api/portfolio/simulate-sale": data.demoSaleSimulation,
     "/api/portfolio": data.demoPortfolio,
 
     "/api/reports/year-summary": data.demoYearSummary,

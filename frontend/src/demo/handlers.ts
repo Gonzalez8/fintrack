@@ -2,6 +2,7 @@ import { http, HttpResponse, delay } from "msw";
 
 import {
   demoReturns,
+  demoSaleSimulation,
   demoUser,
   demoAssets,
   demoAccounts,
@@ -457,6 +458,11 @@ const proxyHandlers = [
   }),
 
   // ---- Portfolio ----
+  http.get("/api/proxy/portfolio/simulate-sale/", async () => {
+    await delay(200);
+    return HttpResponse.json(demoSaleSimulation);
+  }),
+
   http.get("/api/proxy/portfolio/returns/", async () => {
     await delay(200);
     return HttpResponse.json(demoReturns);

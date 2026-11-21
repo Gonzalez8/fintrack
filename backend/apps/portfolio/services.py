@@ -238,14 +238,18 @@ def _process_lot_based(user, lifo=False):
         if tx.type == Transaction.TransactionType.BUY:
             price = tx.price or Decimal("0")
             price_per_unit = price + (tx.commission + tx.tax) / tx.quantity if tx.quantity else Decimal("0")
-            lots[aid].append({"qty": tx.quantity, "price_per_unit": price_per_unit, "account_id": tx.account_id})
+            lots[aid].append(
+                {"qty": tx.quantity, "price_per_unit": price_per_unit, "account_id": tx.account_id, "date": tx.date}
+            )
 
         elif tx.type == Transaction.TransactionType.GIFT:
             if settings.gift_cost_mode == Settings.GiftCostMode.MARKET:
                 price_per_unit = tx.price or Decimal("0")
             else:
                 price_per_unit = Decimal("0")
-            lots[aid].append({"qty": tx.quantity, "price_per_unit": price_per_unit, "account_id": tx.account_id})
+            lots[aid].append(
+                {"qty": tx.quantity, "price_per_unit": price_per_unit, "account_id": tx.account_id, "date": tx.date}
+            )
 
         elif tx.type == Transaction.TransactionType.SELL:
             sell_price = tx.price or Decimal("0")

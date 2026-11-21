@@ -110,6 +110,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_detect_dividend_drafts` | write | Look up dividends on Yahoo and create drafts |
 | `fintrack_accept_dividend_draft` | write | Turn a draft into a dividend with your broker's figures |
 | `fintrack_dismiss_dividend_draft` | write | Dismiss a draft |
+| `fintrack_restore_dividend_draft` | write | Undo a dismissal (the draft is pending again) |
 | `fintrack_apply_split` | write | Apply a detected stock split |
 | `fintrack_create_asset` | write | Add a stock, ETF, fund or crypto (ticker, ISIN, currency, AUTO/MANUAL price, countries) |
 | `fintrack_update_asset` | write (overwrites) | Change an asset's details or set the price of a MANUAL asset |

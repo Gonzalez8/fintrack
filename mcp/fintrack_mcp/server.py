@@ -760,6 +760,14 @@ def create_server(client: FintrackClient) -> MCPServer:
         return await call("post", f"dividend-suggestions/{draft_id}/dismiss/")
 
     @mcp.tool(annotations=WRITE)
+    async def fintrack_restore_dividend_draft(
+        draft_id: Annotated[str, Field(description="Id of a dismissed dividend draft.")],
+    ) -> dict[str, Any]:
+        """Undo the dismissal of a dividend draft so it is pending review again (e.g. dismissed by mistake).
+        Dismissed drafts are never suggested again by detection, so this is the only way back."""
+        return await call("post", f"dividend-suggestions/{draft_id}/restore/")
+
+    @mcp.tool(annotations=WRITE)
     async def fintrack_apply_split(
         split_id: Annotated[str, Field(description="Id of a pending stock split (fintrack_list_pending_reviews).")],
     ) -> dict[str, Any]:

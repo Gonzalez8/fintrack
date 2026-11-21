@@ -6,10 +6,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HandCoins } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslations } from "@/i18n/use-translations";
-import { formatMoney, uiLocale } from "@/lib/utils";
+import { cn, formatMoney, uiLocale } from "@/lib/utils";
 import type { Asset, Dividend, DividendSuggestion, PaginatedResponse } from "@/types";
 
 const VISIBLE = 5; // most recent payments shown before "show all"
@@ -19,7 +20,8 @@ function formatDay(iso: string): string {
 }
 
 /**
- * Dividends recorded for one asset (newest first, with the net total) and, for Yahoo-priced assets, the backfill
+ * Dividends of one asset: its drafts (pending to review or dismiss, dismissed to restore), the recorded ones
+ * (newest first, with the net total) and, for Yahoo-priced assets, the backfill
  * of dividend drafts: it looks back to the first purchase (the daily detection only looks after the last one).
  */
 export function AssetDividendsCard({ asset }: { asset: Asset }) {
@@ -32,6 +34,23 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
     queryKey: ["dividends", { asset_id: asset.id }],
     queryFn: () => api.get<PaginatedResponse<Dividend>>(`/dividends/?asset_id=${asset.id}&page_size=1000`),
     staleTime: 60 * 1000,
+  });
+
+  // Drafts of this asset: pending ones to review, dismissed ones to restore (detection never proposes them again)
+  const { data: drafts } = useQuery({
+    queryKey: ["dividend-suggestions", { asset_id: asset.id }],
+    queryFn: () =>
+      api.get<PaginatedResponse<DividendSuggestion>>(`/dividend-suggestions/?asset_id=${asset.id}&page_size=1000`),
+    staleTime: 60 * 1000,
+  });
+  const refreshDrafts = () => queryClient.invalidateQueries({ queryKey: ["dividend-suggestions"] });
+  const dismissMut = useMutation({
+    mutationFn: (id: string) => api.post(`/dividend-suggestions/${id}/dismiss/`),
+    onSuccess: refreshDrafts,
+  });
+  const restoreMut = useMutation({
+    mutationFn: (id: string) => api.post(`/dividend-suggestions/${id}/restore/`),
+    onSuccess: refreshDrafts,
   });
 
   const backfillMut = useMutation({
@@ -49,7 +68,11 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
   });
 
   const dividends = [...(data?.results ?? [])].sort((a, b) => b.date.localeCompare(a.date));
-  if (dividends.length === 0 && !canBackfill) return null;
+  const byDate = (a: DividendSuggestion, b: DividendSuggestion) => b.ex_date.localeCompare(a.ex_date);
+  const pending = (drafts?.results ?? []).filter((d) => d.status === "PENDING").sort(byDate);
+  const dismissed = (drafts?.results ?? []).filter((d) => d.status === "DISMISSED").sort(byDate);
+  const busy = dismissMut.isPending || restoreMut.isPending;
+  if (dividends.length === 0 && pending.length === 0 && dismissed.length === 0 && !canBackfill) return null;
   const totalNet = dividends.reduce((sum, d) => sum + parseFloat(d.net), 0);
 
   return (
@@ -73,6 +96,46 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
         )}
       </CardHeader>
       <CardContent className="space-y-3">
+        {(pending.length > 0 || dismissed.length > 0) && (
+          <ul className="divide-y rounded-md border text-sm">
+            {[...pending, ...dismissed].map((d) => {
+              const isPending = d.status === "PENDING";
+              return (
+                <li key={d.id} className={cn("flex items-center justify-between gap-3 px-3 py-2", !isPending && "opacity-60")}>
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-center gap-x-2 font-medium">
+                      <span className="whitespace-nowrap">{formatDay(d.ex_date)}</span>
+                      <Badge variant={isPending ? "secondary" : "outline"} className="text-[10px]">
+                        {isPending ? t("dividendDrafts.statusPending") : t("dividendDrafts.statusDismissed")}
+                      </Badge>
+                    </p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {t("dividendDrafts.exDateEstimate", { net: formatMoney(d.net, d.currency) })}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    {isPending ? (
+                      <>
+                        <Link href={`/dividends?review=${d.id}`} className="px-2 text-xs text-primary hover:underline">
+                          {t("dividendDrafts.review")}
+                        </Link>
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={busy}
+                          onClick={() => dismissMut.mutate(d.id)}>
+                          {t("dividendDrafts.dismiss")}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled={busy}
+                        title={t("dividendDrafts.restoreHint")} onClick={() => restoreMut.mutate(d.id)}>
+                        {t("dividendDrafts.restore")}
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
         {dividends.length > 0 ? (
           <>
             <p className="text-sm">

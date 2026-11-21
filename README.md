@@ -544,6 +544,7 @@ POST    /api/splits/detect/               Look up Yahoo splits → PENDING sugge
 GET     /api/dividend-suggestions/        Dividend drafts (?status=, ?asset_id=)
 POST    /api/dividend-suggestions/{id}/accept/   Create the Dividend from reviewed figures
 POST    /api/dividend-suggestions/{id}/dismiss/
+POST    /api/dividend-suggestions/{id}/restore/  Undo a dismissal (back to pending)
 POST    /api/dividend-suggestions/dismiss-all/
 POST    /api/dividend-suggestions/detect/        { asset_id?, backfill? }
 

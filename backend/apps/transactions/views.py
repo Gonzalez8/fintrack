@@ -131,6 +131,16 @@ class DividendSuggestionViewSet(
         suggestion.save(update_fields=["status", "updated_at"])
         return Response(self.get_serializer(suggestion).data)
 
+    @action(detail=True, methods=["post"])
+    def restore(self, request, pk=None):
+        """Undo a dismissal: the draft is pending again (accepted drafts already became dividends)."""
+        suggestion = self.get_object()
+        if suggestion.status != DividendSuggestion.Status.DISMISSED:
+            return Response({"detail": "Only dismissed drafts can be restored."}, status=status.HTTP_400_BAD_REQUEST)
+        suggestion.status = DividendSuggestion.Status.PENDING
+        suggestion.save(update_fields=["status", "updated_at"])
+        return Response(self.get_serializer(suggestion).data)
+
     @action(detail=False, methods=["post"], url_path="dismiss-all")
     def dismiss_all(self, request):
         dismissed = (

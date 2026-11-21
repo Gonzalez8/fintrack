@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 38 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 39 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -65,6 +65,7 @@ async def test_tools_are_prefixed_and_annotated():
         "fintrack_detect_dividend_drafts",
         "fintrack_accept_dividend_draft",
         "fintrack_dismiss_dividend_draft",
+        "fintrack_restore_dividend_draft",
         "fintrack_apply_split",
         "fintrack_create_asset",
         "fintrack_update_asset",
@@ -90,6 +91,14 @@ async def test_portfolio_hides_realized_sales_unless_asked(api):
     )
     assert "realized_sales" not in payload(await call("fintrack_get_portfolio"))
     assert payload(await call("fintrack_get_portfolio", {"include_realized_sales": True}))["realized_sales"] == [1]
+
+
+async def test_restore_dividend_draft(api):
+    route = api.post("/dividend-suggestions/d1/restore/").mock(
+        return_value=httpx.Response(200, json={"id": "d1", "status": "PENDING"})
+    )
+    assert payload(await call("fintrack_restore_dividend_draft", {"draft_id": "d1"}))["status"] == "PENDING"
+    assert route.called
 
 
 async def test_returns_passes_the_benchmark(api):

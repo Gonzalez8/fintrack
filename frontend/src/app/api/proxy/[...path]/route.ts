@@ -61,7 +61,8 @@ async function handler(
 
   // Demo session: return static data, no backend needed
   if (isDemoToken(access)) {
-    return resolveDemoProxy(djangoPath, req.method);
+    // With the query string: demo answers depend on filters (year, asset) and the simulator's figures
+    return resolveDemoProxy(`${djangoPath}${req.nextUrl.search}`, req.method);
   }
 
   const url = new URL(req.url);

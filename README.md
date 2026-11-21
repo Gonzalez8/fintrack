@@ -41,6 +41,10 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
   <img src=".github/screenshots/10-cartera-detalle.png" alt="Position detail chart" width="49%" />
   <img src=".github/screenshots/11-activo-detalle.png" alt="Asset price history chart" width="49%" />
 </p>
+<p align="center">
+  <img src=".github/screenshots/12-rentabilidad-indice.png" alt="Annual return vs an index" width="49%" />
+  <img src=".github/screenshots/13-simulador-venta.png" alt="Sale simulator" width="49%" />
+</p>
 
 ---
 

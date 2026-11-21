@@ -107,6 +107,8 @@
   "common.deleted": "Eliminato correttamente",
   "common.name": "Nome",
   "common.date": "Data",
+  "offline.banner": "Offline: stai vedendo i dati del {time}. Le modifiche non si possono salvare finché non torna la connessione.",
+  "offline.bannerNoTime": "Offline: stai vedendo l'ultima copia salvata. Le modifiche non si possono salvare finché non torna la connessione.",
   "common.showAll": "Mostra tutti ({count})",
   "common.showLess": "Mostra meno",
   "common.type": "Tipo",

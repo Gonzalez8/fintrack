@@ -107,6 +107,8 @@
   "common.deleted": "Supprimé avec succès",
   "common.name": "Nom",
   "common.date": "Date",
+  "offline.banner": "Hors ligne : tu vois les données du {time}. Les modifications ne pourront être enregistrées qu'au retour de la connexion.",
+  "offline.bannerNoTime": "Hors ligne : tu vois la dernière copie enregistrée. Les modifications ne pourront être enregistrées qu'au retour de la connexion.",
   "common.showAll": "Tout afficher ({count})",
   "common.showLess": "Afficher moins",
   "common.type": "Type",

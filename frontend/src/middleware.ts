@@ -14,6 +14,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
     pathname === "/mockServiceWorker.js" ||
+    pathname === "/sw.js" ||
     pathname === "/opengraph-image" ||
     pathname === "/twitter-image" ||
     pathname === "/icon" ||

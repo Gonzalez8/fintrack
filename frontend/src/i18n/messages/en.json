@@ -107,6 +107,8 @@
   "common.deleted": "Deleted successfully",
   "common.name": "Name",
   "common.date": "Date",
+  "offline.banner": "Offline: you are seeing the data from {time}. Changes cannot be saved until the connection is back.",
+  "offline.bannerNoTime": "Offline: you are seeing the last saved copy. Changes cannot be saved until the connection is back.",
   "common.showAll": "Show all ({count})",
   "common.showLess": "Show less",
   "common.type": "Type",

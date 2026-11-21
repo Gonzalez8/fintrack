@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { djangoFetch, ApiError } from "@/lib/api-server";
 import { Providers } from "@/components/app/providers";
+import { OfflineSupport } from "@/components/app/offline-support";
 import { Sidebar } from "@/components/app/sidebar";
 import { TopBar } from "@/components/app/top-bar";
 import { MobileNav } from "@/components/app/mobile-nav";
@@ -56,6 +57,7 @@ export default async function DashboardLayout({
       <div className="flex min-h-screen">
         <Sidebar />
         <div className="flex flex-1 flex-col min-w-0">
+          <OfflineSupport />
           <TopBar />
           <SectionNav />
           <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">{children}</main>

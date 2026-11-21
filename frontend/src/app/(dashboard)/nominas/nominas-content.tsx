@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, FileUp, AlertTriangle, Upload, X } from "lucide-react";
@@ -27,6 +27,7 @@ import { MoneyCell } from "@/components/app/money-cell";
 import { SwipeCard } from "@/components/app/swipe-card";
 import { DetailDrawer } from "@/components/app/detail-drawer";
 import { formatMoney } from "@/lib/utils";
+import { takeSharedFiles } from "@/lib/offline";
 import { useTranslations } from "@/i18n/use-translations";
 import { BulkPayrollDialog } from "./bulk-payroll-dialog";
 import { PAYROLL_TYPES } from "@/types";
@@ -183,6 +184,16 @@ export function NominasContent() {
       });
     }
   }
+
+  // Payslip PDFs shared from another app (share target, see public/sw.js) open the bulk import
+  const shared = searchParams.get("shared") === "1";
+  useEffect(() => {
+    if (!shared) return;
+    takeSharedFiles().then((files) => {
+      if (files.length > 0) setBulkFiles(files);
+      router.replace("/nominas", { scroll: false });
+    });
+  }, [shared, router]);
 
   function onBulkFilesPicked(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);

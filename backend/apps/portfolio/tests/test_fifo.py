@@ -189,6 +189,21 @@ class TestBuyThenSellFIFO:
 
 
 @pytest.mark.django_db
+class TestRealizedSaleRecordedAt:
+    """The chart adds a same-day sale only to snapshots taken after it was recorded."""
+
+    @pytest.mark.parametrize("method_fixture", ["settings_fifo", "settings_wac"])
+    def test_sale_carries_its_recording_time(self, request, method_fixture, user, asset, account):
+        request.getfixturevalue(method_fixture)
+        _make_tx(user, asset, account, "BUY", datetime.date(2025, 1, 1), 10, 10)
+        sell = _make_tx(user, asset, account, "SELL", datetime.date(2025, 3, 1), 4, 25)
+
+        sale = calculate_portfolio_full(user)["realized_sales"][0]
+
+        assert sale["recorded_at"] == sell.created_at.isoformat()
+
+
+@pytest.mark.django_db
 class TestBuyThenSellLIFO:
     def test_buy_then_sell_lifo(self, user, settings_lifo, asset, account):
         # Buy 10 @ 10, then 10 @ 20

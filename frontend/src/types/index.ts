@@ -384,6 +384,8 @@ export interface RealizedSale {
   cost_basis: string;
   proceeds: string;
   realized_pnl: string;
+  /** When the sale was recorded in Fintrack (ISO datetime) */
+  recorded_at?: string;
 }
 
 export interface PortfolioAccount {

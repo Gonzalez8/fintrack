@@ -45,6 +45,7 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
 
     "/api/portfolio/returns": data.demoReturns,
     "/api/portfolio/simulate-sale": data.demoSaleSimulation,
+    "/api/portfolio/loss-harvesting": { date: "2026-03-07", method: "FIFO", positions: [], tax: null },
     "/api/portfolio": data.demoPortfolio,
 
     "/api/reports/year-summary": data.demoYearSummary,

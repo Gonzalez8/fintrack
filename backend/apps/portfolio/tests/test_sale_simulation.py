@@ -8,8 +8,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from apps.assets.models import Account, Asset, Settings
-from apps.portfolio.sale_simulation import SaleSimulationError, simulate_sale
-from apps.reports.tax_adapters.es_sale import savings_base, savings_tax
+from apps.portfolio.sale_simulation import SaleSimulationError, loss_harvest, simulate_sale
+from apps.reports.tax_adapters.es_sale import loss_offset, savings_base, savings_tax
 from apps.transactions.models import Dividend, Transaction
 
 User = get_user_model()
@@ -70,6 +70,21 @@ class TestSavingsScale:
         assert savings_base(Decimal("-900"), Decimal("1000")) == Decimal("750")
 
 
+class TestLossOffset:
+    def test_gains_first_then_a_quarter_of_income_then_carried_forward(self):
+        o = loss_offset(Decimal("500"), Decimal("1000"), Decimal("900"))
+        assert o == {"gains": Decimal("500"), "income": Decimal("250"), "carried_forward": Decimal("150")}
+
+    def test_without_gains_or_income_everything_is_carried_forward(self):
+        o = loss_offset(Decimal("0"), Decimal("0"), Decimal("300"))
+        assert o == {"gains": Decimal("0"), "income": Decimal("0"), "carried_forward": Decimal("300")}
+
+    def test_earlier_losses_already_used_part_of_the_income_cap(self):
+        # The year is already −100 net: 100 of the 250 cap is taken
+        o = loss_offset(Decimal("-100"), Decimal("1000"), Decimal("200"))
+        assert o == {"gains": Decimal("0"), "income": Decimal("150"), "carried_forward": Decimal("50")}
+
+
 @pytest.mark.django_db
 class TestSimulateSale:
     def test_fifo_takes_the_oldest_lots(self, user, asset, three_lots):
@@ -117,6 +132,13 @@ class TestSimulateSale:
         assert tax["tax_sale"] == "28.50"
         assert tax["wash_sale"] is None
 
+    def test_a_loss_says_what_it_offsets(self, user, asset, account, three_lots):
+        _tx(user, asset, account, "SELL", D(2026, 1, 10), "5", "100")  # FIFO from the 80 lot: +100 this year
+        # 5 left at 80 and 5 at 100, sold at 70: −50 − 150 = −200
+        tax = simulate_sale(user, asset.id, Decimal("10"), Decimal("70"), today=TODAY)["tax"]
+        assert tax["loss_offset"] == {"gains": "100.00", "income": "0.00", "carried_forward": "100.00"}
+        assert tax["tax_sale"] == "-19.00"
+
     def test_two_month_rule_on_a_loss(self, user, asset, account, three_lots):
         _tx(user, asset, account, "BUY", D(2026, 5, 20), "1", "90")
         s = Settings.load(user)
@@ -159,3 +181,46 @@ class TestSimulateSaleEndpoint:
 
     def test_requires_auth(self):
         assert APIClient().get(self.URL).status_code == 401
+
+
+@pytest.mark.django_db
+class TestLossHarvest:
+    @pytest.fixture
+    def losers(self, user, account):
+        a = Asset.objects.create(
+            owner=user, name="Down A", ticker="DA", type="STOCK", currency="EUR", current_price=Decimal("50")
+        )
+        b = Asset.objects.create(
+            owner=user, name="Down B", ticker="DB", type="STOCK", currency="EUR", current_price=Decimal("80")
+        )
+        up = Asset.objects.create(
+            owner=user, name="Up", ticker="UP", type="STOCK", currency="EUR", current_price=Decimal("200")
+        )
+        _tx(user, a, account, "BUY", D(2025, 1, 10), "10", "100")  # −500
+        _tx(user, b, account, "BUY", D(2025, 1, 10), "10", "100")  # −200
+        _tx(user, up, account, "BUY", D(2025, 1, 10), "10", "100")
+        _tx(user, up, account, "SELL", D(2026, 2, 1), "5", "200")  # +500 realized this year
+        return a, b
+
+    def test_lists_only_positions_at_a_loss(self, user, losers):
+        r = loss_harvest(user, today=TODAY)
+        assert [(p["asset_name"], p["loss"]) for p in r["positions"]] == [("Down A", "500.00"), ("Down B", "200.00")]
+        assert r["tax"]["gains_ytd"] == "500.00"
+
+    def test_selection_respects_the_offset_limit(self, user, losers):
+        a, b = losers
+        tax = loss_harvest(user, {str(a.pk), str(b.pk)}, today=TODAY)["tax"]
+        # 700 of losses but only 500 of gains and no capital income: 200 carried forward, 19 % of 500 saved
+        assert tax["selection"]["tax_saving"] == "95.00"
+        assert tax["selection"]["loss_offset"]["carried_forward"] == "200.00"
+        assert tax["per_asset"][str(a.pk)]["tax_saving"] == "95.00"
+        assert tax["per_asset"][str(b.pk)]["tax_saving"] == "38.00"
+        assert tax["max_saving"] == "95.00"
+
+    def test_endpoint(self, user, losers):
+        c = APIClient()
+        c.force_authenticate(user=user)
+        a, _ = losers
+        res = c.get("/api/portfolio/loss-harvesting/", {"selected": str(a.pk)})
+        assert res.status_code == 200
+        assert res.json()["tax"]["selection"]["loss"] == "500.00"

@@ -77,6 +77,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | Tool | Kind | Description |
 |---|---|---|
 | `fintrack_get_portfolio` | read | Totals, open positions, cash accounts; optionally realized sales |
+| `fintrack_get_loss_harvesting` | read | Positions at a loss and the tax each (or several together) would save this year, with the offset limit and the two-month rule |
 | `fintrack_simulate_sale` | read | What-if sale: lots out (fiscal method), gain, Spanish tax estimate and two-month rule; records nothing |
 | `fintrack_get_returns` | read | Annualized money-weighted return (XIRR) of the portfolio and each asset, vs the same money in an index ETF (MSCI World, S&P 500, All-World) |
 | `fintrack_list_assets` | read | Assets with ticker, type, currency and price |

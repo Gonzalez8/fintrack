@@ -49,6 +49,9 @@ class SpanishTaxAdapter:
     def estimate_sale_tax(self, user, asset, gain, today) -> dict:
         return es_sale.estimate_sale_tax(user, asset, gain, today)
 
+    def loss_harvest(self, user, candidates, selected, today) -> dict:
+        return es_sale.loss_harvest(user, candidates, selected, today)
+
     def declare(self, user, year: int) -> dict:
         from apps.assets.models import Settings as UserSettings
 

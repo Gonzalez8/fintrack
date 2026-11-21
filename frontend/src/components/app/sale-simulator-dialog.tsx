@@ -70,6 +70,8 @@ export function SaleSimulatorDialog({
   const money = (v: string) => formatMoney(v, asset.currency);
   const gain = data ? parseFloat(data.gain) : 0;
   const tax = data?.tax;
+  // What a loss saves this year (tax_sale is negative then)
+  const saving = tax ? -parseFloat(tax.tax_sale) : 0;
   const wash = tax?.wash_sale;
 
   return (
@@ -150,15 +152,43 @@ export function SaleSimulatorDialog({
                 <dt>{gain >= 0 ? t("saleSim.gain") : t("saleSim.loss")}</dt>
                 <dd className={cn("font-mono tabular-nums", moneyColor(gain))}>{money(data.gain)}</dd>
               </div>
-              {tax && (
+              {tax && gain >= 0 && (
                 <div className="flex justify-between gap-3">
                   <dt className="text-muted-foreground">{t("saleSim.taxSale")}</dt>
                   <dd className="font-mono tabular-nums">{formatMoney(tax.tax_sale)}</dd>
                 </div>
               )}
+              {tax && gain < 0 && saving > 0 && (
+                <div className="flex justify-between gap-3 text-green-600 dark:text-green-400">
+                  <dt>{t("saleSim.taxSaving", { year: tax.year })}</dt>
+                  <dd className="font-mono tabular-nums">{formatMoney(saving)}</dd>
+                </div>
+              )}
             </dl>
 
-            {tax && (
+            {tax && gain < 0 && tax.loss_offset && (
+              <div className="space-y-1 text-xs text-muted-foreground">
+                {saving > 0 ? (
+                  <p>
+                    {[
+                      parseFloat(tax.loss_offset.gains) > 0 &&
+                        t("saleSim.offsetsGains", { amount: formatMoney(tax.loss_offset.gains), year: tax.year }),
+                      parseFloat(tax.loss_offset.income) > 0 &&
+                        t("saleSim.offsetsIncome", { amount: formatMoney(tax.loss_offset.income) }),
+                      parseFloat(tax.loss_offset.carried_forward) > 0 &&
+                        t("saleSim.carriedForward", { amount: formatMoney(tax.loss_offset.carried_forward) }),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                ) : (
+                  <p>{t("saleSim.noSaving", { year: tax.year })}</p>
+                )}
+                <p>{t("saleSim.notSalary")}</p>
+              </div>
+            )}
+
+            {tax && gain >= 0 && (
               <p className="text-xs text-muted-foreground">
                 {t("saleSim.taxContext", {
                   year: tax.year,

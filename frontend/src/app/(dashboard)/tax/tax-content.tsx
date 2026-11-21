@@ -10,6 +10,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LossHarvestCard } from "@/components/app/loss-harvest-card";
 import { useTranslations } from "@/i18n/use-translations";
 import { api } from "@/lib/api-client";
 import type { Settings } from "@/types";
@@ -48,6 +49,9 @@ export function TaxContent() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Planning for the current year only: selling losers to offset this year's gains */}
+      {year === String(currentYear) && <LossHarvestCard />}
 
       <Tabs defaultValue={0}>
         <TabsList>

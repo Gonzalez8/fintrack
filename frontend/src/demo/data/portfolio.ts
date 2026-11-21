@@ -224,6 +224,6 @@ export const demoSaleSimulation: SaleSimulation = {
   lots: [{ date: "2023-03-01", quantity_held: "25", quantity_sold: "10", unit_cost: "75.93", cost: "759.27", gain: "590.73" }],
   tax: {
     country: "ES", year: 2026, gains_ytd: "420.00", income_ytd: "310.50",
-    tax_before: "138.70", tax_after: "250.94", tax_sale: "112.24", wash_sale: null,
+    tax_before: "138.70", tax_after: "250.94", tax_sale: "112.24", loss_offset: null, wash_sale: null,
   },
 };

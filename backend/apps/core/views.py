@@ -78,6 +78,8 @@ class JWTLoginView(APIView):
     Returns body { access, user } + httpOnly cookies (access_token, refresh_token).
     """
 
+    # No authentication: a stale or invalid access cookie must not turn these into 401s
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth_login"
@@ -110,6 +112,8 @@ class JWTRefreshView(APIView):
     Returns body { access } + updated cookies.
     """
 
+    # No authentication: a stale or invalid access cookie must not turn these into 401s
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -147,6 +151,10 @@ class JWTRefreshView(APIView):
 
 class JWTLogoutView(APIView):
     """POST /api/auth/logout/ — blacklist refresh token and clear cookies."""
+
+    # Always clears the cookies, also when the session has already expired
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
         raw_token = request.COOKIES.get(django_settings.JWT_AUTH_COOKIE_REFRESH)
@@ -213,6 +221,8 @@ class TaskStatusView(APIView):
 class RegisterView(APIView):
     """POST /api/auth/register/ — create a new user and return JWT tokens."""
 
+    # No authentication: a stale or invalid access cookie must not turn these into 401s
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth_register"
@@ -248,6 +258,8 @@ class RegisterView(APIView):
 class GoogleAuthView(APIView):
     """POST /api/auth/google/ — verify Google ID token and issue JWT tokens."""
 
+    # No authentication: a stale or invalid access cookie must not turn these into 401s
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth_google"

@@ -170,6 +170,9 @@
   "dashboard.rvModeUnrealized": "Nicht realisiert",
   "dashboard.rvModeTotal": "Gesamt",
   "dashboard.rvRealizedPart": "Inklusive {amount} bereits durch Verkäufe realisiert",
+  "dashboard.pricesStale": "Die automatischen Kurse wurden seit {since} nicht aktualisiert",
+  "dashboard.pricesNeverUpdated": "Die automatischen Kurse konnten nicht aktualisiert werden",
+  "dashboard.pricesStaleHint": "Die Zahlen verwenden diese Kurse. Prüfe, ob die Hintergrundaufgaben (Celery) des Servers laufen.",
   "dashboard.rvSale": "Verkauf {asset} · {amount} realisiert",
 
   "portfolio.title": "Portfolio",

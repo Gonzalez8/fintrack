@@ -457,6 +457,8 @@ export const demoSnapshotStatus: SnapshotStatus = {
   next_snapshot: "2026-03-07T13:00:00Z",
   frequency_minutes: 60,
   total_snapshots: 1584,
+  prices_updated_at: "2026-03-07T12:00:00Z",
+  prices_stale: false,
 };
 
 // Average-cost replay of the demo operations, one point per month up to today.

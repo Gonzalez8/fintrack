@@ -303,3 +303,51 @@ class TestTaxDeclarationCountryGate:
     def test_missing_year_returns_400(self, client, user):
         resp = client.get("/api/reports/tax-declaration/")
         assert resp.status_code == 400
+
+
+@pytest.mark.django_db
+class TestPriceFreshness:
+    URL = "/api/reports/snapshot-status/"
+
+    def _setup(self, user, freq, updated_minutes_ago, status=Asset.PriceStatus.OK):
+        from django.utils import timezone
+
+        from apps.assets.models import Settings
+
+        s = Settings.load(user)
+        s.snapshot_frequency = freq
+        s.save()
+        Asset.objects.create(
+            owner=user,
+            name="Auto ETF",
+            ticker="AUTO",
+            type=Asset.AssetType.ETF,
+            price_mode=Asset.PriceMode.AUTO,
+            price_status=status,
+            price_updated_at=timezone.now() - datetime.timedelta(minutes=updated_minutes_ago),
+        )
+
+    def test_fresh_prices(self, client, user):
+        self._setup(user, 30, 45)
+        data = client.get(self.URL).json()
+        assert data["prices_stale"] is False
+        assert data["prices_updated_at"] is not None
+
+    def test_stale_after_a_day_without_updates(self, client, user):
+        self._setup(user, 30, 25 * 60)
+        assert client.get(self.URL).json()["prices_stale"] is True
+
+    def test_long_frequency_allows_two_cycles(self, client, user):
+        self._setup(user, 24 * 60, 30 * 60)
+        assert client.get(self.URL).json()["prices_stale"] is False
+
+    def test_only_errors_count_as_stale(self, client, user):
+        self._setup(user, 30, 5, status=Asset.PriceStatus.ERROR)
+        assert client.get(self.URL).json()["prices_stale"] is True
+
+    def test_never_stale_when_automatic_updates_are_off(self, client, user):
+        self._setup(user, 0, 10 * 24 * 60)
+        assert client.get(self.URL).json()["prices_stale"] is False
+
+    def test_never_stale_without_auto_assets(self, client, user):
+        assert client.get(self.URL).json()["prices_stale"] is False

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { includesSale, realizedUntil } from "./realized";
+import { includesSale, localDay, realizedUntil } from "./realized";
 import type { RealizedSale } from "@/types";
 
 const sale = (date: string, pnl: string, cost: string, recorded_at?: string): RealizedSale => ({
@@ -41,5 +41,13 @@ describe("realizedUntil", () => {
     const after = realizedUntil(sales, "2026-11-02T20:12:00+00:00");
     expect(after.realized).toBeCloseTo(530.52);
     expect(after.soldCost).toBeCloseTo(2201.8);
+  });
+});
+
+describe("localDay", () => {
+  it("uses the viewer's calendar day, not the UTC one", () => {
+    // 00:30 local on 3 Nov is still 2 Nov in UTC for any zone ahead of UTC
+    expect(localDay(new Date(2026, 10, 3, 0, 30).toISOString())).toBe("2026-11-03");
+    expect(localDay(new Date(2026, 10, 2, 23, 50).toISOString())).toBe("2026-11-02");
   });
 });

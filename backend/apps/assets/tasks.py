@@ -35,19 +35,27 @@ def update_prices_task(self, user_id: int) -> dict:
 @shared_task
 def snapshot_all_users_task() -> None:
     """Dispatch per-user snapshot tasks for every user whose snapshot interval is due."""
+    from django.db.models import Max
     from django.utils import timezone
 
-    from apps.assets.models import PortfolioSnapshot, Settings
+    from apps.assets.models import Asset, PortfolioSnapshot, Settings
 
     for user_settings in Settings.objects.select_related("user").filter(snapshot_frequency__gt=0):
         freq = user_settings.snapshot_frequency
-        last = PortfolioSnapshot.objects.filter(owner=user_settings.user).order_by("-captured_at").first()
-        if last is not None:
-            elapsed_minutes = (timezone.now() - last.captured_at).total_seconds() / 60
+        user = user_settings.user
+        # Last run: the last snapshot, or the last price check when the snapshot was skipped because nothing
+        # moved (market closed) — otherwise Yahoo would be asked every minute all weekend
+        last_snapshot = PortfolioSnapshot.objects.filter(owner=user).aggregate(t=Max("captured_at"))["t"]
+        last_prices = Asset.objects.filter(owner=user, price_mode=Asset.PriceMode.AUTO).aggregate(
+            t=Max("price_updated_at")
+        )["t"]
+        last_run = max((t for t in (last_snapshot, last_prices) if t is not None), default=None)
+        if last_run is not None:
+            elapsed_minutes = (timezone.now() - last_run).total_seconds() / 60
             if elapsed_minutes < freq:
                 continue
 
-        snapshot_single_user_task.delay(user_settings.user_id)
+        snapshot_single_user_task.delay(user.pk)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)

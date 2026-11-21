@@ -562,7 +562,7 @@ GET     /api/reports/rv-evolution/
 GET     /api/reports/investment-cost-evolution/   Money invested at each month end + monthly change
 GET     /api/reports/monthly-savings/
 GET     /api/reports/annual-savings/
-GET     /api/reports/snapshot-status/
+GET     /api/reports/snapshot-status/         Snapshot schedule + automatic price freshness (prices_updated_at, prices_stale)
 GET     /api/reports/tax-declaration/?year=YYYY   Renta Web payload (Modo Renta)
 
 CRUD    /api/savings-goals/

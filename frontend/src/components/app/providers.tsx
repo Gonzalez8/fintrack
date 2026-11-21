@@ -44,10 +44,13 @@ export function Providers({
   children,
   user,
   dictionary,
+  initialPrivacy = false,
 }: {
   children: React.ReactNode;
   user: User;
   dictionary: Record<string, string>;
+  /** Privacy mode from the cookie, read on the server */
+  initialPrivacy?: boolean;
 }) {
   const [queryClient] = useState(getQueryClient);
 
@@ -56,7 +59,7 @@ export function Providers({
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <UserContext value={user}>
           <DictionaryContext value={dictionary}>
-            <PrivacyProvider>
+            <PrivacyProvider initial={initialPrivacy}>
               {children}
             </PrivacyProvider>
           </DictionaryContext>

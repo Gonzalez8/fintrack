@@ -111,7 +111,7 @@ frontend/         Next.js 16 App Router
   - Asset prices (market data) — NOT hidden
   - Percentages (P&L %, withholding rates) — NOT hidden
   - Share quantities — NOT hidden
-- **Persistence:** Stored in `fintrack_privacy` cookie, survives page reload
+- **Persistence:** Stored in `fintrack_privacy` cookie, survives page reload. The dashboard layout reads the cookie on the server and passes it to `PrivacyProvider` (`initialPrivacy`), which also sets the formatMoney flag during the server render, so server and browser render the same first frame (no hydration mismatch)
 - **Implementation:** `isPublic` flag on `formatMoney(value, currency, isPublic)` and `MoneyCell` component. `PrivacyProvider` in component tree forces re-render via key change
 
 ### UX

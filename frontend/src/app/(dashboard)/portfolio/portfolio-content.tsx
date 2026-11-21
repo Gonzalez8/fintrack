@@ -310,7 +310,11 @@ export function PortfolioContent() {
       </div>
 
       {/* Position detail: % gained and a year, figures, link to the asset and its price chart */}
-      <PositionDetailDialog position={selectedPosition} onClose={() => setSelectedPosition(null)} />
+      <PositionDetailDialog
+        key={selectedPosition?.asset_id ?? "none"}
+        position={selectedPosition}
+        onClose={() => setSelectedPosition(null)}
+      />
 
       {/* The summary card opens the equity evolution, the money invested over time or the returns details */}
       <Dialog open={summaryChart !== null} onOpenChange={(o) => !o && setSummaryChart(null)}>

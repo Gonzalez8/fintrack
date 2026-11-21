@@ -218,6 +218,11 @@ export function SettingsContent() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // The import replaces every record with the backup's
+    if (!confirm(t("settings.importBackupConfirm"))) {
+      e.target.value = "";
+      return;
+    }
     setImportResult(null);
     setImportError(null);
     setImporting(true);
@@ -229,9 +234,9 @@ export function SettingsContent() {
       queryClient.invalidateQueries();
       toast.success(t("settings.backupImported"));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error al importar el backup";
+      const msg = err instanceof Error ? err.message : t("settings.importFailed");
       setImportError(msg);
-      toast.error("Error al importar");
+      toast.error(t("settings.importFailed"));
     } finally {
       setImporting(false);
     }
@@ -608,7 +613,6 @@ export function SettingsContent() {
                 <li>{t("settings.backupAccounts")}: {importResult.accounts}</li>
                 <li>{t("settings.backupAccountHistory")}: {importResult.account_snapshots}</li>
                 <li>{t("settings.backupPortfolioHistory")}: {importResult.portfolio_snapshots}</li>
-                <li>{t("settings.backupPositionHistory")}: {importResult.position_snapshots}</li>
                 <li>{t("settings.backupTransactions")}: {importResult.transactions}</li>
                 <li>{t("settings.backupStockSplits")}: {importResult.stock_splits ?? 0}</li>
                 <li>{t("settings.backupDividends")}: {importResult.dividends}</li>

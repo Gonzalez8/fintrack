@@ -343,3 +343,76 @@ def test_backup_round_trips_avatar(client, user):
     assert res.status_code == 200
     assert res.json()["counts"]["avatar"] is True
     assert bytes(UserAvatar.objects.get(user=user).data) == png
+
+
+def _import(client, payload):
+    file = SimpleUploadedFile("backup.json", json.dumps(payload).encode(), content_type="application/json")
+    return client.post("/api/backup/import/", {"file": file}, format="multipart")
+
+
+@pytest.mark.django_db
+class TestImportReplaces:
+    def test_records_not_in_backup_are_removed(self, client, user, populated_data):
+        exported = json.loads(client.get("/api/backup/export/").content)
+        # Created after the backup, same ticker as nothing in it: must not survive the restore
+        Asset.objects.create(owner=user, name="Later", ticker="LATER", type=Asset.AssetType.STOCK, currency="EUR")
+
+        assert _import(client, exported).status_code == 200
+        assert list(Asset.objects.filter(owner=user).values_list("ticker", flat=True)) == ["EXP"]
+        assert Transaction.objects.filter(owner=user).count() == 1
+
+    def test_same_ticker_with_another_id_no_longer_conflicts(self, client, user, populated_data):
+        exported = json.loads(client.get("/api/backup/export/").content)
+        Transaction.objects.filter(owner=user).delete()
+        Dividend.objects.filter(owner=user).delete()
+        Asset.objects.filter(owner=user).delete()
+        Asset.objects.create(owner=user, name="Recreated", ticker="EXP", type=Asset.AssetType.STOCK, currency="EUR")
+
+        assert _import(client, exported).status_code == 200
+        assert Asset.objects.get(owner=user, ticker="EXP").id == populated_data["asset"].id
+
+    def test_failed_import_keeps_current_data(self, client, user, populated_data):
+        exported = json.loads(client.get("/api/backup/export/").content)
+        exported["transactions"][0]["quantity"] = "not-a-number"
+        Asset.objects.create(owner=user, name="Later", ticker="LATER", type=Asset.AssetType.STOCK, currency="EUR")
+
+        assert _import(client, exported).status_code == 400
+        assert Asset.objects.filter(owner=user).count() == 2
+        assert Transaction.objects.filter(owner=user).count() == 1
+
+    def test_other_users_data_is_untouched(self, client, user, populated_data):
+        other = User.objects.create_user(username="other", password="testpass123")
+        Asset.objects.create(owner=other, name="Theirs", ticker="OTH", type=Asset.AssetType.STOCK, currency="EUR")
+
+        assert _import(client, {"version": "1.0"}).status_code == 200
+        assert Asset.objects.filter(owner=user).count() == 0
+        assert Asset.objects.filter(owner=other).count() == 1
+
+    def test_every_owned_model_is_wiped(self):
+        # A new model holding user data must be added to the backup and to the wipe
+        from django.apps import apps
+
+        from apps.assets.models import Settings
+        from apps.core.models import ApiToken
+        from apps.importer.views import _RESTORED_MODELS
+
+        owned = {m for m in apps.get_models() if any(f.name == "owner" and f.is_relation for f in m._meta.fields)} - {
+            Settings,
+            ApiToken,
+        }
+        assert owned <= set(_RESTORED_MODELS), owned - set(_RESTORED_MODELS)
+
+    def test_keeps_when_each_operation_was_recorded(self, client, user, populated_data):
+        recorded = datetime.datetime(2025, 1, 15, 19, 55, tzinfo=datetime.UTC)
+        Transaction.objects.filter(pk=populated_data["tx"].pk).update(created_at=recorded)
+        exported = json.loads(client.get("/api/backup/export/").content)
+
+        assert _import(client, exported).status_code == 200
+        assert Transaction.objects.get(pk=populated_data["tx"].pk).created_at == recorded
+
+    def test_clears_the_cache(self, client, user, populated_data):
+        from apps.core.cache import NS_PORTFOLIO, get_user_cache, set_user_cache
+
+        set_user_cache(user.pk, NS_PORTFOLIO, {"stale": True})
+        assert _import(client, {"version": "1.0"}).status_code == 200
+        assert get_user_cache(user.pk, NS_PORTFOLIO) is None

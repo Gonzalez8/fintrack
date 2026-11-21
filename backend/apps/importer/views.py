@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from apps.assets.models import Account, AccountSnapshot, Asset, PortfolioSnapshot, Settings
 from apps.assets.serializers import SettingsSerializer
+from apps.core.cache import FINANCIAL_NAMESPACES, NS_SETTINGS, invalidate_user_cache
 from apps.core.models import UserAvatar
 from apps.core.serializers import AvatarSerializer
 from apps.payroll.models import Employer, Payroll
@@ -45,6 +46,38 @@ def _export_avatar(user):
     if avatar is None:
         return None
     return {"content_type": avatar.content_type, "data": base64.b64encode(bytes(avatar.data)).decode()}
+
+
+# Deleted children first so PROTECT foreign keys never block the wipe
+_RESTORED_MODELS = (
+    DividendSuggestion,
+    StockSplit,
+    Dividend,
+    Interest,
+    OtherIncome,
+    Transaction,
+    PortfolioSnapshot,
+    AccountSnapshot,
+    Amortization,
+    RentalExpense,
+    Lease,
+    Property,
+    Payroll,
+    Employer,
+    SavingsGoal,
+    Asset,
+    Account,
+)
+
+
+def _wipe_user_data(user):
+    """Delete everything a backup restores, so the import replaces the data instead of merging.
+
+    Settings are overwritten by the backup and API tokens are credentials, not data: both stay.
+    """
+    for model in _RESTORED_MODELS:
+        model.objects.filter(owner=user).delete()
+    UserAvatar.objects.filter(user=user).delete()
 
 
 class BackupExportView(APIView):
@@ -145,7 +178,10 @@ class BackupImportView(APIView):
             return result
 
         try:
+            # One transaction: if anything fails, the wipe is rolled back and the current data stays
             with db_transaction.atomic():
+                _wipe_user_data(user)
+
                 if "settings" in payload:
                     settings_obj = Settings.load(user)
                     ser = SettingsSerializer(settings_obj, data=payload["settings"], partial=True)
@@ -186,11 +222,16 @@ class BackupImportView(APIView):
                     counts["portfolio_snapshots"] += 1
 
                 for item in payload.get("transactions", []):
-                    Transaction.objects.update_or_create(
+                    # When it was recorded: the RV chart adds a same-day sale only to later snapshots.
+                    # auto_now_add would stamp the import time, so it is set afterwards.
+                    created_at = item.pop("created_at", None)
+                    tx, _ = Transaction.objects.update_or_create(
                         id=item["id"],
                         owner=user,
                         defaults=to_defaults(item, fk_fields=("asset", "account")),
                     )
+                    if created_at:
+                        Transaction.objects.filter(pk=tx.pk).update(created_at=created_at)
                     counts["transactions"] += 1
 
                 for item in payload.get("stock_splits", []):
@@ -309,4 +350,5 @@ class BackupImportView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        invalidate_user_cache(user.pk, *FINANCIAL_NAMESPACES, NS_SETTINGS)
         return Response({"counts": counts})

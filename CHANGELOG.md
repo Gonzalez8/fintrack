@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.29.0] - 2026-11-23
+
+### Added
+
+- **Dividends: payment date and upcoming payments.** A dividend no longer asks for review on its ex-dividend date, weeks before you are paid. Fintrack looks up the payment date on the asset's primary listing (found through the ISIN on Yahoo, e.g. MSFT for Frankfurt's MSF.F, which lacks it) and, until that day, lists the dividend under *Upcoming payments* in Dividends with its date and estimated net; the asset page shows it too. From the payment date it is pending review as before, and the review form proposes the payment date. Without a payment date from Yahoo nothing changes. (#153)
+
+### MCP update
+
+- `fintrack_list_pending_reviews` returns the dividends to review (already paid) and `upcoming_dividends` with their payment date. Update the MCP command (Settings shows it pinned to v2.29.0) and restart Claude Desktop; the skill is unchanged, but the zip is attached as usual.
+
+### Migration notes
+
+- `transactions.0013_dividendsuggestion_pay_date`: adds a nullable `pay_date` to dividend drafts (additive). Existing pending drafts get it on the next dividend search (daily, or *Search dividends on Yahoo*).
+
 ## [2.28.0] - 2026-11-23
 
 ### Added

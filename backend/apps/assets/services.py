@@ -3,6 +3,7 @@ import math
 import uuid
 from decimal import Decimal, InvalidOperation
 
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -50,6 +51,28 @@ def _fetch_batch(tickers, period="5d"):
             prices[ticker] = last
 
     return prices
+
+
+def fetch_daily_closes(ticker: str, start: datetime.date) -> list[tuple[datetime.date, float]]:
+    """Daily closes of a ticker since ``start``, oldest first. Public data, cached for everyone for 6 h.
+
+    Yahoo's plain close: not adjusted for dividends, but adjusted for later splits.
+    """
+    key = f"daily-closes:{ticker}:{start.isoformat()}:{datetime.date.today().isoformat()}"
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    import yfinance as yf
+
+    data = yf.download(ticker, start=start - datetime.timedelta(days=10), progress=False, auto_adjust=False)
+    closes = []
+    if not data.empty:
+        col = data["Close"]
+        if hasattr(col, "columns"):
+            col = col[ticker]
+        closes = [(idx.date(), float(v)) for idx, v in col.dropna().items()]
+    cache.set(key, closes, 6 * 3600)
+    return closes
 
 
 def create_portfolio_snapshot_now(user) -> None:

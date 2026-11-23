@@ -56,7 +56,7 @@ async def test_tools_are_prefixed_and_annotated():
     server = create_server(FintrackClient(BASE, "ft_test"))
     async with Client(server) as client:
         tools = {t.name: t for t in (await client.list_tools()).tools}
-    assert len(tools) == 41 and all(name.startswith("fintrack_") for name in tools)
+    assert len(tools) == 43 and all(name.startswith("fintrack_") for name in tools)
     writes = {n for n, t in tools.items() if not t.annotations.read_only_hint}
     assert writes == {
         "fintrack_create_transaction",
@@ -66,6 +66,7 @@ async def test_tools_are_prefixed_and_annotated():
         "fintrack_accept_dividend_draft",
         "fintrack_dismiss_dividend_draft",
         "fintrack_restore_dividend_draft",
+        "fintrack_rebuild_history",
         "fintrack_apply_split",
         "fintrack_create_asset",
         "fintrack_update_asset",
@@ -120,6 +121,19 @@ async def test_restore_dividend_draft(api):
     )
     assert payload(await call("fintrack_restore_dividend_draft", {"draft_id": "d1"}))["status"] == "PENDING"
     assert route.called
+
+
+async def test_history_rebuild_previews_then_posts(api):
+    preview = api.get("/portfolio/rebuild-history/").mock(
+        return_value=httpx.Response(200, json={"days": 548, "created": 0})
+    )
+    apply = api.post("/portfolio/rebuild-history/").mock(
+        return_value=httpx.Response(201, json={"days": 548, "created": 548})
+    )
+    assert payload(await call("fintrack_preview_history_rebuild"))["days"] == 548
+    assert not apply.called
+    assert payload(await call("fintrack_rebuild_history"))["created"] == 548
+    assert preview.called and apply.called
 
 
 async def test_returns_passes_the_benchmark(api):

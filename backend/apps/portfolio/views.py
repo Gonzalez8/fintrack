@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from apps.core.cache import NS_PORTFOLIO, get_user_cache, set_user_cache
 
+from .history import preview_rebuild, rebuild_history
 from .returns import BENCHMARKS, DEFAULT_BENCHMARK, calculate_returns
 from .sale_simulation import SaleSimulationError, loss_harvest, simulate_sale
 from .services import calculate_portfolio_full
@@ -80,3 +81,17 @@ class LossHarvestingView(APIView):
     def get(self, request):
         selected = {s for s in request.query_params.get("selected", "").split(",") if s}
         return Response(loss_harvest(request.user, selected))
+
+
+class RebuildHistoryView(APIView):
+    """GET /api/portfolio/rebuild-history/ → what would be added; POST → adds it.
+
+    Rebuilds the portfolio snapshots of past trading days that have none, from the operations and Yahoo daily
+    closes. Never changes or deletes existing snapshots.
+    """
+
+    def get(self, request):
+        return Response(preview_rebuild(request.user))
+
+    def post(self, request):
+        return Response(rebuild_history(request.user), status=status.HTTP_201_CREATED)

@@ -465,6 +465,16 @@ const proxyHandlers = [
   }),
 
   // ---- Portfolio ----
+  // The demo history is already complete: nothing to rebuild
+  http.get("/api/proxy/portfolio/rebuild-history/", async () => {
+    await delay(200);
+    return HttpResponse.json({ method: "FIFO", days: 0, first_date: null, last_date: null, lowest: null, assets: [], purged_before: null, created: 0, batch_id: null });
+  }),
+  http.post("/api/proxy/portfolio/rebuild-history/", async () => {
+    await delay(200);
+    return HttpResponse.json({ method: "FIFO", days: 0, first_date: null, last_date: null, lowest: null, assets: [], purged_before: null, created: 0, batch_id: null }, { status: 201 });
+  }),
+
   // No loss-harvesting card in the demo (no tax estimate)
   http.get("/api/proxy/portfolio/loss-harvesting/", async () => {
     await delay(200);

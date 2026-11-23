@@ -1032,6 +1032,25 @@ export interface ReturnsData {
   benchmarks: { key: string; name: string; ticker: string }[];
 }
 
+// ---- Portfolio history rebuild ----
+
+export interface HistoryRebuild {
+  /** Cost basis method used for the cost of each day (the same as the regular snapshots) */
+  method: string;
+  /** Days without a snapshot that would be (or were) added */
+  days: number;
+  first_date: string | null;
+  last_date: string | null;
+  /** Day with the lowest unrealized % among the rebuilt ones */
+  lowest: { date: string; market_value: string; cost: string; pnl_pct: string } | null;
+  /** YAHOO: daily closes; OPERATIONS: price of the last operation (no Yahoo history) */
+  assets: { asset_id: string; asset_name: string; asset_ticker: string | null; source: "YAHOO" | "OPERATIONS" }[];
+  /** The retention purge deletes snapshots older than this day, rebuilt ones too */
+  purged_before: string | null;
+  created: number;
+  batch_id: string | null;
+}
+
 // ---- Sale simulation ----
 
 export interface SaleSimulationLot {

@@ -1144,6 +1144,10 @@
   "dividendDrafts.backfill": "Frühere Dividenden suchen",
   "dividendDrafts.assetCardHelp": "Die tägliche Suche schlägt nur Dividenden nach der zuletzt erfassten vor. Diese Schaltfläche sucht bei Yahoo alle Dividenden dieses Werts seit deinem ersten Kauf, die dir noch fehlen.",
   "dividendDrafts.goToDividends": "Zu den Dividenden",
+  "dividendDrafts.upcomingTitle": "Anstehende Zahlungen ({count})",
+  "dividendDrafts.upcomingDescription": "Angekündigte Dividenden, die du noch nicht erhalten hast. Am Zahltag werden sie zur Prüfung vorgelegt.",
+  "dividendDrafts.paysOn": "Zahlung am {date}",
+  "dividendDrafts.netShort": "netto",
 
   "aiAccess.title": "KI-Zugriff (MCP)",
   "aiAccess.description": "Verbinde einen KI-Assistenten (Claude Desktop oder Claude Code) mit deinem Fintrack, damit er deine Daten abfragen und analysieren kann. Er läuft auf deinem Computer und ruft Fintrack über dein lokales Netzwerk mit einem Token auf, das du jederzeit widerrufen kannst.",

@@ -568,6 +568,10 @@ export interface DividendSuggestion {
   asset_currency: string;
   /** Ex-dividend date from Yahoo; the payment usually comes days later. */
   ex_date: string;
+  /** Payment date from Yahoo (primary listing); null when unknown. */
+  pay_date: string | null;
+  /** True until the payment date: shown as upcoming, not due for review yet. */
+  upcoming: boolean;
   amount_per_share: string;
   /** Currency of the Yahoo quote the amounts are in. */
   currency: string;

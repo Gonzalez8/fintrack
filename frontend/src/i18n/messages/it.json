@@ -1144,6 +1144,10 @@
   "dividendDrafts.backfill": "Cerca dividendi precedenti",
   "dividendDrafts.assetCardHelp": "La ricerca giornaliera propone solo dividendi successivi all'ultimo registrato. Questo pulsante cerca su Yahoo tutti i dividendi di questo titolo dal tuo primo acquisto che ancora non hai.",
   "dividendDrafts.goToDividends": "Vai ai dividendi",
+  "dividendDrafts.upcomingTitle": "Prossimi incassi ({count})",
+  "dividendDrafts.upcomingDescription": "Dividendi annunciati che non hai ancora incassato. Nel giorno di pagamento passano in attesa di revisione.",
+  "dividendDrafts.paysOn": "pagato il {date}",
+  "dividendDrafts.netShort": "netto",
 
   "aiAccess.title": "Accesso IA (MCP)",
   "aiAccess.description": "Collega un assistente IA (Claude Desktop o Claude Code) al tuo Fintrack perché consulti e analizzi i tuoi dati. Funziona sul tuo computer e chiama Fintrack tramite la tua rete locale con un token che puoi revocare in qualsiasi momento.",

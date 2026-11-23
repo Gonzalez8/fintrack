@@ -420,3 +420,62 @@ def test_backup_roundtrip_keeps_drafts_and_links(client, user, asset):
     assert res.data["counts"]["dividend_suggestions"] == 1
     restored = DividendSuggestion.objects.get(owner=user)
     assert restored.dividend_id == dividend.id and restored.status == DividendSuggestion.Status.ACCEPTED
+
+
+# ---------------------------------------------------------------------------
+# Payment dates
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+class TestPayDate:
+    def _calendar(self, monkeypatch, by_ticker, primary="MSFT"):
+        monkeypatch.setattr("apps.transactions.services.primary_ticker", lambda isin: primary if isin else None)
+        monkeypatch.setattr("apps.transactions.services._yahoo_next_dividend", lambda t: by_ticker.get(t, (None, None)))
+
+    def test_pay_date_from_the_primary_listing(self, monkeypatch, user, asset, account):
+        asset.isin = "US5949181045"
+        asset.save()
+        _buy(user, asset, account, D(2026, 1, 5), 10)
+        self._calendar(monkeypatch, {"MSFT": (D(2026, 11, 19), D(2026, 12, 10))})
+        with patch(FETCH, return_value=([(D(2026, 11, 19), 0.89)], [], "EUR")):
+            created = detect_dividends(user, today=D(2026, 11, 23))
+        assert created[0].pay_date == D(2026, 12, 10)
+        data = DividendSuggestionSerializer(created[0]).data
+        assert data["pay_date"] == "2026-12-10"
+
+    def test_calendar_of_another_dividend_is_ignored(self, monkeypatch, user, asset, account):
+        _buy(user, asset, account, D(2026, 1, 5), 10)
+        # The calendar already shows the next dividend, not this draft's
+        self._calendar(monkeypatch, {"AAPL": (D(2027, 2, 9), D(2027, 2, 12))}, primary=None)
+        with patch(FETCH, return_value=([(D(2026, 11, 10), 0.26)], [], "USD")):
+            created = detect_dividends(user, today=D(2026, 11, 23))
+        assert created[0].pay_date is None
+
+    def test_existing_drafts_get_the_date_later(self, monkeypatch, user, asset, account):
+        _buy(user, asset, account, D(2026, 1, 5), 10)
+        with patch(FETCH, return_value=([(D(2026, 11, 19), 0.89)], [], "EUR")):
+            detect_dividends(user, today=D(2026, 11, 20))
+        draft = DividendSuggestion.objects.get()
+        assert draft.pay_date is None
+        # Yahoo publishes it a few days later: the next run fills it
+        self._calendar(monkeypatch, {"AAPL": (D(2026, 11, 19), D(2026, 12, 10))}, primary=None)
+        with patch(FETCH, return_value=([(D(2026, 11, 19), 0.89)], [], "EUR")):
+            detect_dividends(user, today=D(2026, 11, 23))
+        draft.refresh_from_db()
+        assert draft.pay_date == D(2026, 12, 10)
+
+    def test_timing_filter_splits_due_and_upcoming(self, client, user, asset):
+        today = datetime.date.today()
+        common = {"owner": user, "asset": asset, "amount_per_share": 1, "currency": "USD", "shares": 1, "gross": 1}
+        due = DividendSuggestion.objects.create(ex_date=today - datetime.timedelta(days=30), **common)
+        paid = DividendSuggestion.objects.create(ex_date=today - datetime.timedelta(days=20), pay_date=today, **common)
+        later = DividendSuggestion.objects.create(
+            ex_date=today - datetime.timedelta(days=5), pay_date=today + datetime.timedelta(days=17), **common
+        )
+        url = "/api/dividend-suggestions/"
+        due_ids = {r["id"] for r in client.get(url, {"timing": "due"}).json()["results"]}
+        upcoming = client.get(url, {"timing": "upcoming"}).json()["results"]
+        assert due_ids == {str(due.id), str(paid.id)}
+        assert [r["id"] for r in upcoming] == [str(later.id)]
+        assert upcoming[0]["upcoming"] is True

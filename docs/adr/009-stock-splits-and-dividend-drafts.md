@@ -43,3 +43,7 @@ Yahoo Finance exposes both histories (`Ticker.splits`, `Ticker.dividends`), but 
 - Reports, tax and the MCP see splits through the engine — no consumer recomputes quantities.
 - Yahoo coverage varies by listing; assets in `MANUAL` price mode are never queried.
 - Amounts in foreign quote currencies still need the user's broker figures (the review dialog says so).
+
+## Update (2026-11-23): payment date
+
+A draft appeared as "pending review" on its ex-dividend date, weeks before the broker paid it, when there was nothing to check yet. Yahoo's calendar gives the **next** dividend's payment date, but often only on the primary listing (Frankfurt's MSF.F has the ex-date only; MSFT has both). Drafts now keep `pay_date`, looked up on the primary listing found by searching the asset's ISIN on Yahoo, then on the asset's own ticker, and accepted only when the calendar's ex-date is the draft's. Until that date the draft is *upcoming* (listed with its date and estimated net, no review prompt); from it on it is due. Without a payment date nothing changes. Past payment dates are not published by Yahoo and are not needed: older drafts are already paid when detected.

@@ -22,7 +22,7 @@ import { toast } from "sonner";
 import { formatMoney, formatQty } from "@/lib/utils";
 import { useTranslations } from "@/i18n/use-translations";
 import type { Dividend, DividendFormData, DividendSuggestion, Asset, PaginatedResponse, PortfolioData } from "@/types";
-import { DIVIDEND_SUGGESTIONS_KEY, PendingDividendsBanner, formatDraftAmount } from "@/components/app/pending-dividends-banner";
+import { DIVIDEND_SUGGESTIONS_KEY, PendingDividendsBanner, UpcomingDividendsCard, formatDraftAmount } from "@/components/app/pending-dividends-banner";
 import { formatSplitDate } from "@/lib/splits";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -220,6 +220,8 @@ export function DividendsContent() {
 
       <PendingDividendsBanner onReview={(s) => openDialog(null, s)} />
 
+      <UpcomingDividendsCard />
+
       {/* Mobile cards */}
       <div className="sm:hidden space-y-2">
         {(data?.results ?? []).map((d) => (
@@ -381,7 +383,7 @@ function DividendDialog({
       const domestic = parseFloat(suggestion.domestic_tax ?? "0") || 0;
       setForm({
         // Yahoo only knows the ex-date: the user replaces it with the payment date
-        date: suggestion.ex_date,
+        date: suggestion.pay_date ?? suggestion.ex_date,
         asset: suggestion.asset,
         shares: String(Number(suggestion.shares)),
         gross: gross.toFixed(2),

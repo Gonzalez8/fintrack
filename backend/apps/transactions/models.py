@@ -227,6 +227,14 @@ class DividendSuggestion(UserOwnedModel):
 
     asset = models.ForeignKey("assets.Asset", on_delete=models.CASCADE, related_name="dividend_suggestions")
     ex_date = models.DateField(help_text="Ex-dividend date reported by Yahoo (payment comes later).")
+    pay_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Payment date from Yahoo (primary listing found by ISIN, else the asset's ticker). Yahoo only gives it "
+            "for the next dividend; null when unknown. Until it arrives the draft is upcoming, not due for review."
+        ),
+    )
     amount_per_share = models.DecimalField(max_digits=20, decimal_places=6, help_text="Gross amount per share.")
     currency = models.CharField(max_length=3, help_text="Currency of the Yahoo quote the amount is in.")
     shares = models.DecimalField(max_digits=20, decimal_places=6, help_text="Shares held on the ex-dividend date.")

@@ -1,5 +1,6 @@
 import django_filters
 from django.db.models import Q
+from django.utils import timezone
 
 from .models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
 
@@ -73,6 +74,13 @@ class StockSplitFilter(django_filters.FilterSet):
 class DividendSuggestionFilter(django_filters.FilterSet):
     asset_id = django_filters.UUIDFilter(field_name="asset_id")
     status = django_filters.CharFilter(field_name="status")
+    # due: already paid or payment date unknown (ready to review); upcoming: paid later
+    timing = django_filters.ChoiceFilter(choices=[("due", "due"), ("upcoming", "upcoming")], method="filter_timing")
+
+    def filter_timing(self, queryset, name, value):
+        today = timezone.localdate()
+        upcoming = Q(pay_date__gt=today)
+        return queryset.filter(upcoming) if value == "upcoming" else queryset.exclude(upcoming)
 
     class Meta:
         model = DividendSuggestion

@@ -2,6 +2,7 @@ import logging
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.core.cache import cache
 from django.db.models import Min
 
 from apps.assets.models import Asset
@@ -166,6 +167,76 @@ def _withholding_rates(user, asset):
     return tax, domestic or None
 
 
+# Only drafts this recent can still be waiting for their payment (Yahoo gives the next payment date only)
+PAY_DATE_LOOKBACK = timedelta(days=60)
+
+
+def primary_ticker(isin):
+    """Yahoo symbol of the primary listing of an ISIN (e.g. MSFT for Microsoft), or None. Cached for 30 days.
+
+    Secondary listings such as Frankfurt's MSF.F often lack the payment date that the primary one publishes.
+    """
+    if not isin:
+        return None
+    key = f"primary-ticker:{isin}"
+    cached = cache.get(key)
+    if cached is not None:
+        return cached or None
+    import yfinance as yf
+
+    symbol = ""
+    try:
+        quotes = yf.Search(isin, max_results=5).quotes
+        symbol = next((q["symbol"] for q in quotes if q.get("symbol")), "")
+    except Exception as exc:
+        logger.warning("Primary listing lookup failed for %s: %s", isin, exc)
+        return None
+    cache.set(key, symbol, 30 * 24 * 3600)
+    return symbol or None
+
+
+def _yahoo_next_dividend(ticker):
+    """``(ex_date, pay_date)`` of the next dividend from Yahoo's calendar; either can be None."""
+    import yfinance as yf
+
+    try:
+        cal = yf.Ticker(ticker).calendar or {}
+    except Exception as exc:
+        logger.warning("Dividend calendar failed for %s: %s", ticker, exc)
+        return None, None
+    return cal.get("Ex-Dividend Date"), cal.get("Dividend Date")
+
+
+def find_pay_date(asset, ex_date):
+    """Payment date of the dividend with ``ex_date``: the primary listing's calendar, else the asset's ticker."""
+    for ticker in dict.fromkeys(t for t in (primary_ticker(asset.isin), asset.ticker) if t):
+        cal_ex, pay = _yahoo_next_dividend(ticker)
+        if cal_ex == ex_date and pay and pay >= ex_date:
+            return pay
+    return None
+
+
+def fill_pay_dates(user, asset=None, today=None):
+    """Set the payment date of recent pending drafts that lack it. Returns how many were filled."""
+    today = today or date.today()
+    drafts = DividendSuggestion.objects.filter(
+        owner=user,
+        status=DividendSuggestion.Status.PENDING,
+        pay_date__isnull=True,
+        ex_date__gte=today - PAY_DATE_LOOKBACK,
+    ).select_related("asset")
+    if asset is not None:
+        drafts = drafts.filter(asset=asset)
+    filled = 0
+    for draft in drafts:
+        pay = find_pay_date(draft.asset, draft.ex_date)
+        if pay:
+            draft.pay_date = pay
+            draft.save(update_fields=["pay_date", "updated_at"])
+            filled += 1
+    return filled
+
+
 def detect_dividends(user, asset=None, backfill=False, today=None):
     """Create PENDING DividendSuggestion drafts for Yahoo dividends not yet recorded.
 
@@ -180,7 +251,9 @@ def detect_dividends(user, asset=None, backfill=False, today=None):
 
     Shares are those held on the ex-date (splits applied); the amount per share
     is Yahoo's split-adjusted figure scaled back to that date. Pending drafts
-    that a recorded dividend now covers are dismissed. Returns the new drafts.
+    that a recorded dividend now covers are dismissed. Recent pending drafts get
+    their payment date when Yahoo publishes it (``fill_pay_dates``). Returns the
+    new drafts.
     """
     today = today or date.today()
     first_dates = dict(
@@ -254,4 +327,7 @@ def detect_dividends(user, asset=None, backfill=False, today=None):
                     ),
                 )
             )
+    fill_pay_dates(user, asset=asset, today=today)
+    for draft in created:
+        draft.refresh_from_db(fields=["pay_date"])
     return created

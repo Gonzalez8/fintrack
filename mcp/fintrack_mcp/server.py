@@ -395,10 +395,18 @@ def create_server(client: FintrackClient) -> MCPServer:
 
     @mcp.tool(annotations=READ)
     async def fintrack_list_pending_reviews() -> dict[str, Any]:
-        """Items waiting for the user's decision: dividend drafts detected from Yahoo and detected stock splits."""
-        drafts = await call("get", "dividend-suggestions/", params={"status": "PENDING", "page_size": MAX_LIMIT})
+        """Items waiting for the user's decision: dividend drafts detected from Yahoo that are due (paid already or
+        payment date unknown) and detected stock splits. upcoming_dividends are announced dividends not paid yet
+        (pay_date ahead): what is coming and when, to review once paid."""
+        params = {"status": "PENDING", "page_size": MAX_LIMIT}
+        drafts = await call("get", "dividend-suggestions/", params={**params, "timing": "due"})
+        upcoming = await call("get", "dividend-suggestions/", params={**params, "timing": "upcoming"})
         splits = await call("get", "splits/", params={"status": "PENDING", "page_size": MAX_LIMIT})
-        return {"dividend_drafts": _page(drafts, 1, MAX_LIMIT)["items"], "splits": _page(splits, 1, MAX_LIMIT)["items"]}
+        return {
+            "dividend_drafts": _page(drafts, 1, MAX_LIMIT)["items"],
+            "upcoming_dividends": _page(upcoming, 1, MAX_LIMIT)["items"],
+            "splits": _page(splits, 1, MAX_LIMIT)["items"],
+        }
 
     @mcp.tool(annotations=READ)
     async def fintrack_check_dividend_shares(

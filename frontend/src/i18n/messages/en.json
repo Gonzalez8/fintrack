@@ -1144,6 +1144,10 @@
   "dividendDrafts.backfill": "Search earlier dividends",
   "dividendDrafts.assetCardHelp": "The daily search only suggests dividends after the last one you recorded. This button searches Yahoo for every dividend of this asset since your first purchase that you don't have yet.",
   "dividendDrafts.goToDividends": "Go to Dividends",
+  "dividendDrafts.upcomingTitle": "Upcoming payments ({count})",
+  "dividendDrafts.upcomingDescription": "Announced dividends you have not received yet. On the payment date they become pending review.",
+  "dividendDrafts.paysOn": "paid on {date}",
+  "dividendDrafts.netShort": "net",
 
   "aiAccess.title": "AI access (MCP)",
   "aiAccess.description": "Connect an AI assistant (Claude Desktop or Claude Code) to your Fintrack so it can look up and analyse your data. It runs on your computer and calls Fintrack over your local network with a token you can revoke at any time.",

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import Dividend, DividendSuggestion, Interest, OtherIncome, StockSplit, Transaction
@@ -237,6 +238,7 @@ class DividendSuggestionSerializer(serializers.ModelSerializer):
     asset_ticker = serializers.CharField(source="asset.ticker", read_only=True)
     asset_currency = serializers.CharField(source="asset.currency", read_only=True)
     net = serializers.SerializerMethodField()
+    upcoming = serializers.SerializerMethodField()
 
     class Meta:
         model = DividendSuggestion
@@ -247,6 +249,8 @@ class DividendSuggestionSerializer(serializers.ModelSerializer):
             "asset_ticker",
             "asset_currency",
             "ex_date",
+            "pay_date",
+            "upcoming",
             "amount_per_share",
             "currency",
             "shares",
@@ -263,3 +267,7 @@ class DividendSuggestionSerializer(serializers.ModelSerializer):
 
     def get_net(self, obj):
         return str(obj.gross - (obj.tax or Decimal("0")) - (obj.domestic_tax or Decimal("0")))
+
+    def get_upcoming(self, obj):
+        """True until the payment date: not due for review yet."""
+        return obj.pay_date is not None and obj.pay_date > timezone.localdate()

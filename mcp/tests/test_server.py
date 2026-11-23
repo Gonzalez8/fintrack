@@ -629,3 +629,16 @@ async def test_create_rental_expense(api):
     await call("fintrack_create_rental_expense", args)
     body = json.loads(route.calls.last.request.content)
     assert (body["property"], body["amount"], body["category"]) == (FLAT["id"], "412.30", "TAXES")
+
+
+async def test_pending_reviews_split_due_and_upcoming_dividends(api):
+    def drafts(request):
+        timing = request.url.params["timing"]
+        return httpx.Response(200, json={"count": 1, "results": [{"id": timing, "pay_date": "2026-12-10"}]})
+
+    route = api.get("/dividend-suggestions/").mock(side_effect=drafts)
+    api.get("/splits/").mock(return_value=httpx.Response(200, json={"count": 0, "results": []}))
+    data = payload(await call("fintrack_list_pending_reviews"))
+    assert [d["id"] for d in data["dividend_drafts"]] == ["due"]
+    assert [d["id"] for d in data["upcoming_dividends"]] == ["upcoming"]
+    assert route.call_count == 2

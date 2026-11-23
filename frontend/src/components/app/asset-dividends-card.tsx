@@ -100,7 +100,11 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
                     <p className="flex flex-wrap items-center gap-x-2 font-medium">
                       <span className="whitespace-nowrap">{formatDate(d.ex_date)}</span>
                       <Badge variant={isPending ? "secondary" : "outline"} className="text-[10px]">
-                        {isPending ? t("dividendDrafts.statusPending") : t("dividendDrafts.statusDismissed")}
+                        {d.upcoming
+                          ? t("dividendDrafts.paysOn", { date: formatDate(d.pay_date) })
+                          : isPending
+                            ? t("dividendDrafts.statusPending")
+                            : t("dividendDrafts.statusDismissed")}
                       </Badge>
                     </p>
                     <p className="text-xs text-muted-foreground tabular-nums">
@@ -108,7 +112,7 @@ export function AssetDividendsCard({ asset }: { asset: Asset }) {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
-                    {isPending ? (
+                    {isPending && d.upcoming ? null : isPending ? (
                       <>
                         <Link href={`/dividends?review=${d.id}`} className="px-2 text-xs text-primary hover:underline">
                           {t("dividendDrafts.review")}

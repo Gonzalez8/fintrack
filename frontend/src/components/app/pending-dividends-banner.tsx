@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { HandCoins } from "lucide-react";
+import { CalendarClock, HandCoins } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTranslations } from "@/i18n/use-translations";
 import { formatSplitDate } from "@/lib/splits";
-import { cn, formatQty, uiLocale } from "@/lib/utils";
+import { cn, formatDate, formatQty, uiLocale } from "@/lib/utils";
 import type { DividendSuggestion, PaginatedResponse } from "@/types";
 
-export const DIVIDEND_SUGGESTIONS_KEY = ["dividend-suggestions", "PENDING"];
+export const DIVIDEND_SUGGESTIONS_KEY = ["dividend-suggestions", "PENDING", "due"];
 
 /**
  * Amount in the draft's own currency, in the UI locale. Per-share amounts keep
@@ -27,7 +27,55 @@ export function formatDraftAmount(value: string, currency: string, perShare = fa
 }
 
 /**
- * Dividend drafts detected from Yahoo, waiting for review. "Review" opens the
+ * Dividends announced but not paid yet (drafts whose payment date is still ahead): what is coming and when.
+ * They become due for review, in the banner, on their payment date.
+ */
+export function UpcomingDividendsCard() {
+  const t = useTranslations();
+  const { data } = useQuery({
+    queryKey: ["dividend-suggestions", "PENDING", "upcoming"],
+    queryFn: () =>
+      api.get<PaginatedResponse<DividendSuggestion>>(
+        "/dividend-suggestions/?status=PENDING&timing=upcoming&ordering=ex_date&page_size=1000",
+      ),
+    staleTime: 60 * 1000,
+  });
+  const upcoming = [...(data?.results ?? [])].sort((a, b) => (a.pay_date ?? "").localeCompare(b.pay_date ?? ""));
+  if (upcoming.length === 0) return null;
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 p-4">
+        <div className="flex items-start gap-3">
+          <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div>
+            <p className="text-sm font-semibold">{t("dividendDrafts.upcomingTitle", { count: upcoming.length })}</p>
+            <p className="text-xs text-muted-foreground">{t("dividendDrafts.upcomingDescription")}</p>
+          </div>
+        </div>
+        <ul className="divide-y rounded-md border text-sm">
+          {upcoming.map((s) => (
+            <li key={s.id} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-3 py-2">
+              <span className="min-w-0">
+                <span className="font-semibold">{s.asset_name || s.asset_ticker}</span>
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {t("dividendDrafts.paysOn", { date: formatDate(s.pay_date) })}
+                </span>
+              </span>
+              <span className="tabular-nums text-muted-foreground">
+                ≈ {formatDraftAmount(s.net, s.currency)} {t("dividendDrafts.netShort")}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Dividend drafts detected from Yahoo, waiting for review (paid already, or payment date unknown). "Review" opens the
  * dividend dialog pre-filled (``onReview``) or, outside the dividends page,
  * links there; nothing is recorded until the user saves it.
  */
@@ -38,7 +86,7 @@ export function PendingDividendsBanner({ onReview }: { onReview?: (s: DividendSu
   const { data } = useQuery({
     queryKey: DIVIDEND_SUGGESTIONS_KEY,
     queryFn: () =>
-      api.get<PaginatedResponse<DividendSuggestion>>("/dividend-suggestions/?status=PENDING&page_size=1000"),
+      api.get<PaginatedResponse<DividendSuggestion>>("/dividend-suggestions/?status=PENDING&timing=due&page_size=1000"),
     staleTime: 60 * 1000,
   });
 

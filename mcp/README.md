@@ -92,7 +92,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_get_net_worth_evolution` | read | Monthly net worth (cash + investments) |
 | `fintrack_get_invested_capital_evolution` | read | Money invested at each month end, what was put in or taken out that month and what it was worth then |
 | `fintrack_get_tax_declaration` | read | Tax-declaration helper for your fiscal country |
-| `fintrack_list_pending_reviews` | read | Dividend drafts and detected splits waiting for you |
+| `fintrack_list_pending_reviews` | read | Dividend drafts to review (already paid), upcoming dividends with their payment date and detected splits |
 | `fintrack_check_dividend_shares` | read | Dividends whose share count doesn't match your operations (missing operations); payments on pre-split shares are listed apart |
 | `fintrack_get_settings` | read | Base currency, cost methods, fiscal country |
 | `fintrack_list_payrolls` | read | Payslips (filters: year, month, type MONTHLY/BONUS/ATRASOS/OTHER) |

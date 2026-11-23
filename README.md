@@ -65,7 +65,7 @@ Track your portfolio, transactions, dividends, interests and taxes from a single
 ### Transaction Tracking
 - **Buy / Sell / Gift** transactions with commission and tax support
 - **Dividend tracking** — Gross, withholding tax, administration / custody fees, net and withholding rate per asset; each asset's page lists its dividends with the net total
-- **Dividend drafts** — Dividends detected on Yahoo Finance become pre-filled drafts (shares held on the ex-date, estimated gross and withholding). Review each one against your broker and accept it; drafts never count in reports or tax until accepted, and existing dividends are never duplicated
+- **Dividend drafts** — Dividends detected on Yahoo Finance become pre-filled drafts (shares held on the ex-date, estimated gross and withholding). Review each one against your broker and accept it; drafts never count in reports or tax until accepted, and existing dividends are never duplicated. When Yahoo publishes the payment date (looked up on the primary listing through the ISIN, e.g. MSFT for Frankfurt's MSF.F), a dividend not paid yet shows under *Upcoming payments* with its date and only asks for review once paid
 - **Type-to-search pickers** — Pick the asset of a trade or dividend by typing part of its name or ticker
 - **Interest income** — Date-range based tracking per account, with optional explicit withholding tax (NULL = inferred from gross/net, 0 = confirmed no withholding) and fees
 - **Other income** — Rent, self-employment, side jobs, gifts or anything outside payslips, dividends and interests, one record per payment with an optional account. "Repeat last" fills in a new month in two fields. Counts for savings and estimated spending; not for the tax views (rent recorded against a lease feeds the rental tax instead). See [ADR-011](docs/adr/011-other-income-and-estimated-spending.md)
@@ -551,7 +551,7 @@ POST    /api/splits/{id}/apply/           Apply a detected split
 POST    /api/splits/{id}/dismiss/
 POST    /api/splits/detect/               Look up Yahoo splits → PENDING suggestions
 
-GET     /api/dividend-suggestions/        Dividend drafts (?status=, ?asset_id=)
+GET     /api/dividend-suggestions/        Dividend drafts (?status=, ?asset_id=, ?timing=due|upcoming)
 POST    /api/dividend-suggestions/{id}/accept/   Create the Dividend from reviewed figures
 POST    /api/dividend-suggestions/{id}/dismiss/
 POST    /api/dividend-suggestions/{id}/restore/  Undo a dismissal (back to pending)

@@ -166,6 +166,7 @@ class BackupDividendSuggestionSerializer(serializers.ModelSerializer):
             "id",
             "asset",
             "ex_date",
+            "pay_date",
             "amount_per_share",
             "currency",
             "shares",

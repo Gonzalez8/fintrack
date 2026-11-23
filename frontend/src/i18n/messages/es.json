@@ -172,6 +172,7 @@
   "dashboard.rvEvolution": "Evolución Renta Variable",
   "dashboard.insufficientData": "Datos insuficientes",
   "dashboard.rvModeUnrealized": "No realizado",
+  "dashboard.rvZeroLine": "Sin ganancia",
   "dashboard.rvModeTotal": "Total",
   "dashboard.rvRealizedPart": "Incluye {amount} ya realizados con ventas",
   "dashboard.pricesStale": "Los precios automáticos no se actualizan desde el {since}",

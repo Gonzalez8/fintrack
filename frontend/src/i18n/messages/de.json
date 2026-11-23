@@ -172,6 +172,7 @@
   "dashboard.rvEvolution": "Portfolioentwicklung",
   "dashboard.insufficientData": "Ungenuegend Daten",
   "dashboard.rvModeUnrealized": "Nicht realisiert",
+  "dashboard.rvZeroLine": "Gewinnschwelle",
   "dashboard.rvModeTotal": "Gesamt",
   "dashboard.rvRealizedPart": "Inklusive {amount} bereits durch Verkäufe realisiert",
   "dashboard.pricesStale": "Die automatischen Kurse wurden seit {since} nicht aktualisiert",

@@ -172,6 +172,7 @@
   "dashboard.rvEvolution": "Évolution Actions",
   "dashboard.insufficientData": "Données insuffisantes",
   "dashboard.rvModeUnrealized": "Latent",
+  "dashboard.rvZeroLine": "Équilibre",
   "dashboard.rvModeTotal": "Total",
   "dashboard.rvRealizedPart": "Dont {amount} déjà réalisés par des ventes",
   "dashboard.pricesStale": "Les cours automatiques ne sont plus mis à jour depuis le {since}",

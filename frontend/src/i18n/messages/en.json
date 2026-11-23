@@ -172,6 +172,7 @@
   "dashboard.rvEvolution": "Portfolio Evolution",
   "dashboard.insufficientData": "Insufficient data",
   "dashboard.rvModeUnrealized": "Unrealized",
+  "dashboard.rvZeroLine": "Break-even",
   "dashboard.rvModeTotal": "Total",
   "dashboard.rvRealizedPart": "Includes {amount} already realized through sales",
   "dashboard.pricesStale": "Automatic prices have not been updated since {since}",

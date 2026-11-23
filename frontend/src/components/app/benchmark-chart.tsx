@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useChartTheme } from "@/lib/chart-theme";
+import { niceTicks, useChartTheme } from "@/lib/chart-theme";
 import { usePrivacy } from "@/lib/privacy";
 import { useTranslations } from "@/i18n/use-translations";
 import { cn, formatDate, formatMoney, moneyColor, uiLocale } from "@/lib/utils";
@@ -16,15 +16,6 @@ interface ChartPoint {
   contributed: number;
   portfolio: number | null;
   benchmark: number;
-}
-
-/** Round axis ticks from 0: steps of 1, 2, 2.5 or 5 × a power of ten, about four of them. */
-function niceTicks(max: number): number[] {
-  if (max <= 0) return [0];
-  const raw = max / 4;
-  const pow = 10 ** Math.floor(Math.log10(raw));
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((s) => s >= raw) ?? 10 * pow;
-  return Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step);
 }
 
 function formatAxisDate(day: string): string {
@@ -71,7 +62,7 @@ export function BenchmarkChart({ series, name }: { series: BenchmarkPoint[]; nam
   }, []);
 
   const ticks = useMemo(
-    () => niceTicks(Math.max(0, ...data.flatMap((p) => [p.contributed, p.benchmark, p.portfolio ?? 0]))),
+    () => niceTicks(0, Math.max(...data.flatMap((p) => [p.contributed, p.benchmark, p.portfolio ?? 0]))),
     [data],
   );
 

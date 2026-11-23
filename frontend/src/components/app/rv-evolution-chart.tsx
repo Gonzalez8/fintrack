@@ -10,18 +10,22 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceDot,
+  ReferenceLine,
 } from "recharts";
 import { api } from "@/lib/api-client";
 import { formatMoney, formatMonthYear, uiLocale } from "@/lib/utils";
 import { includesSale, localDay, realizedUntil } from "@/lib/realized";
 import { Card, CardContent } from "@/components/ui/card";
-import { useChartTheme } from "@/lib/chart-theme";
+import { niceTicks, useChartTheme } from "@/lib/chart-theme";
 import { usePrivacy } from "@/lib/privacy";
 import { useTranslations } from "@/i18n/use-translations";
 import type { RVEvolutionPoint, PortfolioData, RealizedSale } from "@/types";
 
 type Range = "1D" | "1W" | "1M" | "3M" | "1Y" | "MAX";
 type Mode = "unrealized" | "total";
+
+const GREEN = "#22c55e";
+const RED = "#ef4444";
 
 const RANGES: { key: Range; label: string }[] = [
   { key: "1D", label: "1D" },
@@ -227,8 +231,17 @@ export function RVEvolutionChart() {
   }, [chartData, saleEvents]);
 
   const isPositive = displayPnl >= 0;
-  const color = isPositive ? "#22c55e" : "#ef4444";
-  const gradientId = `rv-grad-${isPositive ? "green" : "red"}`;
+  const color = isPositive ? GREEN : RED;
+
+  // Green above 0 and red below, along the line: the gradients switch colour where the line crosses 0. They are
+  // laid over the shape's own box (line and area between the data extremes and 0), so the switch is computed from
+  // the data, not from the rounded axis. The axis always includes 0, so how far a loss is shows at a glance.
+  const { zeroAt, yTicks } = useMemo(() => {
+    const values = chartData.map((p) => p[dataKey]);
+    const lo = Math.min(0, ...values);
+    const hi = Math.max(0, ...values);
+    return { zeroAt: hi > lo ? hi / (hi - lo) : 1, yTicks: niceTicks(lo, hi) };
+  }, [chartData, dataKey]);
 
   const isLiveUpdated =
     !hover &&
@@ -396,9 +409,15 @@ export function RVEvolutionChart() {
               margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
             >
               <defs>
-                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
+                <linearGradient id="rv-stroke" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset={zeroAt} stopColor={GREEN} />
+                  <stop offset={zeroAt} stopColor={RED} />
+                </linearGradient>
+                <linearGradient id="rv-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset={0} stopColor={GREEN} stopOpacity={0.2} />
+                  <stop offset={zeroAt} stopColor={GREEN} stopOpacity={0.02} />
+                  <stop offset={zeroAt} stopColor={RED} stopOpacity={0.02} />
+                  <stop offset={1} stopColor={RED} stopOpacity={0.2} />
                 </linearGradient>
               </defs>
 
@@ -423,7 +442,21 @@ export function RVEvolutionChart() {
                     : `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`
                 }
                 width={60}
-                domain={["auto", "auto"]}
+                ticks={yTicks}
+                domain={[yTicks[0], yTicks[yTicks.length - 1]]}
+              />
+
+              <ReferenceLine
+                y={0}
+                stroke={ct.textMuted}
+                strokeDasharray="4 4"
+                strokeOpacity={0.6}
+                label={{
+                  value: t("dashboard.rvZeroLine"),
+                  position: "insideBottomRight",
+                  fill: ct.textMuted,
+                  fontSize: 10,
+                }}
               />
 
               <Tooltip
@@ -439,9 +472,10 @@ export function RVEvolutionChart() {
               <Area
                 type="monotone"
                 dataKey={dataKey}
-                stroke={color}
+                stroke="url(#rv-stroke)"
                 strokeWidth={2}
-                fill={`url(#${gradientId})`}
+                fill="url(#rv-fill)"
+                baseValue={0}
                 dot={false}
                 activeDot={{
                   r: 4,

@@ -172,6 +172,7 @@
   "dashboard.rvEvolution": "Evoluzione del Portafoglio",
   "dashboard.insufficientData": "Dati insufficienti",
   "dashboard.rvModeUnrealized": "Non realizzato",
+  "dashboard.rvZeroLine": "Pareggio",
   "dashboard.rvModeTotal": "Totale",
   "dashboard.rvRealizedPart": "Include {amount} già realizzati con vendite",
   "dashboard.pricesStale": "I prezzi automatici non vengono aggiornati dal {since}",

@@ -29,6 +29,22 @@ export const SERIES = {
   sales: "#f59e0b",
 } as const;
 
+/**
+ * Round axis ticks covering [min, max] and 0: steps of 1, 2, 2.5 or 5 × a power of ten, about four of them.
+ */
+export function niceTicks(min: number, max: number): number[] {
+  const lo = Math.min(0, min);
+  const hi = Math.max(0, max);
+  if (hi === lo) return [0];
+  const raw = (hi - lo) / 4;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((st) => st >= raw) ?? 10 * pow;
+  const first = Math.floor(lo / step);
+  const count = Math.ceil(hi / step) - first + 1;
+  // Rounded so 0.1 + 0.2 style errors do not reach the labels
+  return Array.from({ length: count }, (_, i) => Number(((first + i) * step).toPrecision(12)));
+}
+
 export const POSITIVE = "#22c55e";
 export const NEGATIVE = "#ef4444";
 

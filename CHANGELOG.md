@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.28.0] - 2026-11-23
+
+### Added
+
+- **Your portfolio vs the index over time.** The index comparison (Portfolio → *Vs an index*) now has a chart with your portfolio (value plus dividends collected), the same money in the index and the money put in, so you can see when you got ahead or fell behind; the header follows the cursor. (#149)
+- **Rebuild the portfolio history.** Fintrack only had snapshots of your portfolio from the day it started taking them. *Settings → Portfolio history* rebuilds the earlier days from your operations and Yahoo closing prices, after showing what it would add (days, the lowest point, assets without Yahoo prices). It only fills days without a snapshot and never changes existing ones. The equity chart, the index comparison and the net worth evolution then cover your whole history. (#150)
+- **Market value next to the money invested.** The invested capital chart draws what your positions were worth each month, with the gain or loss on the money invested in the header. Buys and sales are now separate bars (green up, red down), so a sale is visible even in a month with larger buys. (#152)
+
+### Changed
+
+- **Equity chart: red below break-even.** The line and its fill are green above 0 and red below it, per stretch, instead of one colour taken from today's value (hovering a loss no longer turns the whole line red). A dashed line marks 0, which the axis always includes, and axes use round steps. (#151)
+
+### MCP update
+
+- New tools `fintrack_preview_history_rebuild` (read) and `fintrack_rebuild_history` (write); `fintrack_get_returns` returns the comparison series and `fintrack_get_invested_capital_evolution` the market value, buys and sales of each month. Update the MCP command (Settings shows it pinned to v2.28.0) and upload the new `fintrack-advisor.zip` attached to this release in Claude Desktop (Settings → Skills).
+
+### Migration notes
+
+- No migrations.
+
 ## [2.27.1] - 2026-11-21
 
 ### Changed

@@ -466,6 +466,9 @@ export interface InvestmentCostPoint {
   month: string; // YYYY-MM
   cost: string; // invested at month end (cost of open positions)
   delta: string; // change in the month: buys add, sales remove the cost sold
+  bought: string; // cost added by buys and gifts that month
+  sold: string; // cost taken out by sales that month (delta = bought − sold)
+  market_value: string | null; // month's last portfolio snapshot (today for the current month); null without one
 }
 
 export interface RVEvolutionPoint {

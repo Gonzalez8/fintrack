@@ -134,13 +134,40 @@ def rv_evolution(user):
 def investment_cost_evolution(user):
     """Money invested (cost of open positions) at the end of each month, from the first operation to today.
 
-    ``delta`` is the change in the month: buys add their cost, sales remove the cost of the lots sold.
+    ``delta`` is the change in the month: buys add their cost, sales remove the cost of the lots sold. ``bought`` is
+    the cost added by buys and gifts and ``sold`` the cost taken out by sales (``delta = bought − sold``), so a sale
+    stays visible in a month with larger buys.
+    ``market_value`` is what those positions were worth then: the month's last portfolio snapshot (today's value
+    for the current month), null for months without one.
     """
-    from apps.portfolio.services import investment_cost_timeline
+    from apps.assets.models import PortfolioSnapshot, Settings
+    from apps.portfolio.services import calculate_portfolio, investment_cost_timeline
+    from apps.transactions.models import Transaction
 
     timeline = investment_cost_timeline(user)
     if not timeline:
         return []
+
+    gift_market = Settings.load(user).gift_cost_mode == Settings.GiftCostMode.MARKET
+    bought_by_month = {}
+    for tx in Transaction.objects.filter(owner=user, type__in=("BUY", "GIFT")).values(
+        "date", "type", "quantity", "price", "commission", "tax"
+    ):
+        qty, price = tx["quantity"] or Decimal("0"), tx["price"] or Decimal("0")
+        if tx["type"] == "BUY":
+            added = qty * price + (tx["commission"] or Decimal("0")) + (tx["tax"] or Decimal("0"))
+        else:
+            added = qty * price if gift_market else Decimal("0")
+        key = tx["date"].strftime("%Y-%m")
+        bought_by_month[key] = bought_by_month.get(key, Decimal("0")) + added
+
+    value_by_month = {}
+    for captured_at, value in (
+        PortfolioSnapshot.objects.filter(owner=user)
+        .order_by("captured_at")
+        .values_list("captured_at", "total_market_value")
+    ):
+        value_by_month[timezone.localtime(captured_at).strftime("%Y-%m")] = value  # the month's last one wins
 
     cents = Decimal("0.01")
     cost_by_month = {day.strftime("%Y-%m"): cost for day, cost in timeline}
@@ -152,8 +179,19 @@ def investment_cost_evolution(user):
     while (year, month) <= (today.year, today.month):
         key = f"{year:04d}-{month:02d}"
         cost = cost_by_month.get(key, cost)
+        if (year, month) == (today.year, today.month):
+            value = Decimal(calculate_portfolio(user)["totals"]["total_market_value"])
+        else:
+            value = value_by_month.get(key)
         points.append(
-            {"month": key, "cost": str(cost.quantize(cents)), "delta": str((cost - previous).quantize(cents))}
+            {
+                "month": key,
+                "cost": str(cost.quantize(cents)),
+                "delta": str((cost - previous).quantize(cents)),
+                "bought": str(bought_by_month.get(key, Decimal("0")).quantize(cents)),
+                "sold": str((bought_by_month.get(key, Decimal("0")) - (cost - previous)).quantize(cents)),
+                "market_value": None if value is None else str(value.quantize(cents)),
+            }
         )
         previous = cost
         month += 1

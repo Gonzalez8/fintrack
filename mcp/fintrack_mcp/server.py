@@ -381,7 +381,10 @@ def create_server(client: FintrackClient) -> MCPServer:
     async def fintrack_get_invested_capital_evolution() -> dict[str, Any]:
         """Money invested (cost of the open positions, user's cost method) at the end of every month from the first
         operation to today. delta is the change in the month: buys add their cost, sales remove the cost of the lots
-        sold. The last month equals the portfolio's total_cost."""
+        sold; bought and sold split it (delta = bought - sold), so a sale shows even in a month with larger buys.
+        market_value is what those positions were worth that month (its last portfolio snapshot, today for the
+        current month; null before the history starts): market_value - cost is the gain or loss on the money
+        invested then. The last month equals the portfolio's total_cost."""
         return {"months": await call("get", "reports/investment-cost-evolution/")}
 
     @mcp.tool(annotations=READ)

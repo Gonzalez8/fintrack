@@ -3,13 +3,14 @@ Tests for report views: YearSummary, CSV exports, and SavingsGoal CRUD.
 """
 
 import datetime
+import uuid
 from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from apps.assets.models import Account, Asset
+from apps.assets.models import Account, Asset, PortfolioSnapshot
 from apps.transactions.models import Dividend, Interest, Transaction
 
 User = get_user_model()
@@ -147,11 +148,48 @@ class TestInvestmentCostEvolution:
         assert resp.data[0]["month"] == "2025-03"
         assert resp.data[-1]["month"] == datetime.date.today().strftime("%Y-%m")
         # Buy 10 × 12.50 + 5 commission; selling 4 removes 4/10 of the lot's cost
-        assert by_month["2025-03"] == {"month": "2025-03", "cost": "130.00", "delta": "130.00"}
-        assert by_month["2025-04"] == {"month": "2025-04", "cost": "130.00", "delta": "0.00"}
-        assert by_month["2025-05"] == {"month": "2025-05", "cost": "78.00", "delta": "-52.00"}
+        assert by_month["2025-03"] == {
+            "month": "2025-03",
+            "cost": "130.00",
+            "delta": "130.00",
+            "bought": "130.00",
+            "sold": "0.00",
+            "market_value": None,
+        }
+        assert by_month["2025-04"] == {
+            "month": "2025-04",
+            "cost": "130.00",
+            "delta": "0.00",
+            "bought": "0.00",
+            "sold": "0.00",
+            "market_value": None,
+        }
+        assert by_month["2025-05"] == {
+            "month": "2025-05",
+            "cost": "78.00",
+            "delta": "-52.00",
+            "bought": "0.00",
+            "sold": "52.00",
+            "market_value": None,
+        }
         # Other users never see it
         assert other_client.get("/api/reports/investment-cost-evolution/").data == []
+
+    def test_market_value_from_the_months_last_snapshot(self, client, user, asset, transaction):
+        from django.utils import timezone
+
+        for day, value in ((datetime.date(2025, 4, 10), "120"), (datetime.date(2025, 4, 30), "140")):
+            PortfolioSnapshot.objects.create(
+                owner=user,
+                batch_id=uuid.uuid4(),
+                captured_at=timezone.make_aware(datetime.datetime.combine(day, datetime.time(18))),
+                total_market_value=Decimal(value),
+            )
+        by_month = {p["month"]: p for p in client.get("/api/reports/investment-cost-evolution/").data}
+        assert by_month["2025-03"]["market_value"] is None
+        assert by_month["2025-04"]["market_value"] == "140.00"
+        # The current month is valued today
+        assert by_month[datetime.date.today().strftime("%Y-%m")]["market_value"] is not None
 
 
 # ── CSV Exports ───────────────────────────────────────────────────────────────

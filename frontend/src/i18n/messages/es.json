@@ -193,6 +193,8 @@
   "portfolio.cash": "Efectivo",
   "portfolio.cashByAccount": "Efectivo por cuenta",
   "portfolio.investedCapital": "Dinero invertido",
+  "portfolio.investedMarket": "En mercado",
+  "portfolio.investedFlows": "Compras +{bought} · ventas −{sold}",
   "portfolio.investedLastMonths": "invertido en los últimos {count} meses",
   "portfolio.investedLastYear": "invertido en el último año",
   "portfolio.investedLastYears": "invertido en los últimos {count} años",

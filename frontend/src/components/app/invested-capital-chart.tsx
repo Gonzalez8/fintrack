@@ -6,6 +6,7 @@ import {
   ComposedChart,
   Area,
   Bar,
+  Line,
   Cell,
   XAxis,
   YAxis,
@@ -13,7 +14,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { api } from "@/lib/api-client";
-import { formatMoney, formatMonthYear, uiLocale } from "@/lib/utils";
+import { formatMoney, formatMonthYear, formatPct, moneyColor, uiLocale } from "@/lib/utils";
 import { useChartTheme } from "@/lib/chart-theme";
 import { usePrivacy } from "@/lib/privacy";
 import { useTranslations } from "@/i18n/use-translations";
@@ -34,9 +35,12 @@ interface ChartPoint {
   month: string;
   cost: number;
   delta: number;
+  /** What the positions were worth at month end; null before the portfolio history starts */
+  market: number | null;
 }
 
 const COST_COLOR = "#3b82f6";
+const MARKET_COLOR = "#a855f7";
 
 function formatAxisMonth(month: string): string {
   const [y, m] = month.split("-").map(Number);
@@ -64,6 +68,7 @@ export function InvestedCapitalChart() {
       month: p.month,
       cost: parseFloat(p.cost),
       delta: parseFloat(p.delta),
+      market: p.market_value == null ? null : parseFloat(p.market_value),
     }));
     const months = RANGES.find((r) => r.key === range)?.months;
     return months ? points.slice(-months) : points;
@@ -97,6 +102,8 @@ export function InvestedCapitalChart() {
   }
 
   const delta = hover ? hover.delta : rangeDelta;
+  // Market value against the money invested at that point: the absolute gain or loss
+  const gap = shown.market == null ? null : shown.market - shown.cost;
   const deltaClass = delta > 0 ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted-foreground";
   const months = RANGES.find((r) => r.key === range)?.months;
   const period = hover
@@ -126,6 +133,17 @@ export function InvestedCapitalChart() {
             </span>{" "}
             <span className="text-xs text-muted-foreground">· {period}</span>
           </p>
+          {shown.market != null && gap != null && (
+            <p className="mt-1 text-sm tabular-nums">
+              <span className="inline-block h-0.5 w-3 align-middle" style={{ backgroundColor: MARKET_COLOR }} />{" "}
+              <span className="text-xs text-muted-foreground">{t("portfolio.investedMarket")}</span>{" "}
+              <span className="font-semibold">{formatMoney(shown.market)}</span>{" "}
+              <span className={`font-semibold ${moneyColor(gap)}`}>
+                ({gap > 0 ? "+" : ""}
+                {formatMoney(gap)} · {shown.cost > 0 ? formatPct((gap / shown.cost) * 100) : "—"})
+              </span>
+            </p>
+          )}
         </div>
 
         <div className="flex shrink-0 gap-0.5 rounded-lg border border-border bg-secondary/50 p-1">
@@ -194,6 +212,15 @@ export function InvestedCapitalChart() {
               fill="url(#invested-grad)"
               dot={false}
               activeDot={{ r: 4, fill: COST_COLOR, stroke: "white", strokeWidth: 2 }}
+            />
+            <Line
+              yAxisId="cost"
+              type="monotone"
+              dataKey="market"
+              stroke={MARKET_COLOR}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: MARKET_COLOR, stroke: "white", strokeWidth: 2 }}
             />
           </ComposedChart>
         </ResponsiveContainer>

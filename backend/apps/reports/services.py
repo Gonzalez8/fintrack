@@ -135,12 +135,23 @@ def investment_cost_evolution(user):
     """Money invested (cost of open positions) at the end of each month, from the first operation to today.
 
     ``delta`` is the change in the month: buys add their cost, sales remove the cost of the lots sold.
+    ``market_value`` is what those positions were worth then: the month's last portfolio snapshot (today's value
+    for the current month), null for months without one.
     """
-    from apps.portfolio.services import investment_cost_timeline
+    from apps.assets.models import PortfolioSnapshot
+    from apps.portfolio.services import calculate_portfolio, investment_cost_timeline
 
     timeline = investment_cost_timeline(user)
     if not timeline:
         return []
+
+    value_by_month = {}
+    for captured_at, value in (
+        PortfolioSnapshot.objects.filter(owner=user)
+        .order_by("captured_at")
+        .values_list("captured_at", "total_market_value")
+    ):
+        value_by_month[timezone.localtime(captured_at).strftime("%Y-%m")] = value  # the month's last one wins
 
     cents = Decimal("0.01")
     cost_by_month = {day.strftime("%Y-%m"): cost for day, cost in timeline}
@@ -152,8 +163,17 @@ def investment_cost_evolution(user):
     while (year, month) <= (today.year, today.month):
         key = f"{year:04d}-{month:02d}"
         cost = cost_by_month.get(key, cost)
+        if (year, month) == (today.year, today.month):
+            value = Decimal(calculate_portfolio(user)["totals"]["total_market_value"])
+        else:
+            value = value_by_month.get(key)
         points.append(
-            {"month": key, "cost": str(cost.quantize(cents)), "delta": str((cost - previous).quantize(cents))}
+            {
+                "month": key,
+                "cost": str(cost.quantize(cents)),
+                "delta": str((cost - previous).quantize(cents)),
+                "market_value": None if value is None else str(value.quantize(cents)),
+            }
         )
         previous = cost
         month += 1

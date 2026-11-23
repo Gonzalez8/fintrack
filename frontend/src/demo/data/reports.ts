@@ -498,6 +498,10 @@ export const demoInvestmentCostEvolution: InvestmentCostPoint[] = (() => {
     }
     costByMonth[tx.date.slice(0, 7)] = total;
   }
+  const rvRatio: Record<string, number> = Object.fromEntries(
+    demoRVEvolution.map((p) => [p.captured_at.slice(0, 7), parseFloat(p.value) / parseFloat(p.cost)]),
+  );
+  let ratio = 1;
   const points: InvestmentCostPoint[] = [];
   const end = new Date();
   let [y, m] = txs[0].date.split("-").map(Number);
@@ -506,7 +510,14 @@ export const demoInvestmentCostEvolution: InvestmentCostPoint[] = (() => {
   while (y < end.getFullYear() || (y === end.getFullYear() && m <= end.getMonth() + 1)) {
     const key = `${y}-${String(m).padStart(2, "0")}`;
     cost = costByMonth[key] ?? cost;
-    points.push({ month: key, cost: cost.toFixed(2), delta: (cost - previous).toFixed(2) });
+    // Market value: the cost grown by the RV chart's gain that month (its last one beyond its data)
+    ratio = rvRatio[key] ?? ratio;
+    points.push({
+      month: key,
+      cost: cost.toFixed(2),
+      delta: (cost - previous).toFixed(2),
+      market_value: (cost * ratio).toFixed(2),
+    });
     previous = cost;
     m += 1;
     if (m > 12) {

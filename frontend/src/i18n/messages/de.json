@@ -193,6 +193,7 @@
   "portfolio.cash": "Bargeld",
   "portfolio.cashByAccount": "Bargeld nach Konto",
   "portfolio.investedCapital": "Investiertes Kapital",
+  "portfolio.investedMarket": "Marktwert",
   "portfolio.investedLastMonths": "investiert in den letzten {count} Monaten",
   "portfolio.investedLastYear": "investiert im letzten Jahr",
   "portfolio.investedLastYears": "investiert in den letzten {count} Jahren",

@@ -193,6 +193,7 @@
   "portfolio.cash": "Liquidità",
   "portfolio.cashByAccount": "Liquidità per conto",
   "portfolio.investedCapital": "Capitale investito",
+  "portfolio.investedMarket": "Valore di mercato",
   "portfolio.investedLastMonths": "investito negli ultimi {count} mesi",
   "portfolio.investedLastYear": "investito nell'ultimo anno",
   "portfolio.investedLastYears": "investito negli ultimi {count} anni",

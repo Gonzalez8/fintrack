@@ -78,6 +78,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 |---|---|---|
 | `fintrack_get_portfolio` | read | Totals, open positions, cash accounts; optionally realized sales |
 | `fintrack_get_loss_harvesting` | read | Positions at a loss and the tax each (or several together) would save this year, with the offset limit and the two-month rule |
+| `fintrack_preview_history_rebuild` | read | Portfolio days without a snapshot that a rebuild would add from the operations and Yahoo closes (writes nothing) |
 | `fintrack_simulate_sale` | read | What-if sale: lots out (fiscal method), gain, Spanish tax estimate and two-month rule; records nothing |
 | `fintrack_get_returns` | read | Annualized money-weighted return (XIRR) of the portfolio and each asset, vs the same money in an index ETF (MSCI World, S&P 500, All-World) |
 | `fintrack_list_assets` | read | Assets with ticker, type, currency and price |
@@ -113,6 +114,7 @@ Replace `vX.Y.Z` with your Fintrack version (e.g. `v2.14.0`) so the MCP matches 
 | `fintrack_accept_dividend_draft` | write | Turn a draft into a dividend with your broker's figures |
 | `fintrack_dismiss_dividend_draft` | write | Dismiss a draft |
 | `fintrack_restore_dividend_draft` | write | Undo a dismissal (the draft is pending again) |
+| `fintrack_rebuild_history` | write | Add those missing daily snapshots (never changes or deletes existing ones) |
 | `fintrack_apply_split` | write | Apply a detected stock split |
 | `fintrack_create_asset` | write | Add a stock, ETF, fund or crypto (ticker, ISIN, currency, AUTO/MANUAL price, countries) |
 | `fintrack_update_asset` | write (overwrites) | Change an asset's details or set the price of a MANUAL asset |

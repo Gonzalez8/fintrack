@@ -36,7 +36,8 @@ Where to look:
   Before selling: fintrack_simulate_sale (lots out, gain to declare, Spanish tax estimate, two-month rule);
   offsetting this year's gains with losses: fintrack_get_loss_harvesting.
   How well it did: fintrack_get_returns (annualized money-weighted return of the portfolio and each asset, and the
-  same money in an index ETF — "would an index fund have done better?").
+  same money in an index ETF — "would an index fund have done better?"). History missing before the first
+  snapshot: fintrack_preview_history_rebuild, then fintrack_rebuild_history once the user agrees.
 - Income: fintrack_get_payroll_summary (per year: gross, net, social security, effective IRPF, bonus and its share
   of the fixed salary) and fintrack_list_payrolls for single payslips. Payroll types: MONTHLY (regular salary),
   BONUS (pagas extra, variable, incentives), ATRASOS (back pay / regularizations), OTHER (settlements, severance).
@@ -230,6 +231,15 @@ def create_server(client: FintrackClient) -> MCPServer:
         benchmark.series has both over time (weekly up to two years, then month ends): contributed (money in minus
         sales), portfolio (snapshot value + dividends collected, null before the first snapshot) and benchmark."""
         return await call("get", "portfolio/returns/", params={"benchmark": benchmark})
+
+    @mcp.tool(annotations=READ)
+    async def fintrack_preview_history_rebuild() -> dict[str, Any]:
+        """What rebuilding the portfolio history would add (writes nothing). Fintrack only has daily portfolio
+        snapshots from the day it started taking them; the rebuild fills the earlier trading days (and gaps) from
+        the operations and Yahoo closes: days to add, first/last date, the lowest unrealized % among them, which
+        assets have no Yahoo history (valued at their last operation price) and whether the retention purge would
+        delete them. Use it when the equity chart or the index comparison starts later than the first purchase."""
+        return await call("get", "portfolio/rebuild-history/")
 
     @mcp.tool(annotations=READ)
     async def fintrack_simulate_sale(
@@ -807,6 +817,13 @@ def create_server(client: FintrackClient) -> MCPServer:
         """Undo the dismissal of a dividend draft so it is pending review again (e.g. dismissed by mistake).
         Dismissed drafts are never suggested again by detection, so this is the only way back."""
         return await call("post", f"dividend-suggestions/{draft_id}/restore/")
+
+    @mcp.tool(annotations=WRITE)
+    async def fintrack_rebuild_history() -> dict[str, Any]:
+        """Add the missing daily portfolio snapshots shown by fintrack_preview_history_rebuild (run it first and
+        show the user what will be added). Only days without a snapshot; existing ones are never changed or
+        deleted. Returns the same summary with `created` and the run's `batch_id`."""
+        return await call("post", "portfolio/rebuild-history/")
 
     @mcp.tool(annotations=WRITE)
     async def fintrack_apply_split(

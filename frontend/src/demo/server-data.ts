@@ -44,6 +44,7 @@ export async function resolveDemoData<T>(path: string): Promise<T> {
     "/api/splits/detect": { created: [] },
 
     "/api/portfolio/returns": data.demoReturns,
+    "/api/portfolio/rebuild-history": { method: "FIFO", days: 0, first_date: null, last_date: null, lowest: null, assets: [], purged_before: null, created: 0, batch_id: null },
     "/api/portfolio/loss-harvesting": { date: "2026-03-07", method: "FIFO", positions: [], tax: null },
     "/api/portfolio": data.demoPortfolio,
 

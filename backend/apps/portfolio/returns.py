@@ -21,10 +21,10 @@ from bisect import bisect_right
 from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.core.cache import cache
 from django.utils import timezone
 
 from apps.assets.models import PortfolioSnapshot, Settings
+from apps.assets.services import fetch_daily_closes
 from apps.transactions.models import Dividend, Transaction
 
 from .services import calculate_portfolio
@@ -112,22 +112,8 @@ def _summary(flows, market_value, today, money_exp):
 
 
 def fetch_benchmark_closes(ticker: str, start: datetime.date) -> list[tuple[datetime.date, float]]:
-    """Daily closes of a public index ETF since ``start``, oldest first. Cached for everyone (public data)."""
-    key = f"benchmark:{ticker}:{start.isoformat()}:{datetime.date.today().isoformat()}"
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
-    import yfinance as yf
-
-    data = yf.download(ticker, start=start - datetime.timedelta(days=10), progress=False, auto_adjust=False)
-    closes = []
-    if not data.empty:
-        col = data["Close"]
-        if hasattr(col, "columns"):
-            col = col[ticker]
-        closes = [(idx.date(), float(v)) for idx, v in col.dropna().items()]
-    cache.set(key, closes, 6 * 3600)
-    return closes
+    """Daily closes of a public index ETF since ``start``, oldest first (cached for everyone)."""
+    return fetch_daily_closes(ticker, start)
 
 
 def _close_on(closes, day):

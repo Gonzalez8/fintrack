@@ -131,16 +131,37 @@ def investment_cost_timeline(user):
     Uses the user's fiscal_cost_method (FIFO/LIFO/WAC) to track lots, with splits applied. The cost on any date
     is the last entry on or before it.
     """
+    return [
+        (day, sum((cost for _, cost in held.values()), Decimal("0")))
+        for day, held in holdings_timeline(user, Settings.load(user).fiscal_cost_method)
+    ]
+
+
+def holdings_timeline(user, method):
+    """Shares and cost of every open position after each day with operations or applied splits.
+
+    ``[(date, {asset_id: (quantity, cost)}), …]`` in date order, with ``method`` (FIFO/LIFO/WAC) deciding which
+    lots a sale takes; positions closed that day are left out. The holdings on any date are the last entry on or
+    before it.
+    """
     settings = Settings.load(user)
-    method = settings.fiscal_cost_method
     use_wac = method == "WAC"
     use_lifo = method == "LIFO"
     gift_market = settings.gift_cost_mode == "MARKET"
 
     lots: dict = {}
     wac_state: dict = {}
-    running_cost = Decimal("0")
-    cost_by_day: dict = {}
+    by_day: dict = {}
+
+    def held():
+        if use_wac:
+            return {aid: (st["total_qty"], st["total_cost"]) for aid, st in wac_state.items() if st["total_qty"] > 0}
+        out = {}
+        for aid, asset_lots in lots.items():
+            qty = sum((lot["qty"] for lot in asset_lots), Decimal("0"))
+            if qty > 0:
+                out[aid] = (qty, sum((lot["qty"] * lot["ppu"] for lot in asset_lots), Decimal("0")))
+        return out
 
     transactions = (
         Transaction.objects.filter(owner=user)
@@ -154,6 +175,7 @@ def investment_cost_timeline(user):
                     _split_wac(wac_state[tx["asset_id"]], tx["factor"])
             else:
                 _split_lots(lots.get(tx["asset_id"], ()), tx["factor"], price_key="ppu")
+            by_day[tx["date"]] = held()
             continue
 
         aid = tx["asset_id"]
@@ -162,59 +184,41 @@ def investment_cost_timeline(user):
         commission = tx["commission"] or Decimal("0")
         tax = tx["tax"] or Decimal("0")
 
-        if tx["type"] == "BUY":
-            ppu = price + (commission + tax) / qty if qty else Decimal("0")
-            running_cost += qty * ppu
-            if use_wac:
-                if aid not in wac_state:
-                    wac_state[aid] = {"total_qty": Decimal("0"), "total_cost": Decimal("0")}
-                wac_state[aid]["total_qty"] += qty
-                wac_state[aid]["total_cost"] += qty * ppu
+        if tx["type"] in ("BUY", "GIFT"):
+            if tx["type"] == "BUY":
+                ppu = price + (commission + tax) / qty if qty else Decimal("0")
             else:
-                if aid not in lots:
-                    lots[aid] = deque()
-                lots[aid].append({"qty": qty, "ppu": ppu})
-
-        elif tx["type"] == "GIFT":
-            ppu = price if gift_market else Decimal("0")
-            running_cost += qty * ppu
+                ppu = price if gift_market else Decimal("0")
             if use_wac:
-                if aid not in wac_state:
-                    wac_state[aid] = {"total_qty": Decimal("0"), "total_cost": Decimal("0")}
-                wac_state[aid]["total_qty"] += qty
-                wac_state[aid]["total_cost"] += qty * ppu
+                state = wac_state.setdefault(aid, {"total_qty": Decimal("0"), "total_cost": Decimal("0")})
+                state["total_qty"] += qty
+                state["total_cost"] += qty * ppu
             else:
-                if aid not in lots:
-                    lots[aid] = deque()
-                lots[aid].append({"qty": qty, "ppu": ppu})
+                lots.setdefault(aid, deque()).append({"qty": qty, "ppu": ppu})
 
         elif tx["type"] == "SELL":
             if use_wac:
                 state = wac_state.get(aid)
                 if state and state["total_qty"] > 0:
                     avg = state["total_cost"] / state["total_qty"]
-                    running_cost -= avg * qty
                     state["total_qty"] -= qty
                     state["total_cost"] -= avg * qty
                     if state["total_qty"] <= 0:
                         state["total_qty"] = Decimal("0")
                         state["total_cost"] = Decimal("0")
             else:
-                if aid not in lots:
-                    lots[aid] = deque()
                 remaining = qty
                 while remaining > 0 and lots.get(aid):
                     lot = lots[aid][-1] if use_lifo else lots[aid][0]
                     consumed = min(remaining, lot["qty"])
-                    running_cost -= consumed * lot["ppu"]
                     lot["qty"] -= consumed
                     remaining -= consumed
                     if lot["qty"] <= 0:
                         lots[aid].pop() if use_lifo else lots[aid].popleft()
 
-        cost_by_day[tx["date"]] = running_cost
+        by_day[tx["date"]] = held()
 
-    return sorted(cost_by_day.items())
+    return sorted(by_day.items())
 
 
 def _process_lot_based(user, lifo=False):

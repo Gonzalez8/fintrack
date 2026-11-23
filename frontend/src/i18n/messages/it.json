@@ -271,6 +271,11 @@
   "returns.notReliable": "Meno di un anno di storico: la cifra annuale è indicativa.",
   "returns.startsLate": "Alcune operazioni sono precedenti al fondo {name}; sono state valutate al suo primo prezzo.",
   "returns.indexNote": "Indice: ETF ad accumulazione {ticker}, prezzo del {date}. I costi del fondo sono già nel prezzo.",
+  "returns.chartMine": "Portafoglio + dividendi",
+  "returns.chartContributed": "Versato",
+  "returns.chartToday": "Oggi",
+  "returns.chartVsIndex": "rispetto a {name}",
+  "returns.chartNote": "Il tuo portafoglio include i dividendi incassati, perché il fondo indicizzato reinveste i propri. Versato è quanto hai investito meno quanto hai ritirato con le vendite. La tua linea parte dalla prima istantanea salvata del portafoglio.",
 
   "assets.title": "Asset",
   "assets.new": "Nuovo asset",

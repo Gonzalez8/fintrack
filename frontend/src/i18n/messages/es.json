@@ -271,6 +271,11 @@
   "returns.notReliable": "Menos de un año de historial: la cifra anual es orientativa.",
   "returns.startsLate": "Algunas operaciones son anteriores al fondo de {name}; se han valorado a su primer precio.",
   "returns.indexNote": "Índice: ETF de acumulación {ticker}, precio del {date}. Las comisiones del fondo ya van en su precio.",
+  "returns.chartMine": "Cartera + dividendos",
+  "returns.chartContributed": "Aportado",
+  "returns.chartToday": "Hoy",
+  "returns.chartVsIndex": "frente a {name}",
+  "returns.chartNote": "Tu cartera incluye los dividendos cobrados, porque el fondo indexado reinvierte los suyos. Aportado es lo que has metido menos lo que has sacado con ventas. Tu línea empieza con la primera foto guardada de la cartera.",
 
   "assets.title": "Activos",
   "assets.new": "Nuevo activo",

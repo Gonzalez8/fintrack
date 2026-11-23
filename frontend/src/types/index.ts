@@ -1010,6 +1010,18 @@ export interface BenchmarkReturn extends ReturnsSummary {
   price_date: string;
   /** Some operations are older than the ETF; they were priced at its first close */
   starts_late: boolean;
+  /** Both portfolios over time: weekly up to two years of history, monthly beyond, last point today */
+  series: BenchmarkPoint[];
+}
+
+export interface BenchmarkPoint {
+  date: string;
+  /** Money put in minus sale proceeds so far */
+  contributed: string;
+  /** Market value (portfolio snapshot) plus net dividends collected; null before the first snapshot */
+  portfolio: string | null;
+  /** Index units held × that day's close */
+  benchmark: string;
 }
 
 export interface ReturnsData {

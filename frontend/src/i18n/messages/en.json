@@ -194,6 +194,7 @@
   "portfolio.cashByAccount": "Cash by account",
   "portfolio.investedCapital": "Money invested",
   "portfolio.investedMarket": "Market value",
+  "portfolio.investedFlows": "Buys +{bought} · sales −{sold}",
   "portfolio.investedLastMonths": "invested in the last {count} months",
   "portfolio.investedLastYear": "invested in the last year",
   "portfolio.investedLastYears": "invested in the last {count} years",

@@ -481,6 +481,7 @@ export const demoInvestmentCostEvolution: InvestmentCostPoint[] = (() => {
   if (!txs.length) return [];
   const held: Record<string, { qty: number; cost: number }> = {};
   const costByMonth: Record<string, number> = {};
+  const boughtByMonth: Record<string, number> = {};
   let total = 0;
   for (const tx of txs) {
     const pos = (held[tx.asset ?? ""] ??= { qty: 0, cost: 0 });
@@ -495,6 +496,7 @@ export const demoInvestmentCostEvolution: InvestmentCostPoint[] = (() => {
       pos.qty += qty;
       pos.cost += added;
       total += added;
+      boughtByMonth[tx.date.slice(0, 7)] = (boughtByMonth[tx.date.slice(0, 7)] ?? 0) + added;
     }
     costByMonth[tx.date.slice(0, 7)] = total;
   }
@@ -512,10 +514,13 @@ export const demoInvestmentCostEvolution: InvestmentCostPoint[] = (() => {
     cost = costByMonth[key] ?? cost;
     // Market value: the cost grown by the RV chart's gain that month (its last one beyond its data)
     ratio = rvRatio[key] ?? ratio;
+    const bought = boughtByMonth[key] ?? 0;
     points.push({
       month: key,
       cost: cost.toFixed(2),
       delta: (cost - previous).toFixed(2),
+      bought: bought.toFixed(2),
+      sold: (bought - (cost - previous)).toFixed(2),
       market_value: (cost * ratio).toFixed(2),
     });
     previous = cost;

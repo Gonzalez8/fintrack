@@ -148,9 +148,30 @@ class TestInvestmentCostEvolution:
         assert resp.data[0]["month"] == "2025-03"
         assert resp.data[-1]["month"] == datetime.date.today().strftime("%Y-%m")
         # Buy 10 × 12.50 + 5 commission; selling 4 removes 4/10 of the lot's cost
-        assert by_month["2025-03"] == {"month": "2025-03", "cost": "130.00", "delta": "130.00", "market_value": None}
-        assert by_month["2025-04"] == {"month": "2025-04", "cost": "130.00", "delta": "0.00", "market_value": None}
-        assert by_month["2025-05"] == {"month": "2025-05", "cost": "78.00", "delta": "-52.00", "market_value": None}
+        assert by_month["2025-03"] == {
+            "month": "2025-03",
+            "cost": "130.00",
+            "delta": "130.00",
+            "bought": "130.00",
+            "sold": "0.00",
+            "market_value": None,
+        }
+        assert by_month["2025-04"] == {
+            "month": "2025-04",
+            "cost": "130.00",
+            "delta": "0.00",
+            "bought": "0.00",
+            "sold": "0.00",
+            "market_value": None,
+        }
+        assert by_month["2025-05"] == {
+            "month": "2025-05",
+            "cost": "78.00",
+            "delta": "-52.00",
+            "bought": "0.00",
+            "sold": "52.00",
+            "market_value": None,
+        }
         # Other users never see it
         assert other_client.get("/api/reports/investment-cost-evolution/").data == []
 

@@ -7,7 +7,6 @@ import {
   Area,
   Bar,
   Line,
-  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -35,6 +34,10 @@ interface ChartPoint {
   month: string;
   cost: number;
   delta: number;
+  /** Cost added by buys and taken out by sales (delta = bought − sold), as bars up and down */
+  bought: number;
+  sold: number;
+  soldBar: number;
   /** What the positions were worth at month end; null before the portfolio history starts */
   market: number | null;
 }
@@ -68,6 +71,9 @@ export function InvestedCapitalChart() {
       month: p.month,
       cost: parseFloat(p.cost),
       delta: parseFloat(p.delta),
+      bought: parseFloat(p.bought),
+      sold: parseFloat(p.sold),
+      soldBar: -parseFloat(p.sold),
       market: p.market_value == null ? null : parseFloat(p.market_value),
     }));
     const months = RANGES.find((r) => r.key === range)?.months;
@@ -77,7 +83,15 @@ export function InvestedCapitalChart() {
   const last = chartData[chartData.length - 1];
   const shown = hover ?? last;
   // Without hover the header sums the visible range: what was invested (net) in the last 12 months, 3 years…
-  const rangeDelta = useMemo(() => chartData.reduce((sum, p) => sum + p.delta, 0), [chartData]);
+  const rangeTotals = useMemo(
+    () =>
+      chartData.reduce(
+        (sum, p) => ({ delta: sum.delta + p.delta, bought: sum.bought + p.bought, sold: sum.sold + p.sold }),
+        { delta: 0, bought: 0, sold: 0 },
+      ),
+    [chartData],
+  );
+  const rangeDelta = rangeTotals.delta;
 
   const tooltipContent = useCallback(
     (props: { active?: boolean; payload?: ReadonlyArray<{ payload?: ChartPoint }> }) => {
@@ -102,6 +116,7 @@ export function InvestedCapitalChart() {
   }
 
   const delta = hover ? hover.delta : rangeDelta;
+  const flows = hover ?? rangeTotals;
   // Market value against the money invested at that point: the absolute gain or loss
   const gap = shown.market == null ? null : shown.market - shown.cost;
   const deltaClass = delta > 0 ? "text-green-500" : delta < 0 ? "text-red-500" : "text-muted-foreground";
@@ -133,6 +148,14 @@ export function InvestedCapitalChart() {
             </span>{" "}
             <span className="text-xs text-muted-foreground">· {period}</span>
           </p>
+          {flows.sold > 0 && (
+            <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+              {t("portfolio.investedFlows", {
+                bought: formatMoney(flows.bought),
+                sold: formatMoney(flows.sold),
+              })}
+            </p>
+          )}
           {shown.market != null && gap != null && (
             <p className="mt-1 text-sm tabular-nums">
               <span className="inline-block h-0.5 w-3 align-middle" style={{ backgroundColor: MARKET_COLOR }} />{" "}
@@ -198,11 +221,8 @@ export function InvestedCapitalChart() {
               cursor={{ stroke: COST_COLOR, strokeWidth: 1, strokeDasharray: "3 3", opacity: 0.6 }}
               content={tooltipContent}
             />
-            <Bar yAxisId="delta" dataKey="delta" radius={[2, 2, 0, 0]} maxBarSize={14}>
-              {chartData.map((p) => (
-                <Cell key={p.month} fill={p.delta >= 0 ? "#22c55e" : "#ef4444"} fillOpacity={0.55} />
-              ))}
-            </Bar>
+            <Bar yAxisId="delta" dataKey="bought" stackId="flows" fill="#22c55e" fillOpacity={0.55} maxBarSize={14} />
+            <Bar yAxisId="delta" dataKey="soldBar" stackId="flows" fill="#ef4444" fillOpacity={0.55} maxBarSize={14} />
             <Area
               yAxisId="cost"
               type="stepAfter"

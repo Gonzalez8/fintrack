@@ -271,7 +271,7 @@
   "returns.notReliable": "Less than a year of history: the annual figure is only indicative.",
   "returns.startsLate": "Some operations predate the {name} fund; they were valued at its first price.",
   "returns.indexNote": "Index: accumulating ETF {ticker}, price of {date}. The fund's fees are already in its price.",
-  "returns.chartMine": "Your portfolio",
+  "returns.chartMine": "Portfolio + dividends",
   "returns.chartContributed": "Put in",
   "returns.chartToday": "Today",
   "returns.chartVsIndex": "vs {name}",

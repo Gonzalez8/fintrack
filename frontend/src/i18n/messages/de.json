@@ -271,7 +271,7 @@
   "returns.notReliable": "Weniger als ein Jahr Historie: die Jahreszahl ist nur ein Richtwert.",
   "returns.startsLate": "Einige Transaktionen sind älter als der {name}-Fonds; sie wurden zu seinem ersten Kurs bewertet.",
   "returns.indexNote": "Index: thesaurierender ETF {ticker}, Kurs vom {date}. Die Fondskosten sind bereits im Kurs enthalten.",
-  "returns.chartMine": "Dein Depot",
+  "returns.chartMine": "Depot + Dividenden",
   "returns.chartContributed": "Eingezahlt",
   "returns.chartToday": "Heute",
   "returns.chartVsIndex": "gegenüber {name}",

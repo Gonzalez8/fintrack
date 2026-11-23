@@ -18,6 +18,15 @@ interface ChartPoint {
   benchmark: number;
 }
 
+/** Round axis ticks from 0: steps of 1, 2, 2.5 or 5 × a power of ten, about four of them. */
+function niceTicks(max: number): number[] {
+  if (max <= 0) return [0];
+  const raw = max / 4;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((s) => s >= raw) ?? 10 * pow;
+  return Array.from({ length: Math.ceil(max / step) + 1 }, (_, i) => i * step);
+}
+
 function formatAxisDate(day: string): string {
   return new Date(`${day}T00:00:00`).toLocaleDateString(uiLocale(), { month: "short", year: "2-digit" });
 }
@@ -60,6 +69,11 @@ export function BenchmarkChart({ series, name }: { series: BenchmarkPoint[]; nam
     hoverRef.current = null;
     setHover(null);
   }, []);
+
+  const ticks = useMemo(
+    () => niceTicks(Math.max(0, ...data.flatMap((p) => [p.contributed, p.benchmark, p.portfolio ?? 0]))),
+    [data],
+  );
 
   const shown = hover ?? data[data.length - 1];
   if (!shown) return null;
@@ -117,8 +131,11 @@ export function BenchmarkChart({ series, name }: { series: BenchmarkPoint[]; nam
               tickLine={false}
               axisLine={false}
               width={44}
-              domain={["auto", "auto"]}
-              tickFormatter={(v: number) => (privacyMode ? "•••" : v >= 1000 ? `${Math.round(v / 1000)}k` : `${v}`)}
+              ticks={ticks}
+              domain={[0, ticks[ticks.length - 1]]}
+              tickFormatter={(v: number) =>
+                privacyMode ? "•••" : v >= 1000 ? `${(v / 1000).toLocaleString(uiLocale())}k` : `${v}`
+              }
             />
             <Tooltip cursor={{ stroke: ct.textMuted, strokeWidth: 1, strokeDasharray: "3 3" }} content={tooltipContent} />
             <Line

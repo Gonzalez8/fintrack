@@ -271,7 +271,7 @@
   "returns.notReliable": "Moins d'un an d'historique : le chiffre annuel est indicatif.",
   "returns.startsLate": "Certaines opérations sont antérieures au fonds {name} ; elles ont été valorisées à son premier cours.",
   "returns.indexNote": "Indice : ETF de capitalisation {ticker}, cours du {date}. Les frais du fonds sont déjà dans son cours.",
-  "returns.chartMine": "Ton portefeuille",
+  "returns.chartMine": "Portefeuille + dividendes",
   "returns.chartContributed": "Apporté",
   "returns.chartToday": "Aujourd'hui",
   "returns.chartVsIndex": "par rapport à {name}",

@@ -17,12 +17,14 @@ Rates are floats (they are ratios, not money); amounts stay Decimal.
 
 import datetime
 import logging
+from bisect import bisect_right
 from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.core.cache import cache
+from django.utils import timezone
 
-from apps.assets.models import Settings
+from apps.assets.models import PortfolioSnapshot, Settings
 from apps.transactions.models import Dividend, Transaction
 
 from .services import calculate_portfolio
@@ -154,6 +156,7 @@ def _benchmark(flows, today, key, money_exp):
 
     units = Decimal("0")
     replayed = []
+    holdings = []  # (day, units held after that day's operation)
     for day, amount in flows:
         price = Decimal(str(_close_on(closes, day)))
         if amount < 0:
@@ -164,6 +167,7 @@ def _benchmark(flows, today, key, money_exp):
             sold = min(units, amount / price)
             units -= sold
             replayed.append((day, sold * price))
+        holdings.append((day, units))
     market_value = units * Decimal(str(closes[-1][1]))
     data = _summary(replayed, market_value, today, money_exp)
     data.update(
@@ -176,7 +180,79 @@ def _benchmark(flows, today, key, money_exp):
             "starts_late": closes[0][0] > first,
         }
     )
+    data["_holdings"] = holdings
+    data["_closes"] = closes
     return data
+
+
+def _series_days(start: datetime.date, today: datetime.date) -> list[datetime.date]:
+    """Chart points from ``start`` to ``today``: weekly up to two years of history, monthly (month ends) beyond."""
+    days = []
+    if (today - start).days <= 730:
+        day = start
+        while day < today:
+            days.append(day)
+            day += datetime.timedelta(days=7)
+    else:
+        day = start
+        while day < today:
+            days.append(day)
+            # End of this month, or of the next one when ``day`` already is a month end
+            day += datetime.timedelta(days=1)
+            day = (day.replace(day=1) + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1)
+    days.append(today)
+    return days
+
+
+def _last_on(points, day):
+    """Value of the last (date, value) point on or before ``day``, oldest first; None if there is none."""
+    i = bisect_right(points, day, key=lambda p: p[0])
+    return points[i - 1][1] if i else None
+
+
+def _comparison_series(user, trades, dividends, bench, total_value, today, money_exp):
+    """Your portfolio and the benchmark over time, for the chart.
+
+    - ``contributed``: money put in minus sale proceeds so far
+    - ``portfolio``: market value from the portfolio snapshots (null before the first one, or when the nearest
+      one is over a month older) plus the net dividends collected so far, as the accumulating ETF keeps its own
+    - ``benchmark``: index units held × that day's close
+    """
+    holdings, closes = bench.pop("_holdings"), bench.pop("_closes")
+    first = min(d for d, _ in trades)
+
+    snaps = {}
+    for captured_at, value in (
+        PortfolioSnapshot.objects.filter(owner=user, total_market_value__gt=0)
+        .order_by("captured_at")
+        .values_list("captured_at", "total_market_value")
+    ):
+        snaps[timezone.localtime(captured_at).date()] = value  # the day's last snapshot wins
+    snaps = sorted(snaps.items())
+
+    flows = sorted(trades, key=lambda f: f[0])
+    divs = sorted(dividends, key=lambda f: f[0])
+    q = lambda v: str(v.quantize(money_exp, rounding=ROUND_HALF_UP))  # noqa: E731
+
+    series = []
+    for day in _series_days(first, today):
+        contributed = sum((-a for d, a in flows if d <= day), Decimal("0"))
+        collected = sum((a for d, a in divs if d <= day), Decimal("0"))
+        if day == today:
+            value = total_value
+        else:
+            i = bisect_right(snaps, day, key=lambda p: p[0])
+            value = snaps[i - 1][1] if i and (day - snaps[i - 1][0]).days <= 31 else None
+        units = _last_on(holdings, day) or Decimal("0")
+        series.append(
+            {
+                "date": day.isoformat(),
+                "contributed": q(contributed),
+                "portfolio": None if value is None else q(value + collected),
+                "benchmark": q(units * Decimal(str(_close_on(closes, day)))),
+            }
+        )
+    return series
 
 
 def calculate_returns(user, benchmark: str | None = DEFAULT_BENCHMARK, today: datetime.date | None = None):
@@ -208,10 +284,14 @@ def calculate_returns(user, benchmark: str | None = DEFAULT_BENCHMARK, today: da
     assets.sort(key=lambda r: Decimal(r["xirr_pct"]) if r["xirr_pct"] is not None else Decimal("-1e9"), reverse=True)
 
     trade_flows = [(d, a) for d, _, a in trades]
+    bench = _benchmark(trade_flows, today, benchmark, money_exp) if benchmark in BENCHMARKS else None
+    if bench:
+        div_flows = [(d, n) for d, _, n in dividends]
+        bench["series"] = _comparison_series(user, trade_flows, div_flows, bench, total_value, today, money_exp)
     return {
         "as_of": today.isoformat(),
         "portfolio": _summary(all_flows, total_value, today, money_exp),
         "assets": assets,
-        "benchmark": _benchmark(trade_flows, today, benchmark, money_exp) if benchmark in BENCHMARKS else None,
+        "benchmark": bench,
         "benchmarks": [{"key": k, "name": v["name"], "ticker": v["ticker"]} for k, v in BENCHMARKS.items()],
     }

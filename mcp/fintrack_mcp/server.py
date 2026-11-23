@@ -226,7 +226,9 @@ def create_server(client: FintrackClient) -> MCPServer:
         """Annualized money-weighted return (XIRR) of the whole portfolio and of every asset ever held (closed ones
         too), with money put in, money taken out (sales, net dividends), value today and total gain. `reliable` is
         false for less than a year of history (annualizing a few months exaggerates). The benchmark replays the same
-        buys and sales in an index ETF on the same days; compare its xirr_pct and total_gain with the portfolio's."""
+        buys and sales in an index ETF on the same days; compare its xirr_pct and total_gain with the portfolio's.
+        benchmark.series has both over time (weekly up to two years, then month ends): contributed (money in minus
+        sales), portfolio (snapshot value + dividends collected, null before the first snapshot) and benchmark."""
         return await call("get", "portfolio/returns/", params={"benchmark": benchmark})
 
     @mcp.tool(annotations=READ)

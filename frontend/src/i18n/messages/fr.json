@@ -271,6 +271,11 @@
   "returns.notReliable": "Moins d'un an d'historique : le chiffre annuel est indicatif.",
   "returns.startsLate": "Certaines opérations sont antérieures au fonds {name} ; elles ont été valorisées à son premier cours.",
   "returns.indexNote": "Indice : ETF de capitalisation {ticker}, cours du {date}. Les frais du fonds sont déjà dans son cours.",
+  "returns.chartMine": "Ton portefeuille",
+  "returns.chartContributed": "Apporté",
+  "returns.chartToday": "Aujourd'hui",
+  "returns.chartVsIndex": "par rapport à {name}",
+  "returns.chartNote": "Ton portefeuille inclut les dividendes perçus, car le fonds indiciel réinvestit les siens. Apporté correspond à ce que tu as investi moins ce que tu as retiré par des ventes. Ta courbe commence au premier relevé enregistré du portefeuille.",
 
   "assets.title": "Actifs",
   "assets.new": "Nouvel actif",

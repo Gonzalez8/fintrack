@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
+import { BenchmarkChart } from "@/components/app/benchmark-chart";
 import { useTranslations } from "@/i18n/use-translations";
 import { cn, formatDate, formatMoney, formatPct, moneyColor } from "@/lib/utils";
 import type { ReturnsData, ReturnsSummary } from "@/types";
@@ -128,6 +129,8 @@ export function ReturnsDetails() {
             )}
           </p>
         )}
+
+        {bench && bench.series.length > 1 && <BenchmarkChart series={bench.series} name={bench.name} />}
 
         <div className="space-y-1 text-xs text-muted-foreground">
           {!mine.reliable && <p>{t("returns.notReliable")}</p>}

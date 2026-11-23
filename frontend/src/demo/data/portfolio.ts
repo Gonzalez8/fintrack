@@ -1,4 +1,4 @@
-import type { PortfolioData, ReturnsData, SaleSimulation } from "@/types";
+import type { BenchmarkPoint, PortfolioData, ReturnsData, SaleSimulation } from "@/types";
 import { demoAccounts } from "./accounts";
 
 // Positions reflect net holdings after buys and sells (FIFO):
@@ -183,6 +183,32 @@ export const demoPortfolio: PortfolioData = {
   },
 };
 
+// Illustrative month-end series from 2023-01-16 to 2026-03-07: steady contributions, the index rising smoothly and
+// the portfolio swinging more around it, ending at the figures below (value + dividends, index value)
+function demoBenchmarkSeries(): BenchmarkPoint[] {
+  const days: string[] = ["2023-01-16"];
+  for (let y = 2023, m = 1; y < 2026 || m < 3; ) {
+    days.push(new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10));
+    m += 1;
+    if (m > 12) { m = 1; y += 1; }
+  }
+  days.push("2026-03-07");
+  const n = days.length - 1;
+  return days.map((date, i) => {
+    const f = i / n;
+    const contributed = 48250 * Math.min(1, (i + 1) / (n - 2));
+    const index = contributed * (1 + 0.246 * f * f) * (1 + 0.03 * Math.sin(i / 2.5));
+    const mine = contributed * (1 + 0.207 * f * f) * (1 + 0.07 * Math.sin(i / 1.8 + 0.6));
+    const end = i === n;
+    return {
+      date,
+      contributed: contributed.toFixed(2),
+      portfolio: end ? "58240.60" : mine.toFixed(2),
+      benchmark: end ? "60120.00" : index.toFixed(2),
+    };
+  });
+}
+
 // Illustrative returns for the demo (not computed from the operations above)
 export const demoReturns: ReturnsData = {
   as_of: "2026-03-07",
@@ -206,6 +232,7 @@ export const demoReturns: ReturnsData = {
   })),
   benchmark: {
     key: "msci_world", name: "MSCI World", ticker: "EUNL.DE", price_date: "2026-03-06", starts_late: false,
+    series: demoBenchmarkSeries(),
     first_date: "2023-01-16", invested: "52480.00", returned: "4230.00", market_value: "60120.00",
     total_gain: "11870.00", xirr_pct: "9.62", reliable: true,
   },

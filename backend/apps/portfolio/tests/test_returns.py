@@ -1,15 +1,17 @@
 """Money-weighted returns (XIRR) and the benchmark ghost portfolio."""
 
 import datetime
+import uuid
 from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.assets.models import Account, Asset, Settings
-from apps.portfolio.returns import calculate_returns, xirr
+from apps.assets.models import Account, Asset, PortfolioSnapshot, Settings
+from apps.portfolio.returns import _series_days, calculate_returns, xirr
 from apps.transactions.models import Dividend, Transaction
 
 User = get_user_model()
@@ -128,6 +130,43 @@ class TestCalculateReturns:
             bench = calculate_returns(user, today=TODAY)["benchmark"]
         assert bench["returned"] == "500.00"
         assert bench["market_value"] == "500.00"
+
+    def test_comparison_series(self, user, account):
+        a = _asset(user, "Alpha", "12")
+        _tx(user, a, account, "BUY", D(2025, 1, 1), "100", "10")
+        Dividend.objects.create(
+            owner=user, asset=a, date=D(2025, 3, 1), gross=Decimal("30"), tax=Decimal("5"), net=Decimal("25")
+        )
+        PortfolioSnapshot.objects.create(
+            owner=user,
+            batch_id=uuid.uuid4(),
+            captured_at=timezone.make_aware(datetime.datetime(2025, 6, 2, 12)),
+            total_market_value=Decimal("1100"),
+        )
+        closes = [(D(2025, 1, 1), 50.0), (D(2025, 6, 1), 60.0), (D(2025, 12, 31), 100.0)]
+        with patch("apps.portfolio.returns.fetch_benchmark_closes", return_value=closes):
+            series = calculate_returns(user, today=TODAY)["benchmark"]["series"]
+
+        by_day = {p["date"]: p for p in series}
+        assert series[0]["date"] == "2025-01-01" and series[-1]["date"] == "2026-01-01"
+        assert all(p["contributed"] == "1000.00" for p in series)
+        # No snapshot yet: the portfolio line starts later; the index holds 20 units from day one
+        assert by_day["2025-01-01"]["portfolio"] is None
+        assert by_day["2025-01-01"]["benchmark"] == "1000.00"
+        # Snapshot of 1,100 plus the 25 € dividend; 20 units at 60
+        june = next(p for p in series if p["date"] >= "2025-06-02")
+        assert june["portfolio"] == "1125.00"
+        assert june["benchmark"] == "1200.00"
+        # Today: current value (100 × 12) plus the dividend; the index at its last close
+        assert series[-1]["portfolio"] == "1225.00"
+        assert series[-1]["benchmark"] == "2000.00"
+
+    def test_series_days(self):
+        weekly = _series_days(D(2025, 1, 1), TODAY)
+        assert weekly[1] == D(2025, 1, 8) and weekly[-1] == TODAY
+        monthly = _series_days(D(2022, 1, 15), TODAY)
+        assert monthly[:3] == [D(2022, 1, 15), D(2022, 1, 31), D(2022, 2, 28)]
+        assert monthly[-2:] == [D(2025, 12, 31), TODAY]
 
     def test_benchmark_unavailable(self, user, account):
         _tx(user, _asset(user, "Alpha", "10"), account, "BUY", D(2025, 1, 1), "1", "10")

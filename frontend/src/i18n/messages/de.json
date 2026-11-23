@@ -271,6 +271,11 @@
   "returns.notReliable": "Weniger als ein Jahr Historie: die Jahreszahl ist nur ein Richtwert.",
   "returns.startsLate": "Einige Transaktionen sind älter als der {name}-Fonds; sie wurden zu seinem ersten Kurs bewertet.",
   "returns.indexNote": "Index: thesaurierender ETF {ticker}, Kurs vom {date}. Die Fondskosten sind bereits im Kurs enthalten.",
+  "returns.chartMine": "Dein Depot",
+  "returns.chartContributed": "Eingezahlt",
+  "returns.chartToday": "Heute",
+  "returns.chartVsIndex": "gegenüber {name}",
+  "returns.chartNote": "Dein Depot enthält die erhaltenen Dividenden, weil der Indexfonds seine eigenen reinvestiert. Eingezahlt ist, was du investiert hast, abzüglich der Verkaufserlöse. Deine Linie beginnt mit dem ersten gespeicherten Depotstand.",
 
   "assets.title": "Vermoegenswerte",
   "assets.new": "Neuer Vermoegenswert",
